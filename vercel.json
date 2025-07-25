@@ -1,83 +1,30 @@
 {
-  "version": 2,
-  "name": "smart-stock-detail",
-  "builds": [
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/public/index.html"
-    },
-    {
-      "src": "/demo",
-      "dest": "/public/demo-stock-detail.html"
-    },
-    {
-      "src": "/dynamic",
-      "dest": "/public/dynamic-detail.html"
-    },
-    {
-      "src": "/live",
-      "dest": "/public/live-stock-detail.html"
-    },
-    {
-      "src": "/prototype",
-      "dest": "/public/prototype.html"
-    },
-    {
-      "src": "/static",
-      "dest": "/public/static-demo.html"
-    },
-    {
-      "src": "/prototype",
-      "dest": "/prototype.html"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Authorization"
-        }
-      ]
-    }
-  ],
-  "env": {
-    "FINNHUB_API_KEY": "@finnhub_api_key",
-    "DATABASE_URL": "@database_url",
-    "NODE_ENV": "production"
-  },
   "functions": {
     "api/**/*.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/demo", "destination": "/demo-stock-detail.html" },
+    { "source": "/dynamic", "destination": "/dynamic-detail.html" },
+    { "source": "/live", "destination": "/live-stock-detail.html" },
+    { "source": "/prototype", "destination": "/prototype.html" },
+    { "source": "/static", "destination": "/static-demo.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-Requested-With, Content-Type, Authorization" }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
 }
