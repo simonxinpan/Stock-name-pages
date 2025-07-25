@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能个股详情页 - 本地演示版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .price-up { color: #ef4444; }
+        .price-down { color: #10b981; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-connected { background-color: #10b981; }
+        .status-disconnected { background-color: #ef4444; }
+        .status-connecting { background-color: #f59e0b; animation: pulse 1s infinite; }
+        .live-badge {
+            background: linear-gradient(45deg, #ef4444, #f59e0b);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); }
+            to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); }
+        }
+        .demo-badge {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .info-message {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50" x-data="liveStockApp()">
+    <!-- 顶部导航栏 -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
+                    <span class="demo-badge">本地演示</span>
+                    <div class="flex items-center space-x-2">
+                        <span class="status-indicator" :class="connectionStatus"></span>
+                        <span class="text-sm text-gray-600" x-text="getConnectionText()"></span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <select 
+                            x-model="symbol" 
+                            @change="loadStock()"
+                            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="AAPL">AAPL - 苹果</option>
+                            <option value="TSLA">TSLA - 特斯拉</option>
+                            <option value="MSFT">MSFT - 微软</option>
+                            <option value="GOOGL">GOOGL - 谷歌</option>
+                            <option value="AMZN">AMZN - 亚马逊</option>
+                        </select>
+                        <button 
+                            @click="loadStock()"
+                            :disabled="loading"
+                            class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <span x-show="!loading" x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
+                            <span x-show="loading" class="loading">...</span>
+                        </button>
+                    </div>
+                    <button 
+                        @click="toggleLanguage()"
+                        class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                        x-text="language === 'zh' ? 'EN' : '中文'">
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 信息提示 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div class="info-message">
+            <p x-text="language === 'zh' ? '📍 这是本地演示版本，使用模拟数据展示功能。要连接真实API，请部署到Vercel并配置Finnhub API密钥。' : '📍 This is a local demo version using simulated data. To connect to real APIs, deploy to Vercel and configure Finnhub API key.'"></p>
+        </div>
+    </div>
+
+    <!-- 错误提示 -->
+    <div x-show="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div class="error-message">
+            <p x-text="error"></p>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- 股票基本信息 -->
+        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+            <div x-show="loading && !stockData" class="animate-pulse">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+                        <div class="w-16 h-16 bg-gray-200 rounded-lg loading-skeleton"></div>
+                        <div>
+                            <div class="h-8 bg-gray-200 rounded w-32 mb-2 loading-skeleton"></div>
+                            <div class="h-6 bg-gray-200 rounded w-48 mb-1 loading-skeleton"></div>
+                            <div class="h-4 bg-gray-200 rounded w-24 loading-skeleton"></div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="h-12 bg-gray-200 rounded w-32 mb-2 loading-skeleton"></div>
+                        <div class="h-6 bg-gray-200 rounded w-24 loading-skeleton"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div x-show="!loading || stockData">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                            <span class="text-2xl font-bold text-blue-600" x-text="symbol"></span>
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900" x-text="symbol"></h1>
+                            <p class="text-lg text-gray-600" x-text="companyProfile?.name || 'Loading...'"></p>
+                            <p class="text-sm text-gray-500" x-text="companyProfile?.exchange || 'Loading...'"></p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold" :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatPrice(quote?.c)"></div>
+                        <div class="flex items-center justify-end space-x-2 mt-1">
+                            <span :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatChange(quote?.d)"></span>
+                            <span :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatPercent(quote?.dp)"></span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-1" x-text="getLastUpdateText()"></div>
+                    </div>
+                </div>
+                
+                <!-- 详细财务数据 -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div class="tooltip">
+                                <h4 class="text-sm font-medium text-gray-600 mb-1 cursor-help" x-text="language === 'zh' ? '开盘价' : 'Open'"></h4>
+                                <span class="tooltiptext" x-text="language === 'zh' ? '今日开盘价格' : 'Today\'s opening price'"></span>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.o)"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div class="tooltip">
+                                <h4 class="text-sm font-medium text-gray-600 mb-1 cursor-help" x-text="language === 'zh' ? '最高价' : 'High'"></h4>
+                                <span class="tooltiptext" x-text="language === 'zh' ? '今日最高价格' : 'Today\'s highest price'"></span>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.h)"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div class="tooltip">
+                                <h4 class="text-sm font-medium text-gray-600 mb-1 cursor-help" x-text="language === 'zh' ? '最低价' : 'Low'"></h4>
+                                <span class="tooltiptext" x-text="language === 'zh' ? '今日最低价格' : 'Today\'s lowest price'"></span>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.l)"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div class="tooltip">
+                                <h4 class="text-sm font-medium text-gray-600 mb-1 cursor-help" x-text="language === 'zh' ? '前收盘' : 'Prev Close'"></h4>
+                                <span class="tooltiptext" x-text="language === 'zh' ? '前一交易日收盘价' : 'Previous trading day closing price'"></span>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.pc)"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div class="tooltip">
+                                <h4 class="text-sm font-medium text-gray-600 mb-1 cursor-help" x-text="language === 'zh' ? '市值' : 'Market Cap'"></h4>
+                                <span class="tooltiptext" x-text="language === 'zh' ? '公司总市值' : 'Total market capitalization'"></span>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div class="tooltip">
+                                <h4 class="text-sm font-medium text-gray-600 mb-1 cursor-help" x-text="language === 'zh' ? '成交量' : 'Volume'"></h4>
+                                <span class="tooltiptext" x-text="language === 'zh' ? '今日成交量' : 'Today\'s trading volume'"></span>
+                            </div>
+                            <p class="text-lg font-bold text-gray-900" x-text="formatVolume(quote?.v)"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容网格 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- K线图区域 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+                        <div class="flex space-x-2">
+                            <template x-for="period in timePeriods" :key="period.value">
+                                <button 
+                                    @click="selectedPeriod = period.value; loadCandles()"
+                                    :class="selectedPeriod === period.value ? 'bg-blue-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                                    class="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105"
+                                    x-text="language === 'zh' ? period.zh : period.en">
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
+                        <canvas id="stockChart" width="600" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 财务指标和公司信息 -->
+            <div class="space-y-6">
+                <!-- 财务指标 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '财务指标' : 'Financial Metrics'"></h3>
+                    <div class="space-y-4">
+                        <template x-for="metric in getFinancialMetrics()" :key="metric.key">
+                            <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 rounded px-2 transition-colors">
+                                <div class="tooltip flex-1">
+                                    <span class="text-sm text-gray-600 cursor-help" x-text="language === 'zh' ? metric.zh : metric.en"></span>
+                                    <span class="tooltiptext" x-text="language === 'zh' ? metric.tooltip_zh : metric.tooltip_en"></span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-semibold text-gray-900" x-text="metric.value"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 公司信息 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2 hover:bg-gray-50 rounded px-2 transition-colors">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业:' : 'Industry:'"></span>
+                            <span class="text-sm font-medium text-gray-900" x-text="companyProfile?.finnhubIndustry || 'N/A'"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 hover:bg-gray-50 rounded px-2 transition-colors">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '国家:' : 'Country:'"></span>
+                            <span class="text-sm font-medium text-gray-900" x-text="companyProfile?.country || 'N/A'"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 hover:bg-gray-50 rounded px-2 transition-colors">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '货币:' : 'Currency:'"></span>
+                            <span class="text-sm font-medium text-gray-900" x-text="companyProfile?.currency || 'N/A'"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 hover:bg-gray-50 rounded px-2 transition-colors">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '员工数:' : 'Employees:'"></span>
+                            <span class="text-sm font-medium text-gray-900" x-text="formatNumber(companyProfile?.employeeTotal)"></span>
+                        </div>
+                        <div class="py-2" x-show="companyProfile?.weburl">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '官网:' : 'Website:'"></span>
+                            <a :href="companyProfile?.weburl" target="_blank" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-2 block mt-1" x-text="companyProfile?.weburl"></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 实时新闻 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h3>
+                    <div class="space-y-3">
+                        <template x-for="article in news" :key="article.id">
+                            <div class="border-b border-gray-100 pb-3 last:border-b-0">
+                                <a :href="article.url" target="_blank" class="block hover:bg-gray-50 rounded p-2 transition-colors cursor-pointer">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-1 line-clamp-2" x-text="article.headline"></h4>
+                                    <p class="text-xs text-gray-600" x-text="formatNewsTime(article.datetime)"></p>
+                                    <p class="text-xs text-gray-500 mt-1" x-text="article.source"></p>
+                                </a>
+                            </div>
+                        </template>
+                        <div x-show="news.length === 0 && !loading" class="text-center text-gray-500 py-4">
+                            <p x-text="language === 'zh' ? '暂无相关新闻' : 'No news available'"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center text-sm text-gray-500">
+                <p x-text="language === 'zh' ? '本地演示版本 | 模拟数据仅供展示 | 部署到Vercel获取真实数据' : 'Local Demo Version | Simulated data for demonstration | Deploy to Vercel for real data'"></p>
+                <p class="mt-1" x-text="'© 2024 ' + (language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail Page')"></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function liveStockApp() {
+            return {
+                // 基础配置
+                language: 'zh',
+                symbol: 'AAPL',
+                loading: false,
+                error: null,
+                connectionStatus: 'status-connected',
+                
+                // 数据存储
+                quote: null,
+                companyProfile: null,
+                candles: null,
+                news: [],
+                stockData: null,
+                
+                // 图表相关
+                selectedPeriod: '1D',
+                timePeriods: [
+                    { value: '1D', zh: '日内', en: '1D' },
+                    { value: '1W', zh: '1周', en: '1W' },
+                    { value: '1M', zh: '1月', en: '1M' },
+                    { value: '3M', zh: '3月', en: '3M' },
+                    { value: '1Y', zh: '1年', en: '1Y' }
+                ],
+                chart: null,
+                
+                // 模拟数据
+                mockData: {
+                    AAPL: {
+                        quote: { c: 175.43, d: 2.15, dp: 1.24, h: 176.82, l: 173.50, o: 174.20, pc: 173.28, v: 45678900 },
+                        profile: { name: 'Apple Inc.', exchange: 'NASDAQ', finnhubIndustry: 'Technology', country: 'US', currency: 'USD', employeeTotal: 164000, marketCapitalization: 2800000, weburl: 'https://www.apple.com' },
+                        news: [
+                            { id: 1, headline: 'Apple发布新款iPhone 15系列', datetime: Date.now()/1000 - 3600, source: 'Apple Newsroom', url: '#' },
+                            { id: 2, headline: 'Apple Q4财报超预期', datetime: Date.now()/1000 - 7200, source: 'Reuters', url: '#' },
+                            { id: 3, headline: 'Apple在AI领域的新投资', datetime: Date.now()/1000 - 10800, source: 'TechCrunch', url: '#' }
+                        ]
+                    },
+                    TSLA: {
+                        quote: { c: 248.50, d: -3.25, dp: -1.29, h: 252.75, l: 246.80, o: 251.20, pc: 251.75, v: 28456700 },
+                        profile: { name: 'Tesla, Inc.', exchange: 'NASDAQ', finnhubIndustry: 'Automotive', country: 'US', currency: 'USD', employeeTotal: 127855, marketCapitalization: 790000, weburl: 'https://www.tesla.com' },
+                        news: [
+                            { id: 1, headline: 'Tesla Cybertruck开始量产', datetime: Date.now()/1000 - 1800, source: 'Tesla', url: '#' },
+                            { id: 2, headline: 'Tesla在中国市场表现强劲', datetime: Date.now()/1000 - 5400, source: 'Bloomberg', url: '#' }
+                        ]
+                    },
+                    MSFT: {
+                        quote: { c: 378.85, d: 4.12, dp: 1.10, h: 380.50, l: 375.20, o: 376.40, pc: 374.73, v: 18234500 },
+                        profile: { name: 'Microsoft Corporation', exchange: 'NASDAQ', finnhubIndustry: 'Technology', country: 'US', currency: 'USD', employeeTotal: 221000, marketCapitalization: 2820000, weburl: 'https://www.microsoft.com' },
+                        news: [
+                            { id: 1, headline: 'Microsoft Azure云服务增长强劲', datetime: Date.now()/1000 - 2700, source: 'Microsoft', url: '#' },
+                            { id: 2, headline: 'Microsoft Copilot AI助手更新', datetime: Date.now()/1000 - 6300, source: 'The Verge', url: '#' }
+                        ]
+                    },
+                    GOOGL: {
+                        quote: { c: 142.65, d: 1.85, dp: 1.31, h: 143.20, l: 140.90, o: 141.50, pc: 140.80, v: 22567800 },
+                        profile: { name: 'Alphabet Inc.', exchange: 'NASDAQ', finnhubIndustry: 'Technology', country: 'US', currency: 'USD', employeeTotal: 182502, marketCapitalization: 1780000, weburl: 'https://www.google.com' },
+                        news: [
+                            { id: 1, headline: 'Google Bard AI模型重大更新', datetime: Date.now()/1000 - 1200, source: 'Google', url: '#' },
+                            { id: 2, headline: 'Google Cloud业务持续增长', datetime: Date.now()/1000 - 4800, source: 'CNBC', url: '#' }
+                        ]
+                    },
+                    AMZN: {
+                        quote: { c: 153.75, d: -1.45, dp: -0.93, h: 155.80, l: 152.30, o: 154.90, pc: 155.20, v: 31245600 },
+                        profile: { name: 'Amazon.com, Inc.', exchange: 'NASDAQ', finnhubIndustry: 'E-commerce', country: 'US', currency: 'USD', employeeTotal: 1541000, marketCapitalization: 1590000, weburl: 'https://www.amazon.com' },
+                        news: [
+                            { id: 1, headline: 'Amazon Prime会员数量创新高', datetime: Date.now()/1000 - 900, source: 'Amazon', url: '#' },
+                            { id: 2, headline: 'Amazon AWS推出新AI服务', datetime: Date.now()/1000 - 3600, source: 'AWS', url: '#' }
+                        ]
+                    }
+                },
+                
+                // 初始化
+                async init() {
+                    // 从localStorage恢复语言设置
+                    const savedLanguage = localStorage.getItem('language');
+                    if (savedLanguage) {
+                        this.language = savedLanguage;
+                    }
+                    
+                    // 加载初始数据
+                    await this.loadStock();
+                    
+                    // 设置定时刷新（模拟实时更新）
+                    this.startAutoRefresh();
+                },
+                
+                // 加载股票数据（模拟）
+                async loadStock() {
+                    this.loading = true;
+                    this.error = null;
+                    this.connectionStatus = 'status-connecting';
+                    
+                    try {
+                        // 模拟API延迟
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                        
+                        const data = this.mockData[this.symbol];
+                        if (!data) {
+                            throw new Error('股票代码不存在');
+                        }
+                        
+                        this.quote = data.quote;
+                        this.companyProfile = data.profile;
+                        this.news = data.news;
+                        this.stockData = { quote: data.quote, profile: data.profile };
+                        
+                        // 生成模拟K线数据
+                        this.generateMockCandles();
+                        this.updateChart();
+                        
+                        this.connectionStatus = 'status-connected';
+                        
+                    } catch (error) {
+                        this.error = this.language === 'zh' 
+                            ? `加载数据失败: ${error.message}` 
+                            : `Failed to load data: ${error.message}`;
+                        this.connectionStatus = 'status-disconnected';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                
+                // 生成模拟K线数据
+                generateMockCandles() {
+                    const periods = {
+                        '1D': { points: 78, interval: 5 * 60 * 1000 }, // 5分钟间隔
+                        '1W': { points: 35, interval: 4 * 60 * 60 * 1000 }, // 4小时间隔
+                        '1M': { points: 30, interval: 24 * 60 * 60 * 1000 }, // 1天间隔
+                        '3M': { points: 90, interval: 24 * 60 * 60 * 1000 }, // 1天间隔
+                        '1Y': { points: 52, interval: 7 * 24 * 60 * 60 * 1000 } // 1周间隔
+                    };
+                    
+                    const config = periods[this.selectedPeriod];
+                    const basePrice = this.quote.c;
+                    const timestamps = [];
+                    const prices = [];
+                    const volumes = [];
+                    
+                    let currentTime = Date.now() - (config.points * config.interval);
+                    let currentPrice = basePrice * 0.95; // 从较低价格开始
+                    
+                    for (let i = 0; i < config.points; i++) {
+                        timestamps.push(Math.floor(currentTime / 1000));
+                        
+                        // 生成价格波动
+                        const volatility = 0.02; // 2%波动率
+                        const change = (Math.random() - 0.5) * volatility * currentPrice;
+                        currentPrice += change;
+                        
+                        // 确保最后一个点接近当前价格
+                        if (i === config.points - 1) {
+                            currentPrice = basePrice;
+                        }
+                        
+                        prices.push(currentPrice);
+                        volumes.push(Math.floor(Math.random() * 1000000) + 500000);
+                        
+                        currentTime += config.interval;
+                    }
+                    
+                    this.candles = {
+                        s: 'ok',
+                        t: timestamps,
+                        c: prices,
+                        v: volumes
+                    };
+                },
+                
+                // 更新图表
+                updateChart() {
+                    if (this.chart) {
+                        this.chart.destroy();
+                    }
+                    
+                    const ctx = document.getElementById('stockChart');
+                    if (!ctx || !this.candles || this.candles.s !== 'ok') return;
+                    
+                    const chartCtx = ctx.getContext('2d');
+                    const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
+                    
+                    const isPositive = this.quote?.d >= 0;
+                    if (isPositive) {
+                        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.3)');
+                        gradient.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+                    } else {
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+                    }
+                    
+                    const labels = this.candles.t.map(timestamp => this.formatChartLabel(timestamp * 1000));
+                    const prices = this.candles.c;
+                    
+                    this.chart = new Chart(chartCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: this.symbol + ' 股价',
+                                data: prices,
+                                borderColor: isPositive ? '#ef4444' : '#10b981',
+                                backgroundColor: gradient,
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.1,
+                                pointBackgroundColor: isPositive ? '#ef4444' : '#10b981',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                pointRadius: 1,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                                    titleColor: '#f9fafb',
+                                    bodyColor: '#f9fafb',
+                                    borderColor: isPositive ? '#ef4444' : '#10b981',
+                                    borderWidth: 2,
+                                    cornerRadius: 8,
+                                    displayColors: false,
+                                    padding: 12,
+                                    callbacks: {
+                                        title: (context) => {
+                                            return this.formatTooltipTitle(context[0].label);
+                                        },
+                                        label: (context) => {
+                                            const price = '$' + context.parsed.y.toFixed(2);
+                                            const volume = this.candles.v[context.dataIndex];
+                                            return [
+                                                `${this.language === 'zh' ? '价格' : 'Price'}: ${price}`,
+                                                `${this.language === 'zh' ? '成交量' : 'Volume'}: ${this.formatVolume(volume)}`
+                                            ];
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        color: 'rgba(156, 163, 175, 0.2)'
+                                    },
+                                    ticks: {
+                                        color: '#6b7280',
+                                        font: {
+                                            size: 12
+                                        },
+                                        maxTicksLimit: 8
+                                    }
+                                },
+                                y: {
+                                    position: 'right',
+                                    grid: {
+                                        color: 'rgba(156, 163, 175, 0.2)'
+                                    },
+                                    ticks: {
+                                        color: '#6b7280',
+                                        font: {
+                                            size: 12
+                                        },
+                                        callback: function(value) {
+                                            return '$' + value.toFixed(2);
+                                        }
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeInOutQuart'
+                            }
+                        }
+                    });
+                },
+                
+                // 加载K线数据
+                loadCandles() {
+                    this.generateMockCandles();
+                    this.updateChart();
+                },
+                
+                // 开始自动刷新
+                startAutoRefresh() {
+                    // 每30秒模拟价格变动
+                    setInterval(() => {
+                        if (this.quote && !this.loading) {
+                            // 模拟小幅价格变动
+                            const change = (Math.random() - 0.5) * 0.01 * this.quote.c;
+                            this.quote.c += change;
+                            this.quote.d += change;
+                            this.quote.dp = (this.quote.d / this.quote.pc) * 100;
+                        }
+                    }, 30000);
+                },
+                
+                // 获取财务指标
+                getFinancialMetrics() {
+                    if (!this.companyProfile) return [];
+                    
+                    return [
+                        {
+                            key: 'marketCap',
+                            zh: '市值',
+                            en: 'Market Cap',
+                            value: this.formatMarketCap(this.companyProfile.marketCapitalization),
+                            tooltip_zh: '公司总市值',
+                            tooltip_en: 'Total market capitalization'
+                        },
+                        {
+                            key: 'employees',
+                            zh: '员工数',
+                            en: 'Employees',
+                            value: this.formatNumber(this.companyProfile.employeeTotal),
+                            tooltip_zh: '公司员工总数',
+                            tooltip_en: 'Total number of employees'
+                        },
+                        {
+                            key: 'exchange',
+                            zh: '交易所',
+                            en: 'Exchange',
+                            value: this.companyProfile.exchange || 'N/A',
+                            tooltip_zh: '股票交易所',
+                            tooltip_en: 'Stock exchange'
+                        }
+                    ];
+                },
+                
+                // 工具函数
+                toggleLanguage() {
+                    this.language = this.language === 'zh' ? 'en' : 'zh';
+                    localStorage.setItem('language', this.language);
+                },
+                
+                getConnectionText() {
+                    const texts = {
+                        'status-connected': { zh: '模拟连接', en: 'Demo Connected' },
+                        'status-connecting': { zh: '连接中...', en: 'Connecting...' },
+                        'status-disconnected': { zh: '连接断开', en: 'Disconnected' }
+                    };
+                    return texts[this.connectionStatus]?.[this.language] || '';
+                },
+                
+                formatPrice(price) {
+                    if (!price && price !== 0) return 'N/A';
+                    return '$' + price.toFixed(2);
+                },
+                
+                formatChange(change) {
+                    if (!change && change !== 0) return 'N/A';
+                    const sign = change >= 0 ? '+' : '';
+                    return sign + '$' + change.toFixed(2);
+                },
+                
+                formatPercent(percent) {
+                    if (!percent && percent !== 0) return 'N/A';
+                    const sign = percent >= 0 ? '+' : '';
+                    return '(' + sign + percent.toFixed(2) + '%)';
+                },
+                
+                formatMarketCap(marketCap) {
+                    if (!marketCap) return 'N/A';
+                    const cap = marketCap * 1000000; // 假设输入是百万为单位
+                    
+                    if (this.language === 'zh') {
+                        if (cap >= 1000000000000) {
+                            return (cap / 1000000000000).toFixed(1) + '万亿';
+                        } else if (cap >= 100000000000) {
+                            return (cap / 100000000000).toFixed(0) + '千亿';
+                        }
+                    } else {
+                        if (cap >= 1000000000000) {
+                            return '$' + (cap / 1000000000000).toFixed(1) + 'T';
+                        } else if (cap >= 1000000000) {
+                            return '$' + (cap / 1000000000).toFixed(0) + 'B';
+                        }
+                    }
+                    return '$' + (cap / 1000000).toFixed(0) + 'M';
+                },
+                
+                formatNumber(num) {
+                    if (!num) return 'N/A';
+                    if (this.language === 'zh') {
+                        if (num >= 10000) {
+                            return (num / 10000).toFixed(1) + '万';
+                        }
+                    } else {
+                        if (num >= 1000000) {
+                            return (num / 1000000).toFixed(1) + 'M';
+                        } else if (num >= 1000) {
+                            return (num / 1000).toFixed(1) + 'K';
+                        }
+                    }
+                    return num.toLocaleString();
+                },
+                
+                formatVolume(volume) {
+                    if (!volume) return '0';
+                    if (volume >= 1000000) {
+                        return (volume / 1000000).toFixed(1) + 'M';
+                    } else if (volume >= 1000) {
+                        return (volume / 1000).toFixed(1) + 'K';
+                    }
+                    return volume.toLocaleString();
+                },
+                
+                formatChartLabel(timestamp) {
+                    const date = new Date(timestamp);
+                    if (this.selectedPeriod === '1D') {
+                        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    } else if (this.selectedPeriod === '1W') {
+                        return date.toLocaleDateString('en-US', { weekday: 'short' });
+                    } else {
+                        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    }
+                },
+                
+                formatTooltipTitle(label) {
+                    if (this.language === 'zh') {
+                        return '时间: ' + label;
+                    } else {
+                        return 'Time: ' + label;
+                    }
+                },
+                
+                formatNewsTime(timestamp) {
+                    const date = new Date(timestamp * 1000);
+                    const now = new Date();
+                    const diffMs = now - date;
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffDays = Math.floor(diffHours / 24);
+                    
+                    if (this.language === 'zh') {
+                        if (diffDays > 0) {
+                            return diffDays + '天前';
+                        } else if (diffHours > 0) {
+                            return diffHours + '小时前';
+                        } else {
+                            return '刚刚';
+                        }
+                    } else {
+                        if (diffDays > 0) {
+                            return diffDays + 'd ago';
+                        } else if (diffHours > 0) {
+                            return diffHours + 'h ago';
+                        } else {
+                            return 'Just now';
+                        }
+                    }
+                },
+                
+                getLastUpdateText() {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    
+                    if (this.language === 'zh') {
+                        return `模拟更新 ${timeStr}`;
+                    } else {
+                        return `Demo Update ${timeStr}`;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
