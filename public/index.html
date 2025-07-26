@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能个股详情页 - 本地演示版</title>
+    <title>智能个股详情页</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -111,11 +111,18 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
-                    <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
-                    <span class="demo-badge">本地演示</span>
+                    <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Details'"></h1>
                     <div class="flex items-center space-x-2">
                         <span class="status-indicator" :class="connectionStatus"></span>
                         <span class="text-sm text-gray-600" x-text="getConnectionText()"></span>
+                        <button 
+                            @click="testAPIConnection()" 
+                            class="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+                            :disabled="testing"
+                        >
+                            <span x-show="!testing" x-text="language === 'zh' ? '测试连接' : 'Test API'"></span>
+                            <span x-show="testing" x-text="language === 'zh' ? '测试中...' : 'Testing...'"></span>
+                        </button>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -369,7 +376,8 @@
                 symbol: 'AAPL',
                 loading: false,
                 error: null,
-                connectionStatus: 'status-connected',
+                connectionStatus: 'status-connecting',
+                testing: false,
                 
                 // 数据存储
                 quote: null,
@@ -449,37 +457,80 @@
                     this.startAutoRefresh();
                 },
                 
-                // 加载股票数据（模拟）
+                // 加载股票数据（真实API）
                 async loadStock() {
                     this.loading = true;
                     this.error = null;
                     this.connectionStatus = 'status-connecting';
                     
                     try {
-                        // 模拟API延迟
-                        await new Promise(resolve => setTimeout(resolve, 800));
+                        // 并行获取股票报价、公司资料和新闻
+                        const [quoteResponse, profileResponse, newsResponse] = await Promise.all([
+                            fetch(`/api/cache/stock-data?symbol=${this.symbol}&type=quote`),
+                            fetch(`/api/cache/stock-data?symbol=${this.symbol}&type=profile`),
+                            fetch(`/api/cache/stock-data?symbol=${this.symbol}&type=news`)
+                        ]);
                         
-                        const data = this.mockData[this.symbol];
-                        if (!data) {
-                            throw new Error('股票代码不存在');
+                        if (!quoteResponse.ok || !profileResponse.ok || !newsResponse.ok) {
+                            throw new Error('API请求失败');
                         }
                         
-                        this.quote = data.quote;
-                        this.companyProfile = data.profile;
-                        this.news = data.news;
-                        this.stockData = { quote: data.quote, profile: data.profile };
+                        const quoteData = await quoteResponse.json();
+                        const profileData = await profileResponse.json();
+                        const newsData = await newsResponse.json();
                         
-                        // 生成模拟K线数据
-                        this.generateMockCandles();
-                        this.updateChart();
+                        // 检查API返回的数据
+                        if (quoteData.error || profileData.error || newsData.error) {
+                            throw new Error(quoteData.error || profileData.error || newsData.error);
+                        }
+                        
+                        // 转换API数据格式
+                        this.quote = {
+                            c: quoteData.data.c || 0,
+                            d: quoteData.data.d || 0,
+                            dp: quoteData.data.dp || 0,
+                            h: quoteData.data.h || 0,
+                            l: quoteData.data.l || 0,
+                            o: quoteData.data.o || 0,
+                            pc: quoteData.data.pc || 0,
+                            v: quoteData.data.v || 0
+                        };
+                        
+                        this.companyProfile = {
+                            name: profileData.data.name || 'N/A',
+                            exchange: profileData.data.exchange || 'N/A',
+                            finnhubIndustry: profileData.data.finnhubIndustry || 'N/A',
+                            country: profileData.data.country || 'N/A',
+                            currency: profileData.data.currency || 'USD',
+                            employeeTotal: profileData.data.employeeTotal || 0,
+                            marketCapitalization: profileData.data.marketCapitalization || 0,
+                            weburl: profileData.data.weburl || ''
+                        };
+                        
+                        this.news = newsData.data.slice(0, 5).map(item => ({
+                            id: item.id || Math.random(),
+                            headline: item.headline || item.summary || 'No headline',
+                            datetime: item.datetime || Date.now() / 1000,
+                            source: item.source || 'Unknown',
+                            url: item.url || '#'
+                        }));
+                        
+                        this.stockData = { quote: this.quote, profile: this.companyProfile };
+                        
+                        // 加载K线数据
+                        await this.loadCandles();
                         
                         this.connectionStatus = 'status-connected';
                         
                     } catch (error) {
+                        console.error('API Error:', error);
                         this.error = this.language === 'zh' 
                             ? `加载数据失败: ${error.message}` 
                             : `Failed to load data: ${error.message}`;
                         this.connectionStatus = 'status-disconnected';
+                        
+                        // 降级到模拟数据
+                        this.loadMockData();
                     } finally {
                         this.loading = false;
                     }
@@ -647,9 +698,50 @@
                 },
                 
                 // 加载K线数据
-                loadCandles() {
-                    this.generateMockCandles();
-                    this.updateChart();
+                async loadCandles() {
+                    try {
+                        const resolution = this.selectedPeriod === '1D' ? '5' : 
+                                         this.selectedPeriod === '1W' ? '60' : 
+                                         this.selectedPeriod === '1M' ? 'D' : 
+                                         this.selectedPeriod === '3M' ? 'D' : 'W';
+                        
+                        const response = await fetch(`/api/stock/candles?symbol=${this.symbol}&resolution=${resolution}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('K线数据获取失败');
+                        }
+                        
+                        const candleData = await response.json();
+                        
+                        if (candleData.s === 'ok' && candleData.t && candleData.c) {
+                            this.candles = candleData;
+                        } else {
+                            // 如果API返回无数据，生成模拟数据
+                            this.generateMockCandles();
+                        }
+                        
+                        this.updateChart();
+                        
+                    } catch (error) {
+                        console.error('Candles API Error:', error);
+                        // 降级到模拟数据
+                        this.generateMockCandles();
+                        this.updateChart();
+                    }
+                },
+                
+                // 加载模拟数据（降级方案）
+                loadMockData() {
+                    const data = this.mockData[this.symbol];
+                    if (data) {
+                        this.quote = data.quote;
+                        this.companyProfile = data.profile;
+                        this.news = data.news;
+                        this.stockData = { quote: data.quote, profile: data.profile };
+                        this.generateMockCandles();
+                        this.updateChart();
+                        this.connectionStatus = 'status-demo';
+                    }
                 },
                 
                 // 开始自动刷新
@@ -698,6 +790,45 @@
                     ];
                 },
                 
+                // 测试API连接
+                async testAPIConnection() {
+                    this.testing = true;
+                    
+                    try {
+                        // 测试数据库连接
+                        const dbResponse = await fetch('/api/test/db-connection');
+                        const dbResult = await dbResponse.json();
+                        
+                        // 测试Finnhub API连接
+                        const apiResponse = await fetch('/api/test/finnhub-api?symbol=AAPL');
+                        const apiResult = await apiResponse.json();
+                        
+                        // 显示测试结果
+                        const message = this.language === 'zh' 
+                            ? `数据库: ${dbResult.status === 'success' ? '✅ 连接成功' : '❌ 连接失败'}\nFinnhub API: ${apiResult.success_rate || '❌ 测试失败'}`
+                            : `Database: ${dbResult.status === 'success' ? '✅ Connected' : '❌ Failed'}\nFinnhub API: ${apiResult.success_rate || '❌ Test Failed'}`;
+                        
+                        alert(message);
+                        
+                        // 更新连接状态
+                        if (dbResult.status === 'success' && apiResult.success_rate && parseFloat(apiResult.success_rate) > 50) {
+                            this.connectionStatus = 'status-connected';
+                        } else {
+                            this.connectionStatus = 'status-disconnected';
+                        }
+                        
+                    } catch (error) {
+                        console.error('API test failed:', error);
+                        const message = this.language === 'zh' 
+                            ? '连接测试失败: ' + error.message
+                            : 'Connection test failed: ' + error.message;
+                        alert(message);
+                        this.connectionStatus = 'status-disconnected';
+                    } finally {
+                        this.testing = false;
+                    }
+                },
+                
                 // 工具函数
                 toggleLanguage() {
                     this.language = this.language === 'zh' ? 'en' : 'zh';
@@ -706,9 +837,10 @@
                 
                 getConnectionText() {
                     const texts = {
-                        'status-connected': { zh: '模拟连接', en: 'Demo Connected' },
+                        'status-connected': { zh: '实时连接', en: 'Live Connected' },
                         'status-connecting': { zh: '连接中...', en: 'Connecting...' },
-                        'status-disconnected': { zh: '连接断开', en: 'Disconnected' }
+                        'status-disconnected': { zh: '连接断开', en: 'Disconnected' },
+                        'status-demo': { zh: '演示模式', en: 'Demo Mode' }
                     };
                     return texts[this.connectionStatus]?.[this.language] || '';
                 },

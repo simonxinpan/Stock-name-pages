@@ -1,7 +1,8 @@
 // Neon数据库缓存API - 股票数据缓存服务
 // 用于避免频繁调用Finnhub API，提高性能和稳定性
 
-import { Pool } from '@neondatabase/serverless';
+// 使用标准的 pg 库，兼容 Vercel 部署
+const { Pool } = require('pg');
 
 // 缓存配置
 const CACHE_DURATION = {
@@ -39,7 +40,12 @@ export default async function handler(req, res) {
   
   try {
     // 初始化数据库连接
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool({ 
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
     
     // 检查缓存
     const cachedData = await getCachedData(pool, symbol, type, { resolution, from, to });
@@ -97,7 +103,12 @@ export default async function handler(req, res) {
     
     // 如果API调用失败，尝试返回缓存数据
     try {
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      const pool = new Pool({ 
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      });
       const cachedData = await getCachedData(pool, symbol, type, { resolution, from, to });
       
       if (cachedData) {
