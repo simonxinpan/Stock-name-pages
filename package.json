@@ -35,9 +35,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/smart-stock-detail.git"
+    "url": "https://github.com/simonxinpan/Stock-name-pages.git"
   },
-  "homepage": "https://smart-stock-detail.vercel.app",
+  "homepage": "https://stock-name-pages-10-git-v2-simon-pans-projects.vercel.app",
   "vercel": {
     "framework": null,
     "buildCommand": null,
