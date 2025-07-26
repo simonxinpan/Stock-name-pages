@@ -30,7 +30,7 @@
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
     <!-- 顶部导航栏 -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
@@ -49,6 +49,7 @@
                             <option value="MSFT">MSFT - 微软</option>
                             <option value="GOOGL">GOOGL - 谷歌</option>
                             <option value="AMZN">AMZN - 亚马逊</option>
+                            <option value="NVDA">NVDA - 英伟达</option>
                         </select>
                         <button @click="loadStock()" :disabled="loading" class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             <span x-show="!loading" x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
@@ -100,7 +101,7 @@
                         <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '最高价' : 'High'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.h)"></p></div>
                         <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '最低价' : 'Low'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.l)"></p></div>
                         <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '前收盘' : 'Prev Close'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatPrice(quote?.pc)"></p></div>
-                        <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '市值(B)' : 'Market Cap(B)'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
+                        <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
                         <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '成交量(M)' : 'Volume(M)'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatVolume(quote?.v)"></p></div>
                     </div>
                 </div>
@@ -114,12 +115,20 @@
                         <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
                         <div class="flex space-x-2">
                             <template x-for="period in timePeriods" :key="period.value">
-                                <button @click="selectedPeriod = period.value; loadCandles()" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'" class="px-4 py-2 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
+                                <button 
+                                    @click="changePeriod(period.value)" 
+                                    :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" 
+                                    class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" 
+                                    x-text="language === 'zh' ? period.zh : period.en">
+                                </button>
                             </template>
                         </div>
                     </div>
-                    <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
+                    <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
                         <canvas id="stockChart"></canvas>
+                        <div x-show="loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                            <span class="loading text-blue-500">Loading Chart...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -166,7 +175,7 @@
                 companyProfile: null,
                 candles: null,
                 news: [],
-                selectedPeriod: 'D',
+                selectedPeriod: 'D', // Finnhub resolution: D, W, M
                 timePeriods: [
                     { value: 'D', zh: '日线', en: 'Day' },
                     { value: 'W', zh: '周线', en: 'Week' },
@@ -208,16 +217,26 @@
                         this.loading = false;
                     }
                 },
+                
+                // *** K线图按钮点击事件 ***
+                async changePeriod(newPeriod) {
+                    this.selectedPeriod = newPeriod;
+                    await this.loadCandles();
+                },
 
+                // *** 加载K线图数据 (已修改) ***
                 async loadCandles() {
+                    this.loading = true; // 开始加载图表时也显示loading
                     const currentSymbol = this.symbol.toUpperCase();
                     const resolution = this.selectedPeriod;
                     const to = Math.floor(Date.now() / 1000);
                     let from;
+
+                    // 根据不同的时间周期，计算不同的历史时间范围
                     switch (resolution) {
-                        case 'D': from = to - (365 * 24 * 60 * 60); break; // 1年日线
-                        case 'W': from = to - (5 * 365 * 24 * 60 * 60); break; // 5年周线
-                        case 'M': from = to - (20 * 365 * 24 * 60 * 60); break; // 20年月线
+                        case 'D': from = to - (365 * 24 * 60 * 60); break; // 获取过去1年的日线数据
+                        case 'W': from = to - (5 * 365 * 24 * 60 * 60); break; // 获取过去5年的周线数据
+                        case 'M': from = to - (20 * 365 * 24 * 60 * 60); break; // 获取过去20年的月线数据
                         default: from = to - (365 * 24 * 60 * 60);
                     }
                     
@@ -226,7 +245,7 @@
                         const candlesData = await fetch(url).then(res => this.handleResponse(res));
                         
                         if (candlesData.s === 'no_data') {
-                            this.candles = { s: 'ok', t:[], c:[], v:[] };
+                            this.candles = { s: 'ok', t:[], c:[], v:[] }; // 处理无数据情况
                             console.warn(`No candle data for ${currentSymbol} with resolution ${resolution}`);
                         } else {
                             this.candles = candlesData;
@@ -235,6 +254,8 @@
                     } catch (error) {
                         console.error('Failed to load candle data:', error);
                         this.error = `[Chart Load Error] ${error.message}`;
+                    } finally {
+                        this.loading = false; // 图表加载完成
                     }
                 },
 
@@ -245,7 +266,8 @@
                     }
                     return response.json();
                 },
-
+                
+                // *** 更新图表 (已优化) ***
                 updateChart() {
                     if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
@@ -262,33 +284,27 @@
                     this.chart = new Chart(chartCtx, {
                         type: 'line',
                         data: {
-                            labels: this.candles.t.map(ts => new Date(ts * 1000).toLocaleDateString()),
+                            labels: this.candles.t.map(ts => { // 优化日期显示
+                                const date = new Date(ts * 1000);
+                                if (this.selectedPeriod === 'M') {
+                                    return date.toLocaleDateString(this.language, { year: 'numeric', month: 'short' });
+                                }
+                                return date.toLocaleDateString(this.language);
+                            }),
                             datasets: [{
-                                label: this.symbol,
-                                data: this.candles.c,
-                                borderColor: borderColor,
-                                backgroundColor: gradient,
-                                borderWidth: 2,
-                                fill: true,
-                                tension: 0.1,
-                                pointRadius: 0,
-                                pointHoverRadius: 5,
-                                pointHitRadius: 10,
-                                pointBackgroundColor: borderColor
+                                label: this.symbol, data: this.candles.c, borderColor: borderColor, backgroundColor: gradient,
+                                borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0, pointHoverRadius: 5,
+                                pointHitRadius: 10, pointBackgroundColor: borderColor
                             }]
                         },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
+                            responsive: true, maintainAspectRatio: false,
                             plugins: { legend: { display: false } },
                             scales: {
-                                x: { display: false },
-                                y: { position: 'right', grid: { color: 'rgba(200, 200, 200, 0.1)' } }
+                                x: { ticks: { maxTicksLimit: 8, color: '#6b7280' }, grid: { display: false } }, // 显示X轴刻度
+                                y: { position: 'right', grid: { color: 'rgba(200, 200, 200, 0.1)' }, ticks: { color: '#6b7280' } }
                             },
-                            interaction: {
-                                intersect: false,
-                                mode: 'index',
-                            }
+                            interaction: { intersect: false, mode: 'index' }
                         }
                     });
                 },
@@ -302,12 +318,28 @@
                 formatPrice(price) { return (price !== null && typeof price !== 'undefined') ? '$' + price.toFixed(2) : 'N/A'; },
                 formatChange(change) { return (change !== null && typeof change !== 'undefined') ? (change >= 0 ? '+' : '') + '$' + change.toFixed(2) : 'N/A'; },
                 formatPercent(percent) { return (percent !== null && typeof percent !== 'undefined') ? `(${(percent >= 0 ? '+' : '')}${percent.toFixed(2)}%)` : ''; },
-                formatMarketCap(cap) {
-                    if (!cap) return 'N/A';
+                
+                // *** 总市值计算 (已修正) ***
+                formatMarketCap(capInMillions) {
+                    if (!capInMillions) return 'N/A';
+                    
                     if (this.language === 'zh') {
-                        return (cap / 1000).toFixed(2) + '万亿'; // Finnhub's marketCap is in Billions
+                        // Finnhub的单位是百万美元 (Million USD)
+                        // 1万亿 = 1,000,000 百万
+                        // 1亿 = 100 百万
+                        if (capInMillions >= 1000000) {
+                            return (capInMillions / 1000000).toFixed(2) + '万亿';
+                        }
+                        return (capInMillions / 100).toFixed(2) + '亿';
+                    } else {
+                        // For English, show in Trillions or Billions
+                        // 1T = 1,000,000M
+                        // 1B = 1,000M
+                        if (capInMillions >= 1000000) {
+                            return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
+                        }
+                        return '$' + (capInMillions / 1000).toFixed(2) + 'B';
                     }
-                    return '$' + cap.toFixed(0) + 'B';
                 },
                 formatVolume(volume) { return volume ? (volume / 1000000).toFixed(2) + 'M' : 'N/A'; },
                 formatNewsTime(ts) {
