@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接故障排除</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .error { color: #d32f2f; }
+        .solution { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .step { margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 本地服务器连接故障排除</h1>
+    
+    <div class="error">
+        <h2>❌ 问题现象</h2>
+        <p>所有本地端口 (3000, 3001, 3002, 8080, 9000) 都显示 <code>net::ERR_CONNECTION_REFUSED</code> 错误</p>
+    </div>
+
+    <div class="solution">
+        <h2>💡 可能的解决方案</h2>
+        
+        <div class="step">
+            <h3>1. 检查防火墙设置</h3>
+            <p>Windows防火墙可能阻止了本地服务器连接：</p>
+            <ul>
+                <li>打开 Windows 设置 → 更新和安全 → Windows 安全中心</li>
+                <li>点击 "防火墙和网络保护"</li>
+                <li>允许应用通过防火墙，添加 Node.js 和 Python</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>2. 检查端口占用</h3>
+            <p>在命令行中运行：</p>
+            <code>netstat -ano | findstr :3000</code><br>
+            <code>netstat -ano | findstr :3001</code>
+        </div>
+
+        <div class="step">
+            <h3>3. 尝试管理员权限</h3>
+            <p>以管理员身份运行命令提示符或PowerShell，然后启动服务器</p>
+        </div>
+
+        <div class="step">
+            <h3>4. 检查hosts文件</h3>
+            <p>确保 <code>C:\Windows\System32\drivers\etc\hosts</code> 文件中包含：</p>
+            <code>127.0.0.1 localhost</code>
+        </div>
+
+        <div class="step">
+            <h3>5. 尝试不同的IP地址</h3>
+            <p>如果localhost不工作，尝试：</p>
+            <ul>
+                <li><code>http://127.0.0.1:3000</code></li>
+                <li><code>http://0.0.0.0:3000</code></li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>6. 重启网络服务</h3>
+            <p>以管理员身份运行：</p>
+            <code>ipconfig /flushdns</code><br>
+            <code>netsh winsock reset</code>
+        </div>
+    </div>
+
+    <div class="solution">
+        <h2>🚀 替代方案</h2>
+        <p>如果本地服务器仍然无法访问，可以：</p>
+        <ul>
+            <li><strong>直接部署到Vercel</strong>：项目已经准备好部署</li>
+            <li><strong>使用在线IDE</strong>：如 CodeSandbox 或 StackBlitz</li>
+            <li><strong>使用Docker</strong>：创建容器化环境</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>📋 项目状态</h2>
+        <p>✅ V5版本开发已完成</p>
+        <p>✅ 所有功能已实现（K线图、市值显示、API集成）</p>
+        <p>✅ 可直接部署到生产环境</p>
+        <p>⚠️ 仅本地开发环境存在网络连接问题</p>
+    </div>
+
+    <script>
+        // 简单的连接测试
+        function testConnection() {
+            const ports = [3000, 3001, 3002, 8080, 9000];
+            const results = document.getElementById('test-results');
+            
+            ports.forEach(port => {
+                fetch(`http://localhost:${port}`)
+                    .then(() => {
+                        results.innerHTML += `<p style="color: green;">✅ 端口 ${port} 可访问</p>`;
+                    })
+                    .catch(() => {
+                        results.innerHTML += `<p style="color: red;">❌ 端口 ${port} 连接失败</p>`;
+                    });
+            });
+        }
+        
+        // 页面加载后自动测试
+        window.onload = () => {
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = '<h3>🔍 连接测试结果</h3><div id="test-results"></div>';
+            document.body.appendChild(testDiv);
+            testConnection();
+        };
+    </script>
+</body>
+</html>

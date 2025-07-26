@@ -117,11 +117,21 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
-  console.log('Press Ctrl+C to stop the server');
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Finnhub API Key: ${process.env.FINNHUB_API_KEY ? 'Configured' : 'Not configured'}`);
+server.listen(PORT, () => {
+  console.log(`\n=================================`);
+  console.log(`🚀 服务器启动成功!`);
+  console.log(`📍 地址: http://localhost:${PORT}`);
+  console.log(`⏰ 时间: ${new Date().toLocaleString('zh-CN')}`);
+  console.log(`🌐 环境: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔑 Finnhub API: ${process.env.FINNHUB_API_KEY ? '已配置' : '未配置'}`);
+  console.log(`=================================\n`);
+});
+
+server.on('error', (err) => {
+  console.error('❌ 服务器启动失败:', err.message);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`端口 ${PORT} 已被占用，请尝试其他端口`);
+  }
 });
 
 // 优雅关闭

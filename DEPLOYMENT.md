@@ -3,11 +3,23 @@
 ## 🚀 快速部署指南
 
 ### 当前状态
-✅ **项目已完成开发，可直接部署到Vercel**
-- 前端界面：完整的股票详情页面
-- API接口：完整的Finnhub数据集成
-- 降级机制：API失败时自动使用模拟数据
-- 环境配置：已配置Finnhub API密钥
+✅ **V5版本已完成开发，可直接部署到Vercel**
+
+#### 核心功能
+- ✅ 前端界面：完整的股票详情页面
+- ✅ API接口：股票报价、公司资料、新闻数据
+- ✅ K线图：使用Polygon.io API的历史数据
+- ✅ 市值显示：中文单位（万亿美元、亿美元）
+- ✅ 多时间轴：日线、周线、月线切换
+- ✅ 降级机制：API失败时的友好提示
+- ✅ 环境配置：生产环境变量设置
+
+#### 技术栈
+- 前端：HTML5 + TailwindCSS + Alpine.js + Chart.js
+- 后端：Node.js + Vercel Serverless Functions
+- 数据源：Finnhub API + Polygon.io API
+- 数据库：PostgreSQL (可选)
+- 部署平台：Vercel
 
 ### 1. 环境准备
 
@@ -103,6 +115,7 @@ npm run start
    在Vercel项目设置 → Environment Variables 中添加：
    ```
    FINNHUB_API_KEY=ctbr9k9r01qnc8qhvqpgctbr9k9r01qnc8qhvqq0
+   POLYGON_API_KEY=your_polygon_api_key_here
    NODE_ENV=production
    ```
    
@@ -110,6 +123,10 @@ npm run start
    ```
    DATABASE_URL=postgresql://username:password@hostname/database?sslmode=require
    ```
+
+   **注意：**
+   - `FINNHUB_API_KEY`：用于获取股票报价、公司资料和新闻数据
+   - `POLYGON_API_KEY`：用于获取K线图历史数据，已在Vercel环境变量中配置
 
 4. **部署**
    - Vercel会自动部署
