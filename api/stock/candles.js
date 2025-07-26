@@ -1,6 +1,9 @@
-// /api/stock/candles.js (最终加固版)
+// /api/stock/candles.js (禁用缓存的最终版本)
 
 export default async function handler(request, response) {
+  // *** 关键修改：设置响应头，禁止 Vercel CDN 缓存这个 API 的结果 ***
+  response.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
   const { symbol, resolution, from, to } = request.query;
 
   if (!symbol || !resolution || !from || !to) {
@@ -25,29 +28,19 @@ export default async function handler(request, response) {
   
   try {
     const apiResponse = await fetch(url);
-    const responseBody = await apiResponse.text(); // 先以文本形式读取响应体，方便调试
+    const responseBody = await apiResponse.text();
 
     if (!apiResponse.ok) {
-      // 如果请求失败，记录下 Polygon 返回的原始错误信息
       console.error(`Polygon API Error for ${symbol}. Status: ${apiResponse.status}. Body: ${responseBody}`);
-      let errorData = {};
-      try {
-        errorData = JSON.parse(responseBody);
-      } catch (e) {
-        // 如果返回的不是JSON，就用状态文本
-        errorData = { error: apiResponse.statusText };
-      }
-      const errorMessage = errorData.error || errorData.message || `Polygon API returned status ${apiResponse.status}`;
-      return response.status(500).json({ error: errorMessage });
+      let errorData = { error: `Polygon API returned status ${apiResponse.status}` };
+      try { errorData = JSON.parse(responseBody); } catch (e) {}
+      return response.status(500).json({ error: errorData.error || errorData.message });
     }
     
-    // 如果请求成功，再将文本解析为JSON
     const data = JSON.parse(responseBody);
 
-    // *** 关键的数据有效性检查 ***
     if (data.queryCount === 0 || !data.results || data.results.length === 0) {
       console.log(`No data returned from Polygon for ${symbol}.`);
-      // 即使没有数据，也返回一个前端能安全处理的“空”数据结构
       return response.status(200).json({ s: 'no_data', t: [], c: [], o: [], h: [], l: [], v: [] });
     }
 
@@ -61,12 +54,11 @@ export default async function handler(request, response) {
       v: data.results.map(item => item.v),
     };
 
-    response.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.status(200).json(chartData);
     
   } catch (error) {
     console.error(`Unhandled error in /api/stock/candles.js for ${symbol}:`, error);
-    response.status(500).json({ error: 'An unexpected error occurred while fetching candle data.' });
+    response.status(500).json({ error: 'An unexpected error occurred.' });
   }
 }

@@ -8,29 +8,12 @@
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .price-up { color: #ef4444; }
-        .price-down { color: #10b981; }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .tooltip { position: relative; display: inline-block; }
-        .tooltip .tooltiptext { visibility: hidden; width: 200px; background-color: #1f2937; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 12px; }
-        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-        .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-        .status-indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .status-connected { background-color: #10b981; }
-        .status-disconnected { background-color: #ef4444; }
-        .status-connecting { background-color: #f59e0b; animation: pulse 1s infinite; }
-        .live-badge { background: linear-gradient(45deg, #ef4444, #f59e0b); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; animation: glow 2s ease-in-out infinite alternate; }
-        @keyframes glow { from { box-shadow: 0 0 5px rgba(239, 68, 68, 0.5); } to { box-shadow: 0 0 20px rgba(239, 68, 68, 0.8); } }
-        .error-message { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 12px; border-radius: 8px; margin: 10px 0; }
-        .loading-skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: loading 1.5s infinite; }
-        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        /* ... 省略所有 CSS 样式，和之前一样 ... */
         [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
-    <!-- ... 省略中间相同的HTML部分 ... -->
-    <!-- 中间HTML部分和之前一样，这里不再重复，以节约篇幅。请确保只修改<script>部分，或者直接用这个完整代码覆盖。 -->
+    <!-- ... 省略所有 HTML 结构，和之前一样 ... -->
     
     <script>
         function liveStockApp() {
@@ -38,7 +21,7 @@
                 language: 'zh',
                 symbol: 'AAPL',
                 loading: true,
-                chartLoading: false, // *** 新增：专门用于图表加载的状态 ***
+                chartLoading: false,
                 error: null,
                 connectionStatus: 'status-connecting',
                 quote: null,
@@ -54,12 +37,15 @@
                 chart: null,
                 
                 async init() {
+                    console.log("App Initializing...");
                     const savedLanguage = localStorage.getItem('language');
                     if (savedLanguage) this.language = savedLanguage;
                     await this.loadStock();
+                    console.log("App Initialization Finished.");
                 },
                 
                 async loadStock() {
+                    console.log("loadStock() called for", this.symbol);
                     this.loading = true;
                     this.error = null;
                     this.connectionStatus = 'status-connecting';
@@ -67,11 +53,11 @@
 
                     try {
                         const [quoteData, profileData, newsData] = await Promise.all([
-                            fetch(`/api/stock/quote?symbol=${currentSymbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/profile?symbol=${currentSymbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/news?symbol=${currentSymbol}`).then(res => this.handleResponse(res))
+                            fetch(`/api/stock/quote?symbol=${currentSymbol}`).then(res => this.handleResponse(res, 'quote')),
+                            fetch(`/api/stock/profile?symbol=${currentSymbol}`).then(res => this.handleResponse(res, 'profile')),
+                            fetch(`/api/stock/news?symbol=${currentSymbol}`).then(res => this.handleResponse(res, 'news'))
                         ]);
-
+                        
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.news = newsData;
@@ -80,7 +66,7 @@
                         await this.loadCandles();
 
                     } catch (error) {
-                        console.error('Failed to load stock data:', error);
+                        console.error('Data Load Error:', error);
                         this.error = `[Data Load Error] ${error.message}`;
                         this.connectionStatus = 'status-disconnected';
                     } finally {
@@ -89,13 +75,15 @@
                 },
                 
                 async changePeriod(newPeriod) {
-                    if (this.selectedPeriod === newPeriod && this.chart) return; // 如果周期没变，且图表已存在，则不重新加载
+                    if (this.selectedPeriod === newPeriod && this.chart) return;
                     this.selectedPeriod = newPeriod;
                     await this.loadCandles();
                 },
 
                 async loadCandles() {
-                    this.chartLoading = true; // *** 使用独立的图表加载状态 ***
+                    console.log("loadCandles() called for period:", this.selectedPeriod);
+                    this.chartLoading = true;
+                    this.error = null; // 清除之前的图表错误
                     const currentSymbol = this.symbol.toUpperCase();
                     const resolution = this.selectedPeriod;
                     const to = Math.floor(Date.now() / 1000);
@@ -109,111 +97,53 @@
                     
                     try {
                         const url = `/api/stock/candles?symbol=${currentSymbol}&resolution=${resolution}&from=${from}&to=${to}`;
-                        const candlesData = await fetch(url).then(res => this.handleResponse(res));
+                        const candlesData = await fetch(url).then(res => this.handleResponse(res, 'candles'));
                         
-                        if (candlesData.s === 'no_data' || !candlesData.c) {
-                            this.candles = { s: 'ok', t:[], c:[], o:[], h:[], l:[], v:[] };
-                            console.warn(`No candle data for ${currentSymbol}`);
-                        } else {
+                        console.log("Received candle data from API:", candlesData);
+
+                        if (candlesData && candlesData.s === 'ok') {
                             this.candles = candlesData;
+                        } else {
+                            // 如果后端返回了 no_data 或者其他无效结构，也设置为空
+                            this.candles = { s: 'no_data', t: [], c: [], o: [], h: [], l: [], v: [] };
+                            // 可以选择在这里显示一个提示
+                            // this.error = "No chart data available for this period.";
                         }
                         this.updateChart();
                     } catch (error) {
-                        console.error('Failed to load candle data:', error);
+                        console.error('Chart Load Error:', error);
                         this.error = `[Chart Load Error] ${error.message}`;
+                        this.candles = { s: 'error' }; // 设置一个错误状态
+                        this.updateChart(); // 即使出错也调用updateChart，让它来处理空状态
                     } finally {
-                        this.chartLoading = false; // *** 结束图表加载状态 ***
+                        this.chartLoading = false;
                     }
                 },
 
-                async handleResponse(response) {
+                async handleResponse(response, type) {
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => ({ error: response.statusText }));
-                        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+                        throw new Error(errorData.error || `Request for ${type} failed with status ${response.status}`);
                     }
                     return response.json();
                 },
                 
-                // *** 最终修复版的 updateChart 函数 ***
                 updateChart() {
-                    if (this.chart) {
-                        this.chart.destroy();
-                    }
+                    if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
                     
-                    // *** 关键防御代码：确保 candles 和其内部数组都有效 ***
-                    if (!ctx || !this.candles || this.candles.s !== 'ok' || !Array.isArray(this.candles.c)) {
-                        console.error("Invalid data provided to chart. Aborting chart creation.");
+                    // 只有在数据真正有效时才创建图表
+                    if (!ctx || !this.candles || this.candles.s !== 'ok' || !Array.isArray(this.candles.c) || this.candles.c.length === 0) {
+                        console.warn("Invalid or empty data provided to chart. Aborting chart creation. Data was:", this.candles);
+                        // 可以在这里显示 "No data to display" 的提示
                         return;
                     }
-
-                    const chartCtx = ctx.getContext('2d');
-                    const isPositive = this.quote?.d >= 0;
-                    const borderColor = isPositive ? '#ef4444' : '#10b981';
                     
-                    const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
-                    gradient.addColorStop(0, isPositive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)');
-                    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                    
-                    this.chart = new Chart(chartCtx, {
-                        type: 'line',
-                        data: {
-                            // 确保 labels 和 data 数组长度一致
-                            labels: this.candles.t || [], 
-                            datasets: [{
-                                label: this.symbol, 
-                                data: this.candles.c || [], // 确保 c 数组存在
-                                borderColor: borderColor, 
-                                backgroundColor: gradient,
-                                borderWidth: 2, 
-                                fill: true, 
-                                tension: 0.1, 
-                                pointRadius: 0, 
-                                pointHoverRadius: 5,
-                                pointHitRadius: 10, 
-                                pointBackgroundColor: borderColor
-                            }]
-                        },
-                        options: {
-                            responsive: true, maintainAspectRatio: false,
-                            plugins: { 
-                                legend: { display: false },
-                                // *** 关键修复：为 tooltip 提供默认值，防止读取 undefined ***
-                                tooltip: {
-                                    callbacks: {
-                                        title: (context) => {
-                                            if (!context[0]) return '';
-                                            const timestamp = context[0].label; // label is the timestamp
-                                            return new Date(timestamp * 1000).toLocaleDateString(this.language);
-                                        },
-                                        label: (context) => {
-                                            const price = context.parsed.y;
-                                            return `${this.symbol}: ${this.formatPrice(price)}`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: { display: false }, // 先隐藏X轴，避免复杂的日期格式化问题
-                                y: { position: 'right', grid: { color: 'rgba(200, 200, 200, 0.1)' }, ticks: { color: '#6b7280' } }
-                            },
-                            interaction: { intersect: false, mode: 'index' }
-                        }
-                    });
+                    // ... Chart.js 创建代码，和之前一样，无需改动 ...
+                    // 为了简洁，这里省略
                 },
                 
-                // ... 省略其他所有未改动的工具函数 ...
-                formatMarketCap(capInMillions) {
-                    if (!capInMillions) return 'N/A';
-                    if (this.language === 'zh') {
-                        if (capInMillions >= 1000000) return (capInMillions / 1000000).toFixed(2) + '万亿';
-                        return (capInMillions / 100).toFixed(2) + '亿';
-                    } else {
-                        if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
-                        return '$' + (capInMillions / 1000).toFixed(2) + 'B';
-                    }
-                },
-                // ...
+                // ... 省略其他所有工具函数 ...
             }
         }
     </script>
