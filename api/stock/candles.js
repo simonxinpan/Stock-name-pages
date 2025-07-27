@@ -1,7 +1,5 @@
-// /api/stock/candles.js (Polygon.io 最终版)
-
+// /api/stock/candles.js
 export default async function handler(request, response) {
-  // 强制禁用 Vercel CDN 缓存，确保每次都执行最新代码
   response.setHeader('Cache-Control', 'no-cache');
 
   const { symbol, resolution, from, to } = request.query;
@@ -12,7 +10,7 @@ export default async function handler(request, response) {
 
   const API_KEY = process.env.POLYGON_API_KEY;
   if (!API_KEY) {
-    console.error("Vercel Environment Error: POLYGON_API_KEY is not set.");
+    console.error("Vercel Env Error: POLYGON_API_KEY is not set.");
     return response.status(500).json({ error: 'Polygon API key is not configured.' });
   }
 
@@ -31,21 +29,19 @@ export default async function handler(request, response) {
     const data = await apiResponse.json();
 
     if (!apiResponse.ok) {
-      // 如果 Polygon API 返回错误，将其清晰地记录和返回
       const errorMessage = data.error || data.message || `Polygon API returned status ${apiResponse.status}`;
       console.error(`Polygon API Error for ${symbol}: ${errorMessage}`);
       return response.status(apiResponse.status).json({ error: errorMessage });
     }
     
-    if (data.queryCount === 0 || !data.results || data.results.length === 0) {
+    if (!data.results || data.results.length === 0) {
       console.log(`No data returned from Polygon for ${symbol}.`);
       return response.status(200).json({ s: 'no_data' });
     }
 
-    // 关键：将 Polygon 的数据格式转换为前端期望的 Finnhub 格式
     const chartData = {
       s: 'ok',
-      t: data.results.map(item => item.t / 1000), // Polygon 是毫秒，转为秒
+      t: data.results.map(item => item.t / 1000),
       c: data.results.map(item => item.c),
       o: data.results.map(item => item.o),
       h: data.results.map(item => item.h),
@@ -58,6 +54,6 @@ export default async function handler(request, response) {
     
   } catch (error) {
     console.error(`Unhandled error in /api/stock/candles.js for ${symbol}:`, error);
-    response.status(500).json({ error: 'An unexpected error occurred while fetching candle data.' });
+    response.status(500).json({ error: 'An unexpected error occurred.' });
   }
 }
