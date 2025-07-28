@@ -19,17 +19,17 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-4">
                     <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
-                    <span class="live-badge">Live</span>
                 </div>
                 <div class="flex items-center space-x-4">
                     <select x-model="symbol" @change="loadStock()" class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="AAPL">AAPL - Apple Inc.</option>
-                        <option value="TSLA">TSLA - Tesla Inc.</option>
-                        <option value="MSFT">MSFT - Microsoft Corp.</option>
-                        <option value="GOOGL">GOOGL - Alphabet Inc.</option>
-                        <option value="AMZN">AMZN - Amazon.com Inc.</option>
-                        <option value="NVDA">NVDA - NVIDIA Corp.</option>
+                        <option value="AAPL">AAPL - 苹果</option>
+                        <option value="TSLA">TSLA - 特斯拉</option>
+                        <option value="MSFT">MSFT - 微软</option>
+                        <option value="GOOGL">GOOGL - 谷歌</option>
+                        <option value="AMZN">AMZN - 亚马逊</option>
+                        <option value="NVDA">NVDA - 英伟达</option>
                     </select>
+                    <button @click="toggleLanguage()" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors" x-text="language === 'zh' ? 'EN' : '中文'"></button>
                 </div>
             </div>
         </div>
@@ -37,19 +37,12 @@
 
     <!-- 错误提示 -->
     <div x-show="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4" x-cloak>
-        <div class="error-message">
-            <p x-text="error"></p>
-        </div>
+        <div class="error-message"><p x-text="error"></p></div>
     </div>
     
     <!-- 加载骨架屏 -->
     <div x-show="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-pulse">
-        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex items-center space-x-4 mb-4 lg:mb-0"><div class="w-16 h-16 bg-gray-200 rounded-lg"></div><div><div class="h-8 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-48 mb-1"></div><div class="h-4 bg-gray-200 rounded w-24"></div></div></div>
-                <div class="text-right"><div class="h-12 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-24"></div></div>
-            </div>
-        </div>
+        <div class="bg-white rounded-lg card-shadow p-6 mb-6"><div class="flex flex-col lg:flex-row lg:items-center lg:justify-between"><div class="flex items-center space-x-4 mb-4 lg:mb-0"><div class="w-16 h-16 bg-gray-200 rounded-lg"></div><div><div class="h-8 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-48 mb-1"></div></div></div><div class="text-right"><div class="h-12 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-24"></div></div></div></div>
     </div>
 
     <!-- 主要内容区域 -->
@@ -66,13 +59,27 @@
                     <div class="flex items-center justify-end space-x-2 mt-1"><span :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatChange(quote?.d)"></span><span :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatPercent(quote?.dp)"></span></div>
                 </div>
             </div>
-            <!-- K线图按钮 -->
+            
+            <!-- *** 新增的财务指标行 *** -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键财务指标' : 'Key Financial Metrics'"></h3>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
+                    <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '市盈率 (TTM)' : 'P/E Ratio (TTM)'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatRatio(metrics?.peTTM)"></p></div>
+                    <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '市销率 (TTM)' : 'P/S Ratio (TTM)'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatRatio(metrics?.psTTM)"></p></div>
+                    <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '市净率 (MRQ)' : 'P/B Ratio (MRQ)'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatRatio(metrics?.pbAnnual)"></p></div>
+                    <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '股息率' : 'Dividend Yield'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatYield(metrics?.dividendYieldAnnual)"></p></div>
+                    <div class="bg-gray-50 rounded-lg p-4"><h4 class="text-sm font-medium text-gray-600 mb-1" x-text="language === 'zh' ? '贝塔系数' : 'Beta'"></h4><p class="text-lg font-bold text-gray-900" x-text="formatRatio(metrics?.beta)"></p></div>
+                </div>
+            </div>
+
+            <!-- K线图 -->
             <div class="mt-6 pt-6 border-t border-gray-200">
                  <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-900">Price Chart</h2>
+                    <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
                     <div class="flex space-x-2">
                         <template x-for="period in timePeriods" :key="period.value">
-                            <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" x-text="period.en"></button>
+                            <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" x-text="language === 'zh' ? period.zh : period.en"></button>
                         </template>
                     </div>
                 </div>
@@ -87,36 +94,33 @@
     <script>
         function liveStockApp() {
             return {
+                language: 'zh', // *** 1. 默认语言设置为中文 ***
                 symbol: 'AAPL', loading: true, chartLoading: false, error: null,
-                quote: null, companyProfile: null, candles: null,
+                quote: null, companyProfile: null, candles: null, metrics: null, // <-- 新增 metrics state
                 selectedPeriod: 'D',
-                timePeriods: [
-                    { value: 'D', en: 'Day' },
-                    { value: 'W', en: 'Week' },
-                    { value: 'M', en: 'Month' }
-                ],
+                timePeriods: [ { value: 'D', zh: '日线', en: 'Day' }, { value: 'W', zh: '周线', en: 'Week' }, { value: 'M', zh: '月线', en: 'Month' } ],
                 chart: null,
                 
                 async init() {
+                    const savedLang = localStorage.getItem('stock-lang');
+                    if (savedLang) this.language = savedLang;
                     await this.loadStock();
                 },
                 
                 async loadStock() {
-                    this.loading = true;
-                    this.error = null;
+                    this.loading = true; this.error = null;
                     try {
-                        const [quoteData, profileData] = await Promise.all([
+                        const [quoteData, profileData, metricsData] = await Promise.all([ // <-- 新增 metrics 数据获取
                             fetch(`/api/stock/quote?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/profile?symbol=${this.symbol}`).then(res => this.handleResponse(res))
+                            fetch(`/api/stock/profile?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/metrics?symbol=${this.symbol}`).then(res => this.handleResponse(res))
                         ]);
                         this.quote = quoteData;
                         this.companyProfile = profileData;
+                        this.metrics = metricsData; // <-- 保存 metrics 数据
                         await this.loadCandles();
-                    } catch (error) {
-                        this.error = `[Data Load Error] ${error.message}`;
-                    } finally {
-                        this.loading = false;
-                    }
+                    } catch (error) { this.error = `[Data Load Error] ${error.message}`; } 
+                    finally { this.loading = false; }
                 },
                 
                 async changePeriod(newPeriod) {
@@ -128,8 +132,7 @@
                 async loadCandles() {
                     this.chartLoading = true;
                     try {
-                        const to = Math.floor(Date.now() / 1000);
-                        let from;
+                        const to = Math.floor(Date.now() / 1000); let from;
                         switch (this.selectedPeriod) {
                             case 'W': from = to - (5 * 365 * 24 * 60 * 60); break;
                             case 'M': from = to - (20 * 365 * 24 * 60 * 60); break;
@@ -138,11 +141,8 @@
                         const url = `/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
                         this.candles = await fetch(url).then(res => this.handleResponse(res));
                         this.updateChart();
-                    } catch (error) {
-                        this.error = `[Chart Load Error] ${error.message}`;
-                    } finally {
-                        this.chartLoading = false;
-                    }
+                    } catch (error) { this.error = `[Chart Load Error] ${error.message}`; } 
+                    finally { this.chartLoading = false; }
                 },
 
                 async handleResponse(response) {
@@ -156,44 +156,47 @@
                 updateChart() {
                     if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
-                    if (!ctx || !this.candles || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) {
-                        return;
-                    }
+                    if (!ctx || !this.candles || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) { return; }
+                    
+                    const chartCtx = ctx.getContext('2d');
                     if (this.candles.c.length === 0) {
-                        const chartCtx = ctx.getContext('2d');
-                        chartCtx.clearRect(0, 0, ctx.width, ctx.height);
-                        chartCtx.textAlign = 'center';
-                        chartCtx.fillStyle = '#9ca3af';
-                        chartCtx.font = '16px sans-serif';
-                        chartCtx.fillText('No Chart Data Available', ctx.width / 2, ctx.height / 2);
+                        chartCtx.clearRect(0, 0, ctx.width, ctx.height); chartCtx.textAlign = 'center'; chartCtx.fillStyle = '#9ca3af'; chartCtx.font = '16px sans-serif';
+                        chartCtx.fillText(this.language === 'zh' ? '当前周期无可用数据' : 'No Chart Data Available', ctx.width / 2, ctx.height / 2);
                         return;
                     }
                     const isPositive = this.quote?.d >= 0;
-                    const borderColor = isPositive ? '#ef4444' : '#10b981';
-                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+                    const color = isPositive ? '#ef4444' : '#10b981';
+                    const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
                     gradient.addColorStop(0, isPositive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)');
                     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    
                     this.chart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: this.candles.t.map(ts => new Date(ts * 1000).toLocaleDateString()),
-                            datasets: [{
-                                label: this.symbol, data: this.candles.c, borderColor: borderColor, 
-                                backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0
-                            }]
+                            datasets: [{ label: this.symbol, data: this.candles.c, borderColor: color, backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0 }]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
                             plugins: { legend: { display: false } },
-                            scales: { x: { display: false }, y: { position: 'right' } },
+                            scales: { 
+                                x: { display: false }, 
+                                y: { 
+                                    position: 'right', 
+                                    ticks: { color: color } // *** 2. K线图Y轴颜色动态变化 ***
+                                } 
+                            },
                             interaction: { intersect: false, mode: 'index' }
                         }
                     });
                 },
                 
+                toggleLanguage() { this.language = this.language === 'zh' ? 'en' : 'zh'; localStorage.setItem('stock-lang', this.language); },
                 formatPrice(price) { return (price !== null && typeof price !== 'undefined') ? '$' + price.toFixed(2) : 'N/A'; },
                 formatChange(change) { return (change !== null && typeof change !== 'undefined') ? (change >= 0 ? '+' : '') + '$' + change.toFixed(2) : 'N/A'; },
                 formatPercent(percent) { return (percent !== null && typeof percent !== 'undefined') ? `(${(percent >= 0 ? '+' : '')}${percent.toFixed(2)}%)` : ''; },
+                formatRatio(value) { return value ? value.toFixed(2) : 'N/A'; },
+                formatYield(value) { return value ? value.toFixed(2) + '%' : 'N/A'; }, // Finnhub's dividendYield is already in %, not decimal
             }
         }
     </script>
