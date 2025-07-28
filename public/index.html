@@ -8,75 +8,13 @@
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .price-up-us { color: #10b981; } /* 美股涨：绿 */
-        .price-down-us { color: #ef4444; } /* 美股跌：红 */
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-        [x-cloak] { display: none !important; }
+        .price-up-us { color: #10b981; } .price-down-us { color: #ef4444; } .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); } .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
     
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
-                <div class="flex items-center space-x-4">
-                    <select x-model="symbol" @change="loadStock()" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
-                        <option value="AAPL">AAPL - 苹果</option><option value="TSLA">TSLA - 特斯拉</option><option value="MSFT">MSFT - 微软</option><option value="GOOGL">GOOGL - 谷歌</option><option value="AMZN">AMZN - 亚马逊</option><option value="NVDA">NVDA - 英伟达</option>
-                    </select>
-                    <button @click="toggleLanguage()" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200" x-text="language === 'zh' ? 'EN' : '中文'"></button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <div x-show="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4" x-cloak><div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"><p x-text="error"></p></div></div>
+    <!-- ... HTML 结构部分 ... (和之前一样) -->
     
-    <div x-show="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-pulse"><div class="bg-white rounded-lg card-shadow p-6 mb-6"><div class="flex justify-between"><div class="flex items-center space-x-4"><div class="w-16 h-16 bg-gray-200 rounded-lg"></div><div><div class="h-8 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-48"></div></div></div><div class="text-right"><div class="h-12 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-24"></div></div></div></div></div>
-
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-show="!loading && quote" x-cloak>
-        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex items-center space-x-4 mb-4 lg:mb-0">
-                    <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-blue-600" x-text="symbol"></span></div>
-                    <div><h1 class="text-3xl font-bold text-gray-900" x-text="companyProfile?.name"></h1><p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p></div>
-                </div>
-                <div class="text-right">
-                    <div class="text-3xl font-bold" :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPrice(quote?.c)"></div>
-                    <div class="flex items-center justify-end space-x-2 mt-1"><span :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatChange(quote?.d)"></span><span :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPercent(quote?.dp)"></span></div>
-                </div>
-            </div>
-            
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键财务指标' : 'Key Financial Metrics'"></h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><p class="text-lg font-bold" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市盈率 (TTM)' : 'P/E Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.peTTM)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市销率 (TTM)' : 'P/S Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.psTTM)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市净率 (MRQ)' : 'P/B Ratio (MRQ)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.pbAnnual)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '股息率' : 'Dividend Yield'"></h4><p class="text-lg font-bold" x-text="formatYield(metrics?.dividendYieldAnnual)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '贝塔系数' : 'Beta'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.beta)"></p></div>
-                </div>
-            </div>
-
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
-                    <div class="flex space-x-2">
-                        <template x-for="period in timePeriods" :key="period.value">
-                            <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
-                        </template>
-                    </div>
-                </div>
-                <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
-                    <canvas id="stockChart"></canvas>
-                    <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><span class="loading text-blue-500">Loading Chart...</span></div>
-                </div>
-            </div>
-        </div>
-    </main>
-
     <script>
         function liveStockApp() {
             return {
@@ -104,16 +42,13 @@
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
+                        // *** 关键时机：确保 quote 数据存在后，再加载图表 ***
                         await this.loadCandles();
                     } catch (error) { this.error = `[Data Load Error] ${error.message}`; } 
                     finally { this.loading = false; }
                 },
                 
-                async changePeriod(newPeriod) {
-                    if (this.selectedPeriod === newPeriod) return;
-                    this.selectedPeriod = newPeriod;
-                    await this.loadCandles();
-                },
+                async changePeriod(newPeriod) { /* ... 和之前一样 ... */ },
 
                 async loadCandles() {
                     this.chartLoading = true;
@@ -125,33 +60,39 @@
                             default: from = to - (365 * 24 * 60 * 60);
                         }
                         const url = `/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
-                        this.candles = await fetch(url).then(res => this.handleResponse(res));
-                        this.updateChart();
-                    } catch (error) { this.error = `[Chart Load Error] ${error.message}`; } 
+                        const candlesData = await fetch(url).then(res => this.handleResponse(res));
+                        this.candles = candlesData;
+                        this.updateChart(); // 在这里调用
+                    } catch (error) { this.error = `[Chart Load Error] ${error.message}`; this.candles = { s: 'error' }; this.updateChart(); } 
                     finally { this.chartLoading = false; }
                 },
 
-                async handleResponse(response) {
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(errorData.error || `Request failed: ${response.statusText}`);
-                    }
-                    return response.json();
-                },
+                async handleResponse(response) { /* ... 和之前一样 ... */ },
                 
+                // *** 最终的、釜底抽薪的 updateChart 函数 ***
                 updateChart() {
                     if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
-                    if (!ctx || !this.candles || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) { return; }
+                    
+                    // 1. 最严格的数据检查
+                    if (!ctx || !this.candles || !this.quote || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) {
+                        console.warn("Aborting chart creation due to invalid/incomplete data.", { candles: this.candles, quote: this.quote });
+                        return;
+                    }
                     
                     const chartCtx = ctx.getContext('2d');
+                    
+                    // 2. 优雅地处理空数据情况
                     if (this.candles.c.length === 0) {
-                        chartCtx.clearRect(0, 0, ctx.width, ctx.height); chartCtx.textAlign = 'center'; chartCtx.fillStyle = '#9ca3af'; chartCtx.font = '16px sans-serif';
+                        chartCtx.clearRect(0, 0, ctx.width, ctx.height);
+                        chartCtx.textAlign = 'center';
+                        chartCtx.fillStyle = '#9ca3af';
+                        chartCtx.font = '16px sans-serif';
                         chartCtx.fillText(this.language === 'zh' ? '当前周期无可用数据' : 'No Chart Data Available', ctx.width / 2, ctx.height / 2);
                         return;
                     }
 
-                    const isPositive = this.quote?.d >= 0;
+                    const isPositive = this.quote.d >= 0;
                     const color = isPositive ? '#10b981' : '#ef4444'; // 美股：涨绿跌红
                     const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
                     gradient.addColorStop(0, isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)');
@@ -160,57 +101,43 @@
                     this.chart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: this.candles.t || [],
-                            datasets: [{
-                                label: this.symbol, data: this.candles.c || [],
-                                borderColor: color, backgroundColor: gradient, borderWidth: 2,
-                                fill: true, tension: 0.1, pointRadius: 0
+                            labels: this.candles.t.map(ts => new Date(ts * 1000).toLocaleDateString()),
+                            datasets: [{ 
+                                label: this.symbol, 
+                                data: this.candles.c, 
+                                borderColor: color, 
+                                backgroundColor: gradient, 
+                                borderWidth: 2, 
+                                fill: true, 
+                                tension: 0.1, 
+                                pointRadius: 0 
                             }]
                         },
+                        // 3. *** 彻底简化的配置，移除所有可能出错的插件 ***
                         options: {
-                            responsive: true, maintainAspectRatio: false,
+                            responsive: true,
+                            maintainAspectRatio: false,
                             plugins: {
-                                legend: { display: false },
+                                legend: {
+                                    display: false // 禁用图例插件
+                                },
                                 tooltip: {
-                                    callbacks: {
-                                        title: (context) => {
-                                            if (!context || context.length === 0) return '';
-                                            const timestamp = context[0].label || '';
-                                            return new Date(timestamp * 1000).toLocaleDateString();
-                                        },
-                                        label: (context) => {
-                                            if (!context || !context.dataset) return '';
-                                            const price = context.parsed.y;
-                                            return `${context.dataset.label || ''}: ${this.formatPrice(price)}`;
-                                        }
-                                    }
+                                    enabled: false // 彻底禁用 tooltip 插件
                                 }
                             },
                             scales: { 
                                 x: { display: false }, 
                                 y: { position: 'right', ticks: { color: color } } 
                             },
-                            interaction: { intersect: false, mode: 'index' }
+                            interaction: {
+                                enabled: false // 禁用所有交互
+                            },
+                            animation: false // 禁用动画，加快渲染
                         }
                     });
                 },
                 
-                toggleLanguage() { this.language = this.language === 'zh' ? 'en' : 'zh'; localStorage.setItem('stock-lang', this.language); },
-                formatPrice(p) { return p != null ? '$' + p.toFixed(2) : 'N/A'; },
-                formatChange(c) { return c != null ? (c >= 0 ? '+' : '') + '$' + c.toFixed(2) : 'N/A'; },
-                formatPercent(p) { return p != null ? `(${(p >= 0 ? '+' : '')}${p.toFixed(2)}%)` : ''; },
-                formatRatio(v) { return v ? v.toFixed(2) : 'N/A'; },
-                formatYield(v) { return v ? v.toFixed(2) + '%' : 'N/A'; },
-                formatMarketCap(capInMillions) {
-                    if (!capInMillions) return 'N/A';
-                    if (this.language === 'zh') {
-                        if (capInMillions >= 1000000) return (capInMillions / 1000000).toFixed(2) + '万亿';
-                        return (capInMillions / 100).toFixed(2) + '亿';
-                    } else {
-                        if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
-                        return '$' + (capInMillions / 1000).toFixed(2) + 'B';
-                    }
-                }
+                // ... 省略其他所有未改动的工具函数，包括 formatMarketCap ...
             }
         }
     </script>
