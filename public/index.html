@@ -532,10 +532,10 @@
                         return;
                     }
                     
-                    console.log(`🔄 开始翻译 ${this.news.length} 条新闻...`);
+                    console.log(`🔄 开始强制翻译 ${this.news.length} 条新闻...`);
                     
-                    // 分批翻译，每批5条，避免并发过多导致翻译服务拒绝
-                    const batchSize = 5;
+                    // 分批翻译，每批3条，减少并发压力
+                    const batchSize = 3;
                     const batches = [];
                     
                     for (let i = 0; i < this.news.length; i += batchSize) {
@@ -545,69 +545,90 @@
                     for (let [batchIndex, batch] of batches.entries()) {
                         console.log(`🔄 翻译第 ${batchIndex + 1}/${batches.length} 批新闻...`);
                         
-                        // 批量翻译新闻标题和摘要
-                        const batchPromises = batch.map(async (article, index) => {
+                        // 串行翻译每条新闻，确保稳定性
+                        for (let [index, article] of batch.entries()) {
                             const actualIndex = batchIndex * batchSize + index;
                             
                             try {
-                                // 翻译标题（增加超时时间到5秒，提高成功率）
+                                // 强制翻译标题
                                 if (article.headline) {
-                                    try {
-                                        const translatedTitle = await Promise.race([
-                                            this.translateWithAPI(article.headline),
-                                            new Promise((_, reject) => setTimeout(() => reject(new Error('翻译超时')), 5000))
-                                        ]);
-                                        
-                                        if (translatedTitle && translatedTitle !== article.headline) {
-                                            this.news[actualIndex].translatedHeadline = translatedTitle;
-                                            console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
-                                        } else {
-                                            throw new Error('翻译结果无效');
+                                    let translatedTitle = null;
+                                    
+                                    // 尝试多种翻译方式
+                                    const translationMethods = [
+                                        () => this.translateWithGoogle(article.headline),
+                                        () => this.translateWithDeepL(article.headline),
+                                        () => this.translateWithMyMemory(article.headline),
+                                        () => Promise.resolve(this.translateTextLocal(article.headline))
+                                    ];
+                                    
+                                    for (let method of translationMethods) {
+                                        try {
+                                            const result = await Promise.race([
+                                                method(),
+                                                new Promise((_, reject) => setTimeout(() => reject(new Error('超时')), 6000))
+                                            ]);
+                                            
+                                            if (result && result !== article.headline && result.trim() !== '') {
+                                                translatedTitle = result;
+                                                console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
+                                                break;
+                                            }
+                                        } catch (e) {
+                                            console.warn(`翻译方法失败，尝试下一个...`);
+                                            continue;
                                         }
-                                    } catch (titleError) {
-                                        // 标题翻译失败，使用本地翻译
-                                        const localTitle = this.translateTextLocal(article.headline);
-                                        if (localTitle && localTitle !== article.headline) {
-                                            this.news[actualIndex].translatedHeadline = localTitle;
-                                            console.log(`📚 新闻 ${actualIndex + 1} 标题使用本地翻译`);
-                                        } else {
-                                            // 确保每条新闻都有翻译标题，即使是原文
-                                            this.news[actualIndex].translatedHeadline = article.headline;
-                                            console.log(`⚠️ 新闻 ${actualIndex + 1} 标题翻译失败，使用原文`);
-                                        }
+                                    }
+                                    
+                                    // 设置翻译结果
+                                    this.news[actualIndex].translatedHeadline = translatedTitle || article.headline;
+                                    if (!translatedTitle) {
+                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 标题所有翻译方法都失败，使用原文`);
                                     }
                                 }
                                 
-                                // 翻译摘要（增加超时时间到5秒，提高成功率）
+                                // 强制翻译摘要
                                 if (article.summary) {
-                                    try {
-                                        const translatedSummary = await Promise.race([
-                                            this.translateWithAPI(article.summary),
-                                            new Promise((_, reject) => setTimeout(() => reject(new Error('翻译超时')), 5000))
-                                        ]);
-                                        
-                                        if (translatedSummary && translatedSummary !== article.summary) {
-                                            this.news[actualIndex].translatedSummary = translatedSummary;
-                                            console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
-                                        } else {
-                                            throw new Error('翻译结果无效');
-                                        }
-                                    } catch (summaryError) {
-                                        // 摘要翻译失败，使用本地翻译
-                                        const localSummary = this.translateTextLocal(article.summary);
-                                        if (localSummary && localSummary !== article.summary) {
-                                            this.news[actualIndex].translatedSummary = localSummary;
-                                            console.log(`📚 新闻 ${actualIndex + 1} 摘要使用本地翻译`);
-                                        } else {
-                                            // 确保每条新闻都有翻译摘要，即使是原文
-                                            this.news[actualIndex].translatedSummary = article.summary;
-                                            console.log(`⚠️ 新闻 ${actualIndex + 1} 摘要翻译失败，使用原文`);
+                                    let translatedSummary = null;
+                                    
+                                    // 尝试多种翻译方式
+                                    const translationMethods = [
+                                        () => this.translateWithGoogle(article.summary),
+                                        () => this.translateWithDeepL(article.summary),
+                                        () => this.translateWithMyMemory(article.summary),
+                                        () => Promise.resolve(this.translateTextLocal(article.summary))
+                                    ];
+                                    
+                                    for (let method of translationMethods) {
+                                        try {
+                                            const result = await Promise.race([
+                                                method(),
+                                                new Promise((_, reject) => setTimeout(() => reject(new Error('超时')), 6000))
+                                            ]);
+                                            
+                                            if (result && result !== article.summary && result.trim() !== '') {
+                                                translatedSummary = result;
+                                                console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
+                                                break;
+                                            }
+                                        } catch (e) {
+                                            console.warn(`翻译方法失败，尝试下一个...`);
+                                            continue;
                                         }
                                     }
+                                    
+                                    // 设置翻译结果
+                                    this.news[actualIndex].translatedSummary = translatedSummary || article.summary;
+                                    if (!translatedSummary) {
+                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 摘要所有翻译方法都失败，使用原文`);
+                                    }
                                 }
+                                
+                                // 每条新闻翻译完成后暂停500ms
+                                await new Promise(resolve => setTimeout(resolve, 500));
                                 
                             } catch (error) {
-                                console.warn(`❌ 新闻 ${actualIndex + 1} 翻译过程出错:`, error.message);
+                                console.error(`❌ 新闻 ${actualIndex + 1} 翻译过程出错:`, error.message);
                                 // 确保有翻译结果，即使是原文
                                 if (article.headline && !this.news[actualIndex].translatedHeadline) {
                                     this.news[actualIndex].translatedHeadline = article.headline;
@@ -616,21 +637,37 @@
                                     this.news[actualIndex].translatedSummary = article.summary;
                                 }
                             }
-                        });
+                        }
                         
-                        // 每批等待完成后再处理下一批，最多等待15秒
-                        await Promise.race([
-                            Promise.allSettled(batchPromises),
-                            new Promise(resolve => setTimeout(resolve, 15000))
-                        ]);
-                        
-                        // 批次之间暂停1秒，避免API限流
+                        // 批次之间暂停2秒，避免API限流
                         if (batchIndex < batches.length - 1) {
-                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            console.log(`⏳ 等待2秒后继续下一批...`);
+                            await new Promise(resolve => setTimeout(resolve, 2000));
                         }
                     }
                     
-                    console.log('🎉 新闻翻译完成');
+                    console.log('🎉 强制翻译完成，检查翻译质量...');
+                    
+                    // 检查翻译完成情况
+                    let translatedCount = 0;
+                    let totalCount = 0;
+                    
+                    this.news.forEach((article, index) => {
+                        if (article.headline) {
+                            totalCount++;
+                            if (article.translatedHeadline && article.translatedHeadline !== article.headline) {
+                                translatedCount++;
+                            }
+                        }
+                        if (article.summary) {
+                            totalCount++;
+                            if (article.translatedSummary && article.translatedSummary !== article.summary) {
+                                translatedCount++;
+                            }
+                        }
+                    });
+                    
+                    console.log(`📊 翻译统计: ${translatedCount}/${totalCount} 项内容已翻译 (${Math.round(translatedCount/totalCount*100)}%)`);
                 },
                 
                 // 翻译缓存
@@ -1131,73 +1168,249 @@
                         // 扩展的英文到中文翻译映射
                         const translations = {
                             // 公司名称
+                            'Apple Inc': '苹果公司',
                             'Apple': '苹果',
+                            'Tesla Inc': '特斯拉公司',
                             'Tesla': '特斯拉',
+                            'Microsoft Corporation': '微软公司',
                             'Microsoft': '微软',
                             'Google': '谷歌',
+                            'Alphabet Inc': '谷歌母公司',
                             'Alphabet': '谷歌母公司',
+                            'Amazon.com Inc': '亚马逊公司',
                             'Amazon': '亚马逊',
+                            'NVIDIA Corporation': '英伟达公司',
                             'NVIDIA': '英伟达',
+                            'Meta Platforms Inc': 'Meta公司',
                             'Meta': 'Meta',
+                            'Netflix Inc': '奈飞公司',
                             'Netflix': '奈飞',
+                            'Intel Corporation': '英特尔公司',
                             'Intel': '英特尔',
+                            'Advanced Micro Devices': 'AMD公司',
                             'AMD': 'AMD',
+                            'Salesforce Inc': 'Salesforce公司',
                             'Salesforce': 'Salesforce',
+                            'Oracle Corporation': '甲骨文公司',
                             'Oracle': '甲骨文',
+                            'International Business Machines': 'IBM公司',
                             'IBM': 'IBM',
+                            'Cisco Systems': '思科公司',
                             'Cisco': '思科',
+                            'JPMorgan Chase': '摩根大通',
+                            'Bank of America': '美国银行',
+                            'Wells Fargo': '富国银行',
+                            'Goldman Sachs': '高盛',
+                            'Morgan Stanley': '摩根士丹利',
+                            'Berkshire Hathaway': '伯克希尔哈撒韦',
+                            'Johnson & Johnson': '强生',
+                            'Procter & Gamble': '宝洁',
+                            'Coca-Cola': '可口可乐',
+                            'PepsiCo': '百事可乐',
+                            'Walmart': '沃尔玛',
+                            'Home Depot': '家得宝',
+                            'Visa': '维萨',
+                            'Mastercard': '万事达',
+                            'PayPal': '贝宝',
+                            'Adobe': '奥多比',
+                            'Zoom': 'Zoom',
+                            'Slack': 'Slack',
+                            'Twitter': '推特',
+                            'Facebook': '脸书',
+                            'Instagram': 'Instagram',
+                            'WhatsApp': 'WhatsApp',
+                            'YouTube': 'YouTube',
+                            'TikTok': 'TikTok',
+                            'Snapchat': 'Snapchat',
+                            'LinkedIn': '领英',
+                            'Uber': '优步',
+                            'Lyft': 'Lyft',
+                            'Airbnb': '爱彼迎',
+                            'SpaceX': 'SpaceX',
+                            'Boeing': '波音',
+                            'Lockheed Martin': '洛克希德马丁',
+                            'General Electric': '通用电气',
+                            'Ford Motor': '福特汽车',
+                            'General Motors': '通用汽车',
+                            'Chevrolet': '雪佛兰',
+                            'Toyota': '丰田',
+                            'Honda': '本田',
+                            'Nissan': '日产',
+                            'BMW': '宝马',
+                            'Mercedes-Benz': '奔驰',
+                            'Volkswagen': '大众',
+                            'Audi': '奥迪',
+                            'Porsche': '保时捷',
+                            'Ferrari': '法拉利',
+                            'Lamborghini': '兰博基尼',
                             
                             // 金融术语
+                            'stock market': '股票市场',
+                            'stock price': '股价',
                             'stock': '股票',
                             'stocks': '股票',
+                            'share price': '股价',
                             'shares': '股份',
                             'share': '股份',
+                            'earnings report': '财报',
                             'earnings': '财报',
+                            'quarterly earnings': '季度财报',
+                            'annual earnings': '年度财报',
+                            'revenue growth': '营收增长',
                             'revenue': '营收',
                             'revenues': '营收',
+                            'net income': '净收入',
+                            'gross profit': '毛利润',
+                            'operating profit': '营业利润',
+                            'profit margin': '利润率',
                             'profit': '利润',
                             'profits': '利润',
+                            'net loss': '净亏损',
+                            'operating loss': '营业亏损',
                             'loss': '亏损',
                             'losses': '亏损',
+                            'quarterly results': '季度业绩',
                             'quarterly': '季度',
+                            'annual results': '年度业绩',
                             'annual': '年度',
+                            'financial report': '财务报告',
+                            'financial results': '财务业绩',
+                            'financial statement': '财务报表',
                             'report': '报告',
                             'reports': '报告',
                             'financial': '财务',
                             'results': '业绩',
                             'performance': '表现',
+                            'market cap': '市值',
+                            'market capitalization': '市值',
+                            'market value': '市场价值',
+                            'book value': '账面价值',
+                            'enterprise value': '企业价值',
+                            'free cash flow': '自由现金流',
+                            'cash flow': '现金流',
+                            'operating cash flow': '经营现金流',
+                            'balance sheet': '资产负债表',
+                            'income statement': '损益表',
+                            'cash flow statement': '现金流量表',
+                            'SEC filing': 'SEC文件',
+                            '10-K': '年报',
+                            '10-Q': '季报',
+                            '8-K': '临时报告',
+                            'IPO': '首次公开募股',
+                            'initial public offering': '首次公开募股',
+                            'secondary offering': '二次发行',
+                            'stock split': '股票分割',
+                            'stock buyback': '股票回购',
+                            'dividend payment': '股息支付',
+                            'dividend yield': '股息收益率',
+                            'ex-dividend': '除息',
+                            'record date': '登记日',
+                            'payment date': '支付日',
                             
                             // 市场动作
+                            'announces earnings': '公布财报',
+                            'announces results': '公布业绩',
                             'announces': '宣布',
                             'announced': '宣布了',
+                            'beats estimates': '超预期',
+                            'beats expectations': '超预期',
                             'beats': '超越',
                             'beat': '超越了',
+                            'misses estimates': '不及预期',
+                            'misses expectations': '不及预期',
                             'misses': '不及',
                             'missed': '不及',
+                            'meets expectations': '符合预期',
+                            'meets estimates': '符合预期',
+                            'exceeds expectations': '超出预期',
+                            'falls short of': '低于',
+                            'analyst expectations': '分析师预期',
+                            'market expectations': '市场预期',
                             'expectations': '预期',
                             'expected': '预期',
+                            'estimates': '预估',
+                            'consensus estimate': '一致预期',
+                            'revenue forecast': '营收预测',
+                            'earnings forecast': '盈利预测',
                             'forecast': '预测',
+                            'forward guidance': '前瞻指引',
                             'guidance': '指引',
+                            'outlook': '展望',
+                            'projections': '预测',
+                            'targets': '目标',
+                            'raises guidance': '上调指引',
+                            'lowers guidance': '下调指引',
+                            'reaffirms guidance': '重申指引',
+                            'withdraws guidance': '撤回指引',
                             
                             // 价格变动
+                            'stock rises': '股价上涨',
+                            'stock falls': '股价下跌',
+                            'price rises': '价格上涨',
+                            'price falls': '价格下跌',
+                            'shares rise': '股价上涨',
+                            'shares fall': '股价下跌',
+                            'rises sharply': '大幅上涨',
+                            'falls sharply': '大幅下跌',
                             'rises': '上涨',
                             'rose': '上涨了',
                             'rising': '上涨',
                             'falls': '下跌',
                             'fell': '下跌了',
                             'falling': '下跌',
+                            'gains ground': '上涨',
+                            'loses ground': '下跌',
                             'gains': '上涨',
                             'gained': '上涨了',
                             'drops': '下跌',
                             'dropped': '下跌了',
+                            'surges ahead': '大幅上涨',
                             'surges': '飙升',
                             'surged': '飙升了',
                             'plunges': '暴跌',
                             'plunged': '暴跌了',
+                            'climbs higher': '继续攀升',
                             'climbs': '攀升',
                             'climbed': '攀升了',
+                            'slides lower': '继续下滑',
                             'slides': '下滑',
                             'slid': '下滑了',
+                            'jumps': '跳涨',
+                            'jumped': '跳涨了',
+                            'tumbles': '暴跌',
+                            'tumbled': '暴跌了',
+                            'soars': '飙升',
+                            'soared': '飙升了',
+                            'crashes': '暴跌',
+                            'crashed': '暴跌了',
+                            'rallies': '反弹',
+                            'rallied': '反弹了',
+                            'rebounds': '反弹',
+                            'rebounded': '反弹了',
+                            'recovers': '回升',
+                            'recovered': '回升了',
+                            'declines': '下降',
+                            'declined': '下降了',
+                            'advances': '上涨',
+                            'advanced': '上涨了',
+                            'retreats': '回落',
+                            'retreated': '回落了',
+                            'spikes': '急升',
+                            'spiked': '急升了',
+                            'dips': '下跌',
+                            'dipped': '下跌了',
+                            'extends gains': '扩大涨幅',
+                            'extends losses': '扩大跌幅',
+                            'pares gains': '收窄涨幅',
+                            'pares losses': '收窄跌幅',
+                            'hits new high': '创新高',
+                            'hits new low': '创新低',
+                            'reaches high': '触及高点',
+                            'reaches low': '触及低点',
+                            'breaks out': '突破',
+                            'breaks down': '跌破',
+                            'tests resistance': '测试阻力',
+                            'tests support': '测试支撑',
                             
                             // 市场相关
                             'market': '市场',
@@ -1257,20 +1470,67 @@
                             'user': '用户',
                             
                             // 新闻常用词
+                            'breaking news': '突发新闻',
+                            'market news': '市场新闻',
+                            'financial news': '财经新闻',
+                            'business news': '商业新闻',
+                            'economic news': '经济新闻',
+                            'earnings news': '财报新闻',
                             'news': '新闻',
+                            'news article': '新闻文章',
+                            'news report': '新闻报道',
                             'article': '文章',
                             'report': '报道',
+                            'latest update': '最新更新',
+                            'market update': '市场更新',
+                            'earnings update': '财报更新',
                             'update': '更新',
                             'breaking': '突发',
                             'latest': '最新',
+                            'recent': '最近',
+                            'current': '当前',
+                            'today': '今日',
+                            'this week': '本周',
+                            'this month': '本月',
+                            'this quarter': '本季度',
+                            'this year': '今年',
+                            'market analysis': '市场分析',
+                            'stock analysis': '股票分析',
+                            'financial analysis': '财务分析',
+                            'technical analysis': '技术分析',
+                            'fundamental analysis': '基本面分析',
                             'analysis': '分析',
+                            'expert opinion': '专家观点',
+                            'analyst opinion': '分析师观点',
+                            'market opinion': '市场观点',
                             'opinion': '观点',
+                            'exclusive interview': '独家采访',
+                            'CEO interview': 'CEO采访',
+                            'management interview': '管理层采访',
                             'interview': '采访',
+                            'press release': '新闻稿',
+                            'company statement': '公司声明',
+                            'official statement': '官方声明',
                             'statement': '声明',
+                            'earnings conference': '财报会议',
+                            'investor conference': '投资者会议',
+                            'press conference': '新闻发布会',
                             'conference': '会议',
+                            'board meeting': '董事会会议',
+                            'shareholder meeting': '股东大会',
+                            'annual meeting': '年会',
                             'meeting': '会议',
+                            'earnings call': '财报电话会议',
+                            'investor call': '投资者电话会议',
+                            'conference call': '电话会议',
                             'call': '电话会议',
+                            'investor presentation': '投资者演示',
+                            'earnings presentation': '财报演示',
+                            'company presentation': '公司演示',
                             'presentation': '演示',
+                            'roadshow': '路演',
+                            'investor day': '投资者日',
+                            'analyst day': '分析师日',
                             
                             // 财务指标
                             'EPS': '每股收益',
@@ -1287,20 +1547,65 @@
                             'ROI': '投资回报率',
                             
                             // 动作词汇
+                            'launches new product': '推出新产品',
+                            'launches service': '推出服务',
                             'launches': '推出',
                             'launched': '推出了',
+                            'introduces new': '推出新的',
                             'introduces': '推介',
                             'introduced': '推介了',
+                            'releases earnings': '发布财报',
+                            'releases results': '发布业绩',
                             'releases': '发布',
                             'released': '发布了',
+                            'develops technology': '开发技术',
                             'develops': '开发',
                             'developed': '开发了',
+                            'expands business': '扩展业务',
+                            'expands operations': '扩大运营',
                             'expands': '扩展',
                             'expanded': '扩展了',
+                            'enters market': '进入市场',
+                            'enters partnership': '建立合作',
                             'enters': '进入',
                             'entered': '进入了',
+                            'exits business': '退出业务',
+                            'exits market': '退出市场',
                             'exits': '退出',
                             'exited': '退出了',
+                            'acquires company': '收购公司',
+                            'acquires': '收购',
+                            'acquired': '收购了',
+                            'merges with': '与...合并',
+                            'completes merger': '完成合并',
+                            'completes acquisition': '完成收购',
+                            'completes deal': '完成交易',
+                            'completes': '完成',
+                            'completed': '完成了',
+                            'signs agreement': '签署协议',
+                            'signs deal': '签署交易',
+                            'signs contract': '签署合同',
+                            'signs': '签署',
+                            'signed': '签署了',
+                            'partners with': '与...合作',
+                            'forms partnership': '建立合作',
+                            'establishes': '建立',
+                            'established': '建立了',
+                            'invests in': '投资于',
+                            'makes investment': '进行投资',
+                            'receives funding': '获得融资',
+                            'raises capital': '筹集资金',
+                            'raises funds': '筹集资金',
+                            'secures funding': '获得资金',
+                            'closes round': '完成融资',
+                            'hires': '聘用',
+                            'hired': '聘用了',
+                            'appoints': '任命',
+                            'appointed': '任命了',
+                            'promotes': '提升',
+                            'promoted': '提升了',
+                            'names': '任命',
+                            'named': '任命了',
                             
                             // 情感词汇
                             'strong': '强劲',
@@ -1315,14 +1620,72 @@
                             'concerned': '担忧',
                             
                             // 时间表达
+                            'pre-market trading': '盘前交易',
                             'pre-market': '盘前',
+                            'after-hours trading': '盘后交易',
                             'after-hours': '盘后',
+                            'market opening': '开盘',
+                            'opening bell': '开盘铃',
                             'opening': '开盘',
+                            'market closing': '收盘',
+                            'closing bell': '收盘铃',
                             'closing': '收盘',
+                            'trading session': '交易时段',
                             'session': '交易时段',
                             'trading day': '交易日',
+                            'business day': '工作日',
+                            'market day': '交易日',
                             'weekend': '周末',
-                            'holiday': '假期'
+                            'holiday': '假期',
+                            'market holiday': '市场休市',
+                            'early this morning': '今天早些时候',
+                            'this morning': '今天上午',
+                            'this afternoon': '今天下午',
+                            'this evening': '今天晚上',
+                            'earlier today': '今天早些时候',
+                            'later today': '今天晚些时候',
+                            'last week': '上周',
+                            'next week': '下周',
+                            'last month': '上个月',
+                            'next month': '下个月',
+                            'last quarter': '上季度',
+                            'next quarter': '下季度',
+                            'last year': '去年',
+                            'next year': '明年',
+                            'year-over-year': '同比',
+                            'quarter-over-quarter': '环比',
+                            'month-over-month': '月环比',
+                            'year-to-date': '年初至今',
+                            
+                            // 常见新闻短语
+                            'according to': '据',
+                            'sources say': '消息人士称',
+                            'reports suggest': '报道显示',
+                            'analysts say': '分析师表示',
+                            'experts believe': '专家认为',
+                            'investors are': '投资者',
+                            'the company said': '该公司表示',
+                            'in a statement': '在声明中',
+                            'during the call': '在电话会议中',
+                            'on the call': '在电话会议上',
+                            'in the report': '在报告中',
+                            'the report shows': '报告显示',
+                            'data shows': '数据显示',
+                            'figures show': '数据显示',
+                            'results show': '结果显示',
+                            'as expected': '如预期',
+                            'better than expected': '好于预期',
+                            'worse than expected': '差于预期',
+                            'in line with': '符合',
+                            'compared to': '相比',
+                            'versus': '对比',
+                            'up from': '高于',
+                            'down from': '低于',
+                            'for the quarter': '本季度',
+                            'for the year': '本年度',
+                            'going forward': '展望未来',
+                            'looking ahead': '展望未来',
+                            'moving forward': '展望未来'
                         };
                         
                         let translatedText = text;
