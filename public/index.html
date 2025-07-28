@@ -381,19 +381,63 @@
                             labels: this.candles.t,
                             datasets: [{ label: this.symbol, data: this.candles.c, borderColor: color, backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0 }]
                         },
-                        // *** 最终的、釜底抽薪的极简配置 ***
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: { display: false },
-                                tooltip: { enabled: false } // 彻底禁用 tooltip
+                                tooltip: {
+                                    enabled: true,
+                                    mode: 'index',
+                                    intersect: false,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    titleColor: '#fff',
+                                    bodyColor: '#fff',
+                                    borderColor: color,
+                                    borderWidth: 1,
+                                    callbacks: {
+                                        title: (context) => {
+                                            const timestamp = context[0].parsed.x;
+                                            const date = new Date(timestamp * 1000);
+                                            return this.language === 'zh' ? 
+                                                date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'}) :
+                                                date.toLocaleDateString('en-US') + ' ' + date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+                                        },
+                                        label: (context) => {
+                                            const price = context.parsed.y;
+                                            return this.language === 'zh' ? 
+                                                `价格: $${price.toFixed(2)}` :
+                                                `Price: $${price.toFixed(2)}`;
+                                        }
+                                    }
+                                }
                             },
                             scales: { 
-                                x: { display: false }, 
-                                y: { position: 'right', ticks: { color: color } } 
+                                x: { 
+                                    display: true,
+                                    type: 'linear',
+                                    ticks: {
+                                        callback: function(value) {
+                                            const date = new Date(value * 1000);
+                                            return date.toLocaleDateString();
+                                        },
+                                        maxTicksLimit: 6
+                                    }
+                                }, 
+                                y: { 
+                                    position: 'right', 
+                                    ticks: { 
+                                        color: color,
+                                        callback: function(value) {
+                                            return '$' + value.toFixed(2);
+                                        }
+                                    }
+                                } 
                             },
-                            interaction: { enabled: false },
+                            interaction: { 
+                                mode: 'index',
+                                intersect: false
+                            },
                             animation: false
                         }
                     });
@@ -467,9 +511,52 @@
                 },
                 
                 translateTitle(title) {
-                    // 简单的标题翻译逻辑，实际项目中可以接入翻译API
                     if (this.language === 'zh') {
-                        return title; // 这里可以添加翻译逻辑
+                        // 基本的英文到中文翻译映射
+                        const translations = {
+                            'Apple': '苹果',
+                            'Tesla': '特斯拉',
+                            'Microsoft': '微软',
+                            'Google': '谷歌',
+                            'Amazon': '亚马逊',
+                            'NVIDIA': '英伟达',
+                            'stock': '股票',
+                            'shares': '股份',
+                            'earnings': '财报',
+                            'revenue': '营收',
+                            'profit': '利润',
+                            'quarterly': '季度',
+                            'annual': '年度',
+                            'report': '报告',
+                            'announces': '宣布',
+                            'beats': '超越',
+                            'misses': '不及',
+                            'expectations': '预期',
+                            'rises': '上涨',
+                            'falls': '下跌',
+                            'gains': '上涨',
+                            'drops': '下跌',
+                            'surges': '飙升',
+                            'plunges': '暴跌',
+                            'market': '市场',
+                            'trading': '交易',
+                            'investors': '投资者',
+                            'analyst': '分析师',
+                            'upgrade': '上调',
+                            'downgrade': '下调',
+                            'target': '目标',
+                            'price': '价格'
+                        };
+                        
+                        let translatedTitle = title;
+                        
+                        // 替换公司名称
+                        Object.keys(translations).forEach(english => {
+                            const regex = new RegExp(english, 'gi');
+                            translatedTitle = translatedTitle.replace(regex, translations[english]);
+                        });
+                        
+                        return translatedTitle;
                     }
                     return title;
                 },
@@ -495,7 +582,17 @@
                 },
                 
                 openYouTubeSearch() {
-                    const query = encodeURIComponent(`${this.symbol} ${this.companyProfile?.name || ''} stock analysis`);
+                    // 获取中文股票名称
+                    const stockNames = {
+                        'AAPL': '苹果',
+                        'TSLA': '特斯拉', 
+                        'MSFT': '微软',
+                        'GOOGL': '谷歌',
+                        'AMZN': '亚马逊',
+                        'NVDA': '英伟达'
+                    };
+                    const chineseName = stockNames[this.symbol] || this.companyProfile?.name || this.symbol;
+                    const query = encodeURIComponent(`${chineseName}股票`);
                     window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
                 },
                 
