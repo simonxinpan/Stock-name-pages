@@ -1,6 +1,11 @@
 // /api/stock/candles.js
+
 export default async function handler(request, response) {
-  response.setHeader('Cache-Control', 'no-cache');
+  // 关键：为历史数据开启10分钟的 Vercel CDN 缓存
+  // s-maxage=600 表示在 CDN 缓存 600 秒 (10分钟)
+  // stale-while-revalidate=1200 表示如果缓存过期，在接下来1200秒内，
+  // Vercel 会先返回旧缓存，同时在后台异步更新缓存。
+  response.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=1200');
 
   const { symbol, resolution, from, to } = request.query;
 
@@ -31,12 +36,13 @@ export default async function handler(request, response) {
     if (!apiResponse.ok) {
       const errorMessage = data.error || data.message || `Polygon API returned status ${apiResponse.status}`;
       console.error(`Polygon API Error for ${symbol}: ${errorMessage}`);
+      // 将 Polygon 的错误状态码透传给前端
       return response.status(apiResponse.status).json({ error: errorMessage });
     }
     
     if (!data.results || data.results.length === 0) {
       console.log(`No data returned from Polygon for ${symbol}.`);
-      return response.status(200).json({ s: 'no_data' });
+      return response.status(200).json({ s: 'no_data', t: [], c: [], o: [], h: [], l: [], v: [] });
     }
 
     const chartData = {
