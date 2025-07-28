@@ -13,131 +13,187 @@
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
     
-    <!-- ... HTML 结构部分 ... -->
-    <!-- (和之前一样，这里省略以保持简洁) -->
+    <!-- 顶部导航栏 -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
+                    <span class="live-badge">Live</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <select x-model="symbol" @change="loadStock()" class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="AAPL">AAPL - Apple Inc.</option>
+                        <option value="TSLA">TSLA - Tesla Inc.</option>
+                        <option value="MSFT">MSFT - Microsoft Corp.</option>
+                        <option value="GOOGL">GOOGL - Alphabet Inc.</option>
+                        <option value="AMZN">AMZN - Amazon.com Inc.</option>
+                        <option value="NVDA">NVDA - NVIDIA Corp.</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 错误提示 -->
+    <div x-show="error" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4" x-cloak>
+        <div class="error-message">
+            <p x-text="error"></p>
+        </div>
+    </div>
+    
+    <!-- 加载骨架屏 -->
+    <div x-show="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-pulse">
+        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex items-center space-x-4 mb-4 lg:mb-0"><div class="w-16 h-16 bg-gray-200 rounded-lg"></div><div><div class="h-8 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-48 mb-1"></div><div class="h-4 bg-gray-200 rounded w-24"></div></div></div>
+                <div class="text-right"><div class="h-12 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-24"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-show="!loading && quote" x-cloak>
+        <!-- 股票基本信息 -->
+        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-blue-600" x-text="symbol"></span></div>
+                    <div><h1 class="text-3xl font-bold text-gray-900" x-text="companyProfile?.name"></h1><p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p></div>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-bold" :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatPrice(quote?.c)"></div>
+                    <div class="flex items-center justify-end space-x-2 mt-1"><span :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatChange(quote?.d)"></span><span :class="quote?.d >= 0 ? 'price-up' : 'price-down'" x-text="formatPercent(quote?.dp)"></span></div>
+                </div>
+            </div>
+            <!-- K线图按钮 -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                 <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Price Chart</h2>
+                    <div class="flex space-x-2">
+                        <template x-for="period in timePeriods" :key="period.value">
+                            <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" x-text="period.en"></button>
+                        </template>
+                    </div>
+                </div>
+                <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
+                    <canvas id="stockChart"></canvas>
+                    <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><span class="loading text-blue-500">Loading Chart...</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         function liveStockApp() {
             return {
-                // ... state 和其他函数和之前一样 ...
-                language: 'zh',
-                symbol: 'AAPL',
-                loading: true,
-                chartLoading: false,
-                error: null,
-                connectionStatus: 'status-connecting',
-                quote: null,
-                companyProfile: null,
-                candles: null,
-                news: [],
+                symbol: 'AAPL', loading: true, chartLoading: false, error: null,
+                quote: null, companyProfile: null, candles: null,
                 selectedPeriod: 'D',
                 timePeriods: [
-                    { value: 'D', zh: '日线', en: 'Day' },
-                    { value: 'W', zh: '周线', en: 'Week' },
-                    { value: 'M', zh: '月线', en: 'Month' }
+                    { value: 'D', en: 'Day' },
+                    { value: 'W', en: 'Week' },
+                    { value: 'M', en: 'Month' }
                 ],
                 chart: null,
                 
-                async init() { /* ... 和之前一样 ... */ await this.loadStock(); },
-                async loadStock() { /* ... 和之前一样 ... */ },
-                async changePeriod(newPeriod) { /* ... 和之前一样 ... */ },
-                async loadCandles() { /* ... 和之前一样 ... */ },
-                async handleResponse(response) { /* ... 和之前一样 ... */ },
-
-                // *** 最终的、绝对不会崩溃的 updateChart 函数 ***
-                updateChart() {
-                    if (this.chart) {
-                        this.chart.destroy();
+                async init() {
+                    await this.loadStock();
+                },
+                
+                async loadStock() {
+                    this.loading = true;
+                    this.error = null;
+                    try {
+                        const [quoteData, profileData] = await Promise.all([
+                            fetch(`/api/stock/quote?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/profile?symbol=${this.symbol}`).then(res => this.handleResponse(res))
+                        ]);
+                        this.quote = quoteData;
+                        this.companyProfile = profileData;
+                        await this.loadCandles();
+                    } catch (error) {
+                        this.error = `[Data Load Error] ${error.message}`;
+                    } finally {
+                        this.loading = false;
                     }
+                },
+                
+                async changePeriod(newPeriod) {
+                    if (this.selectedPeriod === newPeriod) return;
+                    this.selectedPeriod = newPeriod;
+                    await this.loadCandles();
+                },
+
+                async loadCandles() {
+                    this.chartLoading = true;
+                    try {
+                        const to = Math.floor(Date.now() / 1000);
+                        let from;
+                        switch (this.selectedPeriod) {
+                            case 'W': from = to - (5 * 365 * 24 * 60 * 60); break;
+                            case 'M': from = to - (20 * 365 * 24 * 60 * 60); break;
+                            default: from = to - (365 * 24 * 60 * 60);
+                        }
+                        const url = `/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
+                        this.candles = await fetch(url).then(res => this.handleResponse(res));
+                        this.updateChart();
+                    } catch (error) {
+                        this.error = `[Chart Load Error] ${error.message}`;
+                    } finally {
+                        this.chartLoading = false;
+                    }
+                },
+
+                async handleResponse(response) {
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || `Request failed: ${response.statusText}`);
+                    }
+                    return response.json();
+                },
+                
+                updateChart() {
+                    if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
-                    
                     if (!ctx || !this.candles || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) {
-                        console.warn("Aborting chart creation due to invalid data structure.", this.candles);
                         return;
                     }
-                    
-                    const chartCtx = ctx.getContext('2d');
-                    
                     if (this.candles.c.length === 0) {
+                        const chartCtx = ctx.getContext('2d');
                         chartCtx.clearRect(0, 0, ctx.width, ctx.height);
                         chartCtx.textAlign = 'center';
                         chartCtx.fillStyle = '#9ca3af';
                         chartCtx.font = '16px sans-serif';
-                        chartCtx.fillText( this.language === 'zh' ? '当前周期无可用数据' : 'No Chart Data Available', ctx.width / 2, ctx.height / 2);
+                        chartCtx.fillText('No Chart Data Available', ctx.width / 2, ctx.height / 2);
                         return;
                     }
-                    
                     const isPositive = this.quote?.d >= 0;
                     const borderColor = isPositive ? '#ef4444' : '#10b981';
-                    
-                    const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
+                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
                     gradient.addColorStop(0, isPositive ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)');
                     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                    
-                    this.chart = new Chart(chartCtx, {
+                    this.chart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: this.candles.t || [],
+                            labels: this.candles.t.map(ts => new Date(ts * 1000).toLocaleDateString()),
                             datasets: [{
-                                label: this.symbol,
-                                data: this.candles.c || [],
-                                borderColor: borderColor,
-                                backgroundColor: gradient,
-                                borderWidth: 2,
-                                fill: true,
-                                tension: 0.1,
-                                pointRadius: 0,
-                                pointHoverRadius: 5,
-                                pointHitRadius: 10,
-                                pointBackgroundColor: borderColor
+                                label: this.symbol, data: this.candles.c, borderColor: borderColor, 
+                                backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0
                             }]
                         },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                // *** 关键修复：提供一个绝对安全的 tooltip 回调函数 ***
-                                tooltip: {
-                                    callbacks: {
-                                        title: (context) => {
-                                            if (!context || context.length === 0) return '';
-                                            const timestamp = context[0].label || '';
-                                            return new Date(timestamp * 1000).toLocaleDateString();
-                                        },
-                                        label: (context) => {
-                                            if (!context || !context.dataset) return '';
-                                            const price = context.parsed.y;
-                                            return `${context.dataset.label || ''}: ${this.formatPrice(price)}`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: { display: false },
-                                y: { position: 'right' }
-                            },
-                            interaction: {
-                                intersect: false,
-                                mode: 'index'
-                            }
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { x: { display: false }, y: { position: 'right' } },
+                            interaction: { intersect: false, mode: 'index' }
                         }
                     });
                 },
                 
-                // ... 省略其他所有未改动的工具函数 ...
-                formatMarketCap(capInMillions) {
-                    if (!capInMillions) return 'N/A';
-                    if (this.language === 'zh') {
-                        if (capInMillions >= 1000000) return (capInMillions / 1000000).toFixed(2) + '万亿';
-                        return (capInMillions / 100).toFixed(2) + '亿';
-                    } else {
-                        if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
-                        return '$' + (capInMillions / 1000).toFixed(2) + 'B';
-                    }
-                },
+                formatPrice(price) { return (price !== null && typeof price !== 'undefined') ? '$' + price.toFixed(2) : 'N/A'; },
+                formatChange(change) { return (change !== null && typeof change !== 'undefined') ? (change >= 0 ? '+' : '') + '$' + change.toFixed(2) : 'N/A'; },
+                formatPercent(percent) { return (percent !== null && typeof percent !== 'undefined') ? `(${(percent >= 0 ? '+' : '')}${percent.toFixed(2)}%)` : ''; },
             }
         }
     </script>
