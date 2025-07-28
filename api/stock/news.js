@@ -25,8 +25,16 @@ export default async function handler(request, response) {
     }
     const data = await apiResponse.json();
     
+    // 过滤掉Seeking Alpha的内容，避免弹窗影响用户体验
+    const filteredData = data.filter(article => {
+      const source = article.source || '';
+      const url = article.url || '';
+      return !source.toLowerCase().includes('seeking alpha') && 
+             !url.toLowerCase().includes('seekingalpha');
+    });
+    
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.status(200).json(data);
+    response.status(200).json(filteredData);
   } catch (error) {
     console.error('API /stock/news Error:', error);
     response.status(500).json({ error: 'Failed to fetch company news.' });
