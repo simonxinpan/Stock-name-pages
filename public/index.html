@@ -59,10 +59,18 @@
             <div class="mt-6 pt-6 border-t border-gray-200">
                  <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
-                    <div class="flex space-x-2">
-                        <template x-for="period in timePeriods" :key="period.value">
-                            <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
-                        </template>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex space-x-2">
+                            <template x-for="period in timePeriods" :key="period.value">
+                                <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
+                            </template>
+                        </div>
+                        <div class="api-status" x-show="chartLoading || (Date.now() - lastCandleCall < candleCallInterval && lastCandleCall > 0)">
+                            <span x-show="chartLoading" class="text-blue-500 text-sm">📊 <span x-text="language === 'zh' ? '加载中...' : 'Loading...'"></span></span>
+                            <span x-show="!chartLoading && (Date.now() - lastCandleCall < candleCallInterval && lastCandleCall > 0)" class="text-orange-500 text-sm">
+                                ⏱️ <span x-text="language === 'zh' ? 'API频率限制 (20秒间隔)' : 'API Rate Limit (20s interval)'"></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
@@ -82,11 +90,32 @@
                 selectedPeriod: 'D',
                 timePeriods: [ { value: 'D', zh: '日线', en: 'Day' }, { value: 'W', zh: '周线', en: 'Week' }, { value: 'M', zh: '月线', en: 'Month' } ],
                 chart: null,
+                // 频率控制相关
+                lastCandleCall: 0,
+                candleCallInterval: 20000, // 20秒间隔
+                candleCache: new Map(), // 缓存K线数据
+                cacheExpiry: 300000, // 缓存5分钟过期
                 
                 async init() {
+                    console.log('初始化股票应用，API调用间隔：20秒');
                     const savedLang = localStorage.getItem('stock-lang');
                     if (savedLang) this.language = savedLang;
                     await this.loadStock();
+                    
+                    // 定期清理过期缓存
+                    setInterval(() => {
+                        this.cleanExpiredCache();
+                    }, 60000); // 每分钟清理一次
+                },
+                
+                cleanExpiredCache() {
+                    const now = Date.now();
+                    for (const [key, value] of this.candleCache.entries()) {
+                        if (now - value.timestamp > this.cacheExpiry) {
+                            this.candleCache.delete(key);
+                            console.log(`清理过期缓存: ${key}`);
+                        }
+                    }
                 },
                 
                 async loadStock() {
@@ -108,11 +137,52 @@
                 async changePeriod(newPeriod) {
                     if (this.selectedPeriod === newPeriod) return;
                     this.selectedPeriod = newPeriod;
+                    
+                    // 检查是否有缓存数据，如果有则直接使用
+                    const cacheKey = `${this.symbol}_${this.selectedPeriod}`;
+                    const cachedData = this.candleCache.get(cacheKey);
+                    const now = Date.now();
+                    
+                    if (cachedData && (now - cachedData.timestamp) < this.cacheExpiry) {
+                        console.log('切换周期：使用缓存数据');
+                        this.candles = cachedData.data;
+                        this.updateChart();
+                        return;
+                    }
+                    
                     await this.loadCandles();
                 },
 
                 async loadCandles() {
+                    // 频率控制检查
+                    const now = Date.now();
+                    const timeSinceLastCall = now - this.lastCandleCall;
+                    
+                    // 检查缓存
+                    const cacheKey = `${this.symbol}_${this.selectedPeriod}`;
+                    const cachedData = this.candleCache.get(cacheKey);
+                    
+                    if (cachedData && (now - cachedData.timestamp) < this.cacheExpiry) {
+                        console.log('使用缓存的K线数据');
+                        this.candles = cachedData.data;
+                        this.updateChart();
+                        return;
+                    }
+                    
+                    // 如果距离上次调用不足20秒，延迟执行
+                    if (timeSinceLastCall < this.candleCallInterval) {
+                        const waitTime = this.candleCallInterval - timeSinceLastCall;
+                        console.log(`API调用频率限制，等待 ${Math.ceil(waitTime/1000)} 秒...`);
+                        
+                        setTimeout(() => {
+                            this.loadCandles();
+                        }, waitTime);
+                        return;
+                    }
+                    
                     this.chartLoading = true;
+                    this.lastCandleCall = now;
+                    
                     try {
                         const to = Math.floor(Date.now() / 1000); let from;
                         switch (this.selectedPeriod) {
@@ -121,9 +191,23 @@
                             default: from = to - (365 * 24 * 60 * 60);
                         }
                         const url = `/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
+                        
+                        console.log(`正在获取K线数据: ${this.symbol} (${this.selectedPeriod})`);
                         this.candles = await fetch(url).then(res => this.handleResponse(res));
+                        
+                        // 缓存数据
+                        this.candleCache.set(cacheKey, {
+                            data: this.candles,
+                            timestamp: now
+                        });
+                        
                         this.updateChart();
-                    } catch (error) { this.error = `[Chart Load Error] ${error.message}`; } 
+                        console.log(`K线数据加载成功: ${this.candles.c ? this.candles.c.length : 0} 个数据点`);
+                    } catch (error) { 
+                        this.error = `[Chart Load Error] ${error.message}`;
+                        // 错误时重置调用时间，允许重试
+                        this.lastCandleCall = 0;
+                    } 
                     finally { this.chartLoading = false; }
                 },
 
