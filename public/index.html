@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能个股详情页 - Live</title>
+    <title>智能个股详情页 - 完整版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .price-up-us { color: #10b981; } .price-down-us { color: #ef4444; } .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); } .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } [x-cloak] { display: none !important; }
+        .price-up-us { color: #10b981; } .price-down-us { color: #ef4444; } .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); } .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } [x-cloak] { display: none !important; } .social-icon { width: 24px; height: 24px; }
     </style>
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
@@ -32,42 +32,88 @@
     <div x-show="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-pulse"><div class="bg-white rounded-lg card-shadow p-6 mb-6"><div class="flex justify-between"><div class="flex items-center space-x-4"><div class="w-16 h-16 bg-gray-200 rounded-lg"></div><div><div class="h-8 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-48"></div></div></div><div class="text-right"><div class="h-12 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-24"></div></div></div></div></div>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-show="!loading && quote" x-cloak>
-        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex items-center space-x-4 mb-4 lg:mb-0">
-                    <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-blue-600" x-text="symbol"></span></div>
-                    <div><h1 class="text-3xl font-bold text-gray-900" x-text="companyProfile?.name"></h1><p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧主内容区 -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 股票基本信息 & K线图 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-blue-600" x-text="symbol"></span></div>
+                            <div><h1 class="text-3xl font-bold text-gray-900" x-text="companyProfile?.name"></h1><p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold" :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPrice(quote?.c)"></div>
+                            <div class="flex items-center justify-end space-x-2 mt-1"><span :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatChange(quote?.d)"></span><span :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPercent(quote?.dp)"></span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+                            <div class="flex space-x-2">
+                                <template x-for="period in timePeriods" :key="period.value">
+                                    <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
+                                </template>
+                            </div>
+                        </div>
+                        <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
+                            <canvas id="stockChart"></canvas>
+                            <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><span class="loading text-blue-500">Loading Chart...</span></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <div class="text-3xl font-bold" :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPrice(quote?.c)"></div>
-                    <div class="flex items-center justify-end space-x-2 mt-1"><span :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatChange(quote?.d)"></span><span :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPercent(quote?.dp)"></span></div>
+                
+                <!-- 相关新闻 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h3>
+                    <div class="max-h-96 overflow-y-auto space-y-3">
+                        <template x-for="article in news.slice(0, 10)" :key="article.id">
+                            <div class="border-b border-gray-100 pb-3 last:border-b-0">
+                                <a :href="article.url" target="_blank" class="block hover:bg-gray-50 rounded p-2 transition-colors"><h4 class="text-sm font-medium text-gray-900 mb-1 line-clamp-2" x-text="article.headline"></h4><p class="text-xs text-gray-600" x-text="formatNewsTime(article.datetime)"></p><p class="text-xs text-gray-500 mt-1" x-text="article.source"></p></a>
+                            </div>
+                        </template>
+                        <div x-show="news.length === 0 && !loading" class="text-center text-gray-500 py-4"><p x-text="language === 'zh' ? '暂无相关新闻' : 'No news available'"></p></div>
+                    </div>
                 </div>
             </div>
             
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键财务指标' : 'Key Financial Metrics'"></h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><p class="text-lg font-bold" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市盈率 (TTM)' : 'P/E Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.peTTM)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市销率 (TTM)' : 'P/S Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.psTTM)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市净率 (MRQ)' : 'P/B Ratio (MRQ)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.pbAnnual)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '股息率' : 'Dividend Yield'"></h4><p class="text-lg font-bold" x-text="formatYield(metrics?.dividendYieldAnnual)"></p></div>
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '贝塔系数' : 'Beta'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.beta)"></p></div>
-                </div>
-            </div>
-
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
-                    <div class="flex space-x-2">
-                        <template x-for="period in timePeriods" :key="period.value">
-                            <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-4 py-2 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
-                        </template>
+            <!-- 右侧边栏 -->
+            <div class="space-y-6">
+                <!-- 关键指标 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></span><span class="text-lg font-bold" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></span></div>
+                        <div class="flex justify-between items-center"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '市盈率 (TTM)' : 'P/E Ratio (TTM)'"></span><span class="text-lg font-bold" x-text="formatRatio(metrics?.peTTM)"></span></div>
+                        <div class="flex justify-between items-center"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '市销率 (TTM)' : 'P/S Ratio (TTM)'"></span><span class="text-lg font-bold" x-text="formatRatio(metrics?.psTTM)"></span></div>
+                        <div class="flex justify-between items-center"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '市净率 (MRQ)' : 'P/B Ratio (MRQ)'"></span><span class="text-lg font-bold" x-text="formatRatio(metrics?.pbAnnual)"></span></div>
+                        <div class="flex justify-between items-center"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '股息率' : 'Dividend Yield'"></span><span class="text-lg font-bold" x-text="formatYield(metrics?.dividendYieldAnnual)"></span></div>
+                        <div class="flex justify-between items-center"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '贝塔系数' : 'Beta'"></span><span class="text-lg font-bold" x-text="formatRatio(metrics?.beta)"></span></div>
                     </div>
                 </div>
-                <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
-                    <canvas id="stockChart"></canvas>
-                    <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><span class="loading text-blue-500">Loading Chart...</span></div>
+                <!-- 公司信息 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center py-2"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业:' : 'Industry:'"></span><span class="text-sm font-medium text-gray-900 text-right" x-text="companyProfile?.finnhubIndustry || 'N/A'"></span></div>
+                        <div class="flex justify-between items-center py-2"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '国家:' : 'Country:'"></span><span class="text-sm font-medium text-gray-900" x-text="companyProfile?.country || 'N/A'"></span></div>
+                        <div class="py-2" x-show="companyProfile?.weburl"><span class="text-sm text-gray-600" x-text="language === 'zh' ? '官网:' : 'Website:'"></span><a :href="companyProfile?.weburl" target="_blank" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-2 block mt-1 break-all" x-text="companyProfile?.weburl"></a></div>
+                    </div>
+                </div>
+                <!-- *** 新增的视频 & 论坛模块 *** -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '媒体与讨论' : 'Media & Discussion'"></h3>
+                    <div class="space-y-4">
+                        <a :href="`https://www.youtube.com/results?search_query=${getChineseName(symbol)}`" target="_blank" class="flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg class="social-icon text-red-600" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            <span class="font-medium text-gray-800" x-text="language === 'zh' ? '视频内容' : 'Video Content'"></span>
+                        </a>
+                        <a :href="`https://xueqiu.com/search?q=${getChineseName(symbol)}`" target="_blank" class="flex items-center space-x-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 12l-4 4-4-4"></path><path d="M12 8v8"></path></svg>
+                            <span class="font-medium text-gray-800" x-text="language === 'zh' ? '论坛信息' : 'Forum Discussion'"></span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -78,11 +124,12 @@
             return {
                 language: 'zh',
                 symbol: 'AAPL', loading: true, chartLoading: false, error: null,
-                quote: null, companyProfile: null, candles: null, metrics: null,
+                quote: null, companyProfile: null, candles: null, metrics: null, news: [],
                 selectedPeriod: 'D',
                 timePeriods: [ { value: 'D', zh: '日线', en: 'Day' }, { value: 'W', zh: '周线', en: 'Week' }, { value: 'M', zh: '月线', en: 'Month' } ],
                 chart: null,
-                
+                stockNames: { AAPL: '苹果', TSLA: '特斯拉', MSFT: '微软', GOOGL: '谷歌', AMZN: '亚马逊', NVDA: '英伟达' },
+
                 async init() {
                     const savedLang = localStorage.getItem('stock-lang');
                     if (savedLang) this.language = savedLang;
@@ -92,14 +139,16 @@
                 async loadStock() {
                     this.loading = true; this.error = null;
                     try {
-                        const [quoteData, profileData, metricsData] = await Promise.all([
+                        const [quoteData, profileData, metricsData, newsData] = await Promise.all([
                             fetch(`/api/stock/quote?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
                             fetch(`/api/stock/profile?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/metrics?symbol=${this.symbol}`).then(res => this.handleResponse(res))
+                            fetch(`/api/stock/metrics?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/news?symbol=${this.symbol}`).then(res => this.handleResponse(res))
                         ]);
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
+                        this.news = newsData;
                         await this.loadCandles();
                     } catch (error) { this.error = `[Data Load Error] ${error.message}`; } 
                     finally { this.loading = false; }
@@ -123,7 +172,7 @@
                         const url = `/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
                         this.candles = await fetch(url).then(res => this.handleResponse(res));
                         this.updateChart();
-                    } catch (error) { this.error = `[Chart Load Error] ${error.message}`; } 
+                    } catch (error) { this.error = `[Chart Load Error] ${error.message}`; this.candles = { s: 'error' }; this.updateChart(); } 
                     finally { this.chartLoading = false; }
                 },
 
@@ -138,10 +187,7 @@
                 updateChart() {
                     if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
-                    if (!ctx || !this.candles || !this.quote || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) {
-                        console.warn("Aborting chart creation due to invalid/incomplete data.", { candles: this.candles, quote: this.quote });
-                        return;
-                    }
+                    if (!ctx || !this.candles || !this.quote || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) { return; }
                     
                     const chartCtx = ctx.getContext('2d');
                     if (this.candles.c.length === 0) {
@@ -149,37 +195,29 @@
                         chartCtx.fillText(this.language === 'zh' ? '当前周期无可用数据' : 'No Chart Data Available', ctx.width / 2, ctx.height / 2);
                         return;
                     }
-
                     const isPositive = this.quote.d >= 0;
-                    const color = isPositive ? '#10b981' : '#ef4444'; // 美股：涨绿跌红
+                    const color = isPositive ? '#10b981' : '#ef4444';
                     const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
                     gradient.addColorStop(0, isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)');
                     gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                    
                     this.chart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: this.candles.t,
                             datasets: [{ label: this.symbol, data: this.candles.c, borderColor: color, backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0 }]
                         },
-                        // *** 最终的、釜底抽薪的极简配置 ***
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: { enabled: false } // 彻底禁用 tooltip
-                            },
-                            scales: { 
-                                x: { display: false }, 
-                                y: { position: 'right', ticks: { color: color } } 
-                            },
-                            interaction: { enabled: false },
-                            animation: false
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { enabled: true /* Re-enabled tooltip */ } },
+                            scales: { x: { display: false }, y: { position: 'right', ticks: { color: color } } },
+                            interaction: { intersect: false, mode: 'index' }
                         }
                     });
                 },
                 
+                // *** 新增的工具函数 ***
+                getChineseName(symbol) { return this.stockNames[symbol] || symbol; },
+
                 toggleLanguage() { this.language = this.language === 'zh' ? 'en' : 'zh'; localStorage.setItem('stock-lang', this.language); },
                 formatPrice(p) { return p != null ? '$' + p.toFixed(2) : 'N/A'; },
                 formatChange(c) { return c != null ? (c >= 0 ? '+' : '') + '$' + c.toFixed(2) : 'N/A'; },
@@ -195,6 +233,12 @@
                         if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
                         return '$' + (capInMillions / 1000).toFixed(2) + 'B';
                     }
+                },
+                formatVolume(volume) { return volume ? (volume / 1000000).toFixed(2) + 'M' : 'N/A'; },
+                formatNewsTime(ts) {
+                    const diffHours = (Date.now() - ts * 1000) / 3600000;
+                    if (diffHours < 24) return `${Math.round(diffHours)} ${this.language === 'zh' ? '小时前' : 'h ago'}`;
+                    return `${Math.round(diffHours / 24)} ${this.language === 'zh' ? '天前' : 'd ago'}`;
                 }
             }
         }
