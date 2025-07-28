@@ -532,47 +532,105 @@
                         return;
                     }
                     
-                    // 批量翻译新闻标题和摘要，带超时控制
-                    const translationPromises = this.news.map(async (article, index) => {
-                        try {
-                            // 翻译标题（带3秒超时）
-                            if (article.headline) {
-                                const translatedTitle = await Promise.race([
-                                    this.translateWithAPI(article.headline),
-                                    new Promise((_, reject) => setTimeout(() => reject(new Error('翻译超时')), 3000))
-                                ]);
-                                if (translatedTitle !== article.headline) {
-                                    this.news[index].translatedHeadline = translatedTitle;
-                                }
-                            }
-                            
-                            // 翻译摘要（带3秒超时）
-                            if (article.summary) {
-                                const translatedSummary = await Promise.race([
-                                    this.translateWithAPI(article.summary),
-                                    new Promise((_, reject) => setTimeout(() => reject(new Error('翻译超时')), 3000))
-                                ]);
-                                if (translatedSummary !== article.summary) {
-                                    this.news[index].translatedSummary = translatedSummary;
-                                }
-                            }
-                        } catch (error) {
-                            // 超时或失败时，确保有本地翻译作为备用
-                            if (article.headline && !this.news[index].translatedHeadline) {
-                                this.news[index].translatedHeadline = this.translateTextLocal(article.headline);
-                            }
-                            if (article.summary && !this.news[index].translatedSummary) {
-                                this.news[index].translatedSummary = this.translateTextLocal(article.summary);
-                            }
-                            console.warn(`翻译新闻 ${index} 失败，使用本地翻译:`, error.message);
-                        }
-                    });
+                    console.log(`🔄 开始翻译 ${this.news.length} 条新闻...`);
                     
-                    // 等待所有翻译完成，最多等待10秒
-                    await Promise.race([
-                        Promise.allSettled(translationPromises),
-                        new Promise(resolve => setTimeout(resolve, 10000))
-                    ]);
+                    // 分批翻译，每批5条，避免并发过多导致翻译服务拒绝
+                    const batchSize = 5;
+                    const batches = [];
+                    
+                    for (let i = 0; i < this.news.length; i += batchSize) {
+                        batches.push(this.news.slice(i, i + batchSize));
+                    }
+                    
+                    for (let [batchIndex, batch] of batches.entries()) {
+                        console.log(`🔄 翻译第 ${batchIndex + 1}/${batches.length} 批新闻...`);
+                        
+                        // 批量翻译新闻标题和摘要
+                        const batchPromises = batch.map(async (article, index) => {
+                            const actualIndex = batchIndex * batchSize + index;
+                            
+                            try {
+                                // 翻译标题（增加超时时间到5秒，提高成功率）
+                                if (article.headline) {
+                                    try {
+                                        const translatedTitle = await Promise.race([
+                                            this.translateWithAPI(article.headline),
+                                            new Promise((_, reject) => setTimeout(() => reject(new Error('翻译超时')), 5000))
+                                        ]);
+                                        
+                                        if (translatedTitle && translatedTitle !== article.headline) {
+                                            this.news[actualIndex].translatedHeadline = translatedTitle;
+                                            console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
+                                        } else {
+                                            throw new Error('翻译结果无效');
+                                        }
+                                    } catch (titleError) {
+                                        // 标题翻译失败，使用本地翻译
+                                        const localTitle = this.translateTextLocal(article.headline);
+                                        if (localTitle && localTitle !== article.headline) {
+                                            this.news[actualIndex].translatedHeadline = localTitle;
+                                            console.log(`📚 新闻 ${actualIndex + 1} 标题使用本地翻译`);
+                                        } else {
+                                            // 确保每条新闻都有翻译标题，即使是原文
+                                            this.news[actualIndex].translatedHeadline = article.headline;
+                                            console.log(`⚠️ 新闻 ${actualIndex + 1} 标题翻译失败，使用原文`);
+                                        }
+                                    }
+                                }
+                                
+                                // 翻译摘要（增加超时时间到5秒，提高成功率）
+                                if (article.summary) {
+                                    try {
+                                        const translatedSummary = await Promise.race([
+                                            this.translateWithAPI(article.summary),
+                                            new Promise((_, reject) => setTimeout(() => reject(new Error('翻译超时')), 5000))
+                                        ]);
+                                        
+                                        if (translatedSummary && translatedSummary !== article.summary) {
+                                            this.news[actualIndex].translatedSummary = translatedSummary;
+                                            console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
+                                        } else {
+                                            throw new Error('翻译结果无效');
+                                        }
+                                    } catch (summaryError) {
+                                        // 摘要翻译失败，使用本地翻译
+                                        const localSummary = this.translateTextLocal(article.summary);
+                                        if (localSummary && localSummary !== article.summary) {
+                                            this.news[actualIndex].translatedSummary = localSummary;
+                                            console.log(`📚 新闻 ${actualIndex + 1} 摘要使用本地翻译`);
+                                        } else {
+                                            // 确保每条新闻都有翻译摘要，即使是原文
+                                            this.news[actualIndex].translatedSummary = article.summary;
+                                            console.log(`⚠️ 新闻 ${actualIndex + 1} 摘要翻译失败，使用原文`);
+                                        }
+                                    }
+                                }
+                                
+                            } catch (error) {
+                                console.warn(`❌ 新闻 ${actualIndex + 1} 翻译过程出错:`, error.message);
+                                // 确保有翻译结果，即使是原文
+                                if (article.headline && !this.news[actualIndex].translatedHeadline) {
+                                    this.news[actualIndex].translatedHeadline = article.headline;
+                                }
+                                if (article.summary && !this.news[actualIndex].translatedSummary) {
+                                    this.news[actualIndex].translatedSummary = article.summary;
+                                }
+                            }
+                        });
+                        
+                        // 每批等待完成后再处理下一批，最多等待15秒
+                        await Promise.race([
+                            Promise.allSettled(batchPromises),
+                            new Promise(resolve => setTimeout(resolve, 15000))
+                        ]);
+                        
+                        // 批次之间暂停1秒，避免API限流
+                        if (batchIndex < batches.length - 1) {
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                    
+                    console.log('🎉 新闻翻译完成');
                 },
                 
                 // 翻译缓存
@@ -1288,15 +1346,73 @@
                 },
                 
                 translateTitle(title) {
+                    if (!title) return '';
+                    
                     // 优先使用API翻译结果，回退到本地翻译
                     const article = this.news?.find(n => n.headline === title);
-                    return article?.translatedHeadline || this.translateTextLocal(title);
+                    if (article?.translatedHeadline) {
+                        return article.translatedHeadline;
+                    }
+                    
+                    // 如果没有找到匹配的新闻或没有翻译结果，使用本地翻译
+                    const localTranslation = this.translateTextLocal(title);
+                    if (localTranslation && localTranslation !== title) {
+                        return localTranslation;
+                    }
+                    
+                    // 如果本地翻译也失败，尝试使用API直接翻译
+                    try {
+                        // 异步翻译，但同步返回，确保UI不会闪烁
+                        this.translateWithAPI(title).then(translatedTitle => {
+                            if (translatedTitle && translatedTitle !== title) {
+                                // 找到对应的新闻并更新其翻译标题
+                                const index = this.news?.findIndex(n => n.headline === title);
+                                if (index !== -1 && index !== undefined) {
+                                    this.news[index].translatedHeadline = translatedTitle;
+                                    // 触发视图更新
+                                    this.$forceUpdate();
+                                }
+                            }
+                        }).catch(() => {});
+                    } catch (e) {}
+                    
+                    // 立即返回最佳可用结果
+                    return localTranslation || title;
                 },
                 
                 translateSummary(summary) {
+                    if (!summary) return '';
+                    
                     // 优先使用API翻译结果，回退到本地翻译
                     const article = this.news?.find(n => n.summary === summary);
-                    return article?.translatedSummary || this.translateTextLocal(summary);
+                    if (article?.translatedSummary) {
+                        return article.translatedSummary;
+                    }
+                    
+                    // 如果没有找到匹配的新闻或没有翻译结果，使用本地翻译
+                    const localTranslation = this.translateTextLocal(summary);
+                    if (localTranslation && localTranslation !== summary) {
+                        return localTranslation;
+                    }
+                    
+                    // 如果本地翻译也失败，尝试使用API直接翻译
+                    try {
+                        // 异步翻译，但同步返回，确保UI不会闪烁
+                        this.translateWithAPI(summary).then(translatedSummary => {
+                            if (translatedSummary && translatedSummary !== summary) {
+                                // 找到对应的新闻并更新其翻译摘要
+                                const index = this.news?.findIndex(n => n.summary === summary);
+                                if (index !== -1 && index !== undefined) {
+                                    this.news[index].translatedSummary = translatedSummary;
+                                    // 触发视图更新
+                                    this.$forceUpdate();
+                                }
+                            }
+                        }).catch(() => {});
+                    } catch (e) {}
+                    
+                    // 立即返回最佳可用结果
+                    return localTranslation || summary;
                 },
                 
                 formatNewsDate(timestamp) {
