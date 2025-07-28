@@ -8,11 +8,7 @@
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .price-up-us { color: #10b981; } /* 美股涨：绿 */
-        .price-down-us { color: #ef4444; } /* 美股跌：红 */
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-        [x-cloak] { display: none !important; }
+        .price-up-us { color: #10b981; } .price-down-us { color: #ef4444; } .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); } .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
@@ -22,10 +18,7 @@
             <div class="flex justify-between items-center h-16">
                 <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
                 <div class="flex items-center space-x-4">
-                    <select 
-                        x-model="symbol" 
-                        @change.debounce.500ms="loadStock()" 
-                        class="px-3 py-1 text-sm border border-gray-300 rounded-md">
+                    <select x-model="symbol" @change.debounce.500ms="loadStock()" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
                         <option value="AAPL">AAPL - 苹果</option><option value="TSLA">TSLA - 特斯拉</option><option value="MSFT">MSFT - 微软</option><option value="GOOGL">GOOGL - 谷歌</option><option value="AMZN">AMZN - 亚马逊</option><option value="NVDA">NVDA - 英伟达</option>
                     </select>
                     <button @click="toggleLanguage()" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200" x-text="language === 'zh' ? 'EN' : '中文'"></button>
@@ -145,7 +138,10 @@
                 updateChart() {
                     if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('stockChart');
-                    if (!ctx || !this.candles || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) { return; }
+                    if (!ctx || !this.candles || !this.quote || (this.candles.s !== 'ok' && this.candles.s !== 'no_data') || !Array.isArray(this.candles.c)) {
+                        console.warn("Aborting chart creation due to invalid/incomplete data.", { candles: this.candles, quote: this.quote });
+                        return;
+                    }
                     
                     const chartCtx = ctx.getContext('2d');
                     if (this.candles.c.length === 0) {
@@ -154,7 +150,7 @@
                         return;
                     }
 
-                    const isPositive = this.quote?.d >= 0;
+                    const isPositive = this.quote.d >= 0;
                     const color = isPositive ? '#10b981' : '#ef4444'; // 美股：涨绿跌红
                     const gradient = chartCtx.createLinearGradient(0, 0, 0, 400);
                     gradient.addColorStop(0, isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)');
@@ -163,36 +159,23 @@
                     this.chart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: this.candles.t || [],
-                            datasets: [{
-                                label: this.symbol, data: this.candles.c || [],
-                                borderColor: color, backgroundColor: gradient, borderWidth: 2,
-                                fill: true, tension: 0.1, pointRadius: 0
-                            }]
+                            labels: this.candles.t,
+                            datasets: [{ label: this.symbol, data: this.candles.c, borderColor: color, backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0 }]
                         },
+                        // *** 最终的、釜底抽薪的极简配置 ***
                         options: {
-                            responsive: true, maintainAspectRatio: false,
+                            responsive: true,
+                            maintainAspectRatio: false,
                             plugins: {
                                 legend: { display: false },
-                                tooltip: {
-                                    callbacks: {
-                                        title: (context) => {
-                                            if (!context || context.length === 0) return '';
-                                            const timestamp = context[0].label || '';
-                                            return new Date(timestamp * 1000).toLocaleDateString();
-                                        },
-                                        label: (context) => {
-                                            if (!context || !context.dataset) return '';
-                                            return `${context.dataset.label || ''}: ${this.formatPrice(context.parsed.y)}`;
-                                        }
-                                    }
-                                }
+                                tooltip: { enabled: false } // 彻底禁用 tooltip
                             },
                             scales: { 
                                 x: { display: false }, 
                                 y: { position: 'right', ticks: { color: color } } 
                             },
-                            interaction: { intersect: false, mode: 'index' }
+                            interaction: { enabled: false },
+                            animation: false
                         }
                     });
                 },
@@ -212,12 +195,6 @@
                         if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
                         return '$' + (capInMillions / 1000).toFixed(2) + 'B';
                     }
-                },
-                formatVolume(volume) { return volume ? (volume / 1000000).toFixed(2) + 'M' : 'N/A'; },
-                formatNewsTime(ts) {
-                    const diffHours = (Date.now() - ts * 1000) / 3600000;
-                    if (diffHours < 24) return `${Math.round(diffHours)} ${this.language === 'zh' ? '小时前' : 'h ago'}`;
-                    return `${Math.round(diffHours / 24)} ${this.language === 'zh' ? '天前' : 'd ago'}`;
                 }
             }
         }
