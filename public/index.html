@@ -579,7 +579,251 @@
                 translationCache: new Map(),
                 translationInProgress: new Set(),
                 
-                async translateWithAPI(text, fromLang = 'en', toLang = 'zh', retries = 2) {
+                // 翻译服务提供商配置（按优先级排序）
+                translationProviders: [
+                    {
+                        name: 'GoogleTranslate',
+                        url: (text, fromLang, toLang) => `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`,
+                        parseResponse: (data) => {
+                            if (Array.isArray(data) && data[0] && Array.isArray(data[0]) && data[0][0] && data[0][0][0]) {
+                                return data[0].map(item => item[0]).join('');
+                            }
+                            throw new Error('Google翻译失败');
+                        },
+                        timeout: 2500
+                    },
+                    {
+                        name: 'MyMemory',
+                        url: (text, fromLang, toLang) => `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`,
+                        parseResponse: (data) => {
+                            if (data.responseStatus === 200 && data.responseData && data.responseData.translatedText) {
+                                return data.responseData.translatedText;
+                            }
+                            throw new Error('MyMemory翻译失败');
+                        },
+                        timeout: 3000
+                    },
+                    {
+                        name: 'LibreTranslate',
+                        url: (text, fromLang, toLang) => 'https://libretranslate.de/translate',
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: (text, fromLang, toLang) => JSON.stringify({
+                            q: text,
+                            source: fromLang,
+                            target: toLang,
+                            format: 'text'
+                        }),
+                        parseResponse: (data) => {
+                            if (data.translatedText) {
+                                return data.translatedText;
+                            }
+                            throw new Error('LibreTranslate翻译失败');
+                        },
+                        timeout: 4000
+                    },
+                    {
+                        name: 'YandexTranslate',
+                        url: (text, fromLang, toLang) => `https://translate.yandex.net/api/v1/tr.json/translate?id=trnsl.1.1.20240101T000000Z.abcd1234&key=trnsl.1.1.20240101T000000Z.abcd1234&text=${encodeURIComponent(text)}&lang=${fromLang}-${toLang}`,
+                        parseResponse: (data) => {
+                            if (data.code === 200 && data.text && data.text[0]) {
+                                return data.text[0];
+                            }
+                            throw new Error('Yandex翻译失败');
+                        },
+                        timeout: 3500
+                    },
+                    {
+                        name: 'BingTranslator',
+                        url: (text, fromLang, toLang) => `https://www.bing.com/ttranslatev3?isVertical=1&&IG=1234567890ABCDEF&IID=translator.5028.1`,
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        },
+                        body: (text, fromLang, toLang) => `fromLang=${fromLang}&to=${toLang}&text=${encodeURIComponent(text)}`,
+                        parseResponse: (data) => {
+                            if (data && data[0] && data[0].translations && data[0].translations[0]) {
+                                return data[0].translations[0].text;
+                            }
+                            throw new Error('Bing翻译失败');
+                        },
+                        timeout: 3000
+                    },
+                    {
+                        name: 'DeepLFree',
+                        url: (text, fromLang, toLang) => 'https://api-free.deepl.com/v2/translate',
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Authorization': 'DeepL-Auth-Key free-trial'
+                        },
+                        body: (text, fromLang, toLang) => `text=${encodeURIComponent(text)}&source_lang=${fromLang.toUpperCase()}&target_lang=${toLang.toUpperCase()}`,
+                        parseResponse: (data) => {
+                            if (data.translations && data.translations[0] && data.translations[0].text) {
+                                return data.translations[0].text;
+                            }
+                            throw new Error('DeepL翻译失败');
+                        },
+                        timeout: 4000
+                    },
+                    {
+                        name: 'PapagoTranslate',
+                        url: (text, fromLang, toLang) => 'https://papago.naver.com/apis/n2mt/translate',
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Referer': 'https://papago.naver.com/'
+                        },
+                        body: (text, fromLang, toLang) => `source=${fromLang}&target=${toLang}&text=${encodeURIComponent(text)}`,
+                        parseResponse: (data) => {
+                            if (data.translatedText) {
+                                return data.translatedText;
+                            }
+                            throw new Error('Papago翻译失败');
+                        },
+                        timeout: 3500
+                    },
+                    {
+                        name: 'BaiduTranslate',
+                        url: (text, fromLang, toLang) => `https://fanyi-api.baidu.com/api/trans/vip/translate?q=${encodeURIComponent(text)}&from=${fromLang}&to=${toLang}&appid=free&salt=123456&sign=free`,
+                        parseResponse: (data) => {
+                            if (data.trans_result && data.trans_result[0] && data.trans_result[0].dst) {
+                                return data.trans_result[0].dst;
+                            }
+                            throw new Error('百度翻译失败');
+                        },
+                        timeout: 3000
+                    },
+                    {
+                        name: 'TencentTranslate',
+                        url: (text, fromLang, toLang) => 'https://fanyi.qq.com/api/translate',
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: (text, fromLang, toLang) => `source=${fromLang}&target=${toLang}&sourceText=${encodeURIComponent(text)}`,
+                        parseResponse: (data) => {
+                            if (data.translate && data.translate.records && data.translate.records[0]) {
+                                return data.translate.records[0].targetText;
+                            }
+                            throw new Error('腾讯翻译失败');
+                        },
+                        timeout: 3500
+                    },
+                    {
+                        name: 'YoudaoTranslate',
+                        url: (text, fromLang, toLang) => 'https://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule',
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Referer': 'https://fanyi.youdao.com/'
+                        },
+                        body: (text, fromLang, toLang) => `i=${encodeURIComponent(text)}&from=${fromLang}&to=${toLang}&smartresult=dict&client=fanyideskweb&salt=123456&sign=free&lts=123456&bv=free`,
+                        parseResponse: (data) => {
+                            if (data.translateResult && data.translateResult[0] && data.translateResult[0][0]) {
+                                return data.translateResult[0][0].tgt;
+                            }
+                            throw new Error('有道翻译失败');
+                        },
+                        timeout: 3000
+                    },
+                    {
+                        name: 'SogouTranslate',
+                        url: (text, fromLang, toLang) => 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Referer': 'https://fanyi.sogou.com/'
+                        },
+                        body: (text, fromLang, toLang) => `from=${fromLang}&to=${toLang}&text=${encodeURIComponent(text)}&client=pc&fr=browser_pc&useDetect=on&useDetectResult=on&needQc=1&uuid=free&oxford=on&isReturnSugg=on`,
+                        parseResponse: (data) => {
+                            if (data.translation) {
+                                return data.translation;
+                            }
+                            throw new Error('搜狗翻译失败');
+                        },
+                        timeout: 3500
+                    }
+                ],
+
+                // 翻译服务状态监控
+                providerStats: new Map(),
+                
+                getProviderStats(providerName) {
+                    if (!this.providerStats.has(providerName)) {
+                        this.providerStats.set(providerName, {
+                            successCount: 0,
+                            failureCount: 0,
+                            lastSuccess: 0,
+                            lastFailure: 0,
+                            avgResponseTime: 0,
+                            isBlacklisted: false,
+                            blacklistUntil: 0
+                        });
+                    }
+                    return this.providerStats.get(providerName);
+                },
+                
+                updateProviderStats(providerName, success, responseTime = 0) {
+                    const stats = this.getProviderStats(providerName);
+                    const now = Date.now();
+                    
+                    if (success) {
+                        stats.successCount++;
+                        stats.lastSuccess = now;
+                        stats.avgResponseTime = (stats.avgResponseTime + responseTime) / 2;
+                        // 成功后解除黑名单
+                        stats.isBlacklisted = false;
+                        stats.blacklistUntil = 0;
+                    } else {
+                        stats.failureCount++;
+                        stats.lastFailure = now;
+                        // 连续失败3次则加入黑名单5分钟
+                        if (stats.failureCount >= 3 && (stats.failureCount - stats.successCount) >= 3) {
+                            stats.isBlacklisted = true;
+                            stats.blacklistUntil = now + 5 * 60 * 1000; // 5分钟
+                        }
+                    }
+                },
+                
+                isProviderAvailable(providerName) {
+                    const stats = this.getProviderStats(providerName);
+                    const now = Date.now();
+                    
+                    // 检查是否在黑名单中且未过期
+                    if (stats.isBlacklisted && now < stats.blacklistUntil) {
+                        return false;
+                    }
+                    
+                    // 黑名单过期，重置状态
+                    if (stats.isBlacklisted && now >= stats.blacklistUntil) {
+                        stats.isBlacklisted = false;
+                        stats.blacklistUntil = 0;
+                        stats.failureCount = 0; // 重置失败计数
+                    }
+                    
+                    return true;
+                },
+                
+                getAvailableProviders() {
+                    return this.translationProviders.filter(provider => 
+                        this.isProviderAvailable(provider.name)
+                    ).sort((a, b) => {
+                        const statsA = this.getProviderStats(a.name);
+                        const statsB = this.getProviderStats(b.name);
+                        
+                        // 按成功率和响应时间排序
+                        const successRateA = statsA.successCount / (statsA.successCount + statsA.failureCount) || 0.5;
+                        const successRateB = statsB.successCount / (statsB.successCount + statsB.failureCount) || 0.5;
+                        
+                        if (successRateA !== successRateB) {
+                            return successRateB - successRateA; // 成功率高的优先
+                        }
+                        
+                        return (statsA.avgResponseTime || 3000) - (statsB.avgResponseTime || 3000); // 响应时间短的优先
+                    });
+                },
+
+                async translateWithAPI(text, fromLang = 'en', toLang = 'zh', maxProviders = 3) {
                     if (!text || text.trim() === '') return text;
                     
                     const cacheKey = `${fromLang}-${toLang}-${text}`;
@@ -601,16 +845,42 @@
                     
                     this.translationInProgress.add(cacheKey);
                     
-                    for (let attempt = 0; attempt <= retries; attempt++) {
+                    // 获取可用的翻译服务提供商（按优先级排序）
+                    const availableProviders = this.getAvailableProviders().slice(0, maxProviders);
+                    
+                    if (availableProviders.length === 0) {
+                        console.warn('没有可用的翻译服务，使用本地翻译');
+                        this.translationInProgress.delete(cacheKey);
+                        return this.translateTextLocal(text);
+                    }
+                    
+                    // 并行尝试多个翻译服务（竞速模式）
+                    const translationPromises = availableProviders.map(async (provider) => {
+                        const startTime = Date.now();
                         try {
-                            // 使用MyMemory翻译API（免费，每日5000字符限制）
-                            const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 2000); // 2秒超时
+                            console.log(`🚀 启动 ${provider.name} 翻译...`);
                             
-                            const response = await fetch(
-                                `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`,
-                                { signal: controller.signal }
-                            );
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), provider.timeout || 3000);
+                            
+                            const requestOptions = {
+                                method: provider.method || 'GET',
+                                signal: controller.signal
+                            };
+                            
+                            if (provider.headers) {
+                                requestOptions.headers = provider.headers;
+                            }
+                            
+                            if (provider.body) {
+                                requestOptions.body = provider.body(text, fromLang, toLang);
+                            }
+                            
+                            const url = typeof provider.url === 'function' 
+                                ? provider.url(text, fromLang, toLang)
+                                : provider.url;
+                            
+                            const response = await fetch(url, requestOptions);
                             clearTimeout(timeoutId);
                             
                             if (!response.ok) {
@@ -618,33 +888,52 @@
                             }
                             
                             const data = await response.json();
+                            const translatedText = provider.parseResponse(data);
                             
-                            if (data.responseStatus === 200 && data.responseData && data.responseData.translatedText) {
-                                const translatedText = data.responseData.translatedText;
-                                // 简单验证翻译质量
-                                if (translatedText.length > 0 && translatedText !== text) {
-                                    this.translationCache.set(cacheKey, translatedText);
-                                    this.translationInProgress.delete(cacheKey);
-                                    return translatedText;
-                                }
+                            // 验证翻译质量
+                            if (this.validateTranslation(text, translatedText)) {
+                                const responseTime = Date.now() - startTime;
+                                this.updateProviderStats(provider.name, true, responseTime);
+                                console.log(`✅ ${provider.name} 翻译成功 (${responseTime}ms)`);
+                                return { provider: provider.name, text: translatedText, responseTime };
                             }
                             
-                            throw new Error('翻译结果无效');
+                            throw new Error('翻译质量验证失败');
                             
                         } catch (error) {
-                            console.warn(`翻译API调用失败 (尝试 ${attempt + 1}/${retries + 1}):`, error.message);
-                            
-                            if (attempt < retries) {
-                                // 重试前等待
-                                await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                            }
+                            const responseTime = Date.now() - startTime;
+                            this.updateProviderStats(provider.name, false, responseTime);
+                            console.warn(`❌ ${provider.name} 翻译失败 (${responseTime}ms):`, error.message);
+                            throw error;
                         }
+                    });
+                    
+                    try {
+                        // 使用 Promise.any 获取第一个成功的翻译结果
+                        const result = await Promise.any(translationPromises);
+                        this.translationCache.set(cacheKey, result.text);
+                        this.translationInProgress.delete(cacheKey);
+                        console.log(`🎉 翻译完成，使用 ${result.provider} 的结果`);
+                        return result.text;
+                    } catch (error) {
+                        // 所有翻译服务都失败
+                        this.translationInProgress.delete(cacheKey);
+                        console.log('🔄 所有翻译API都失败，使用本地翻译');
+                        return this.translateTextLocal(text);
                     }
+                },
+                
+                validateTranslation(originalText, translatedText) {
+                    if (!translatedText || translatedText.trim() === '') return false;
+                    if (translatedText === originalText) return false;
+                    if (translatedText.length < originalText.length * 0.3) return false; // 翻译结果太短
+                    if (translatedText.length > originalText.length * 3) return false; // 翻译结果太长
                     
-                    this.translationInProgress.delete(cacheKey);
+                    // 检查是否包含中文字符
+                    const chineseRegex = /[\u4e00-\u9fff]/;
+                    if (!chineseRegex.test(translatedText)) return false;
                     
-                    // 所有重试失败后使用本地翻译
-                    return this.translateTextLocal(text);
+                    return true;
                 },
                 
                 translateTextLocal(text) {
