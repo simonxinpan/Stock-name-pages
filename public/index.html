@@ -172,7 +172,13 @@
         <div class="bg-white rounded-lg card-shadow p-6 mt-6">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
-                <button @click="loadNews()" class="text-blue-600 hover:text-blue-800 text-sm font-medium" x-text="language === 'zh' ? '刷新' : 'Refresh'"></button>
+                <div class="flex items-center space-x-4">
+                    <div x-show="language === 'zh' && news && news.length > 0 && translationInProgress.size > 0" class="flex items-center text-sm text-blue-600">
+                        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                        <span>AI翻译中...</span>
+                    </div>
+                    <button @click="loadNews()" class="text-blue-600 hover:text-blue-800 text-sm font-medium" x-text="language === 'zh' ? '刷新' : 'Refresh'"></button>
+                </div>
             </div>
             
             <div x-show="newsLoading" class="animate-pulse">
@@ -193,10 +199,10 @@
                         <div class="flex items-start space-x-4">
                             <img x-show="article.image" :src="article.image" :alt="article.headline" class="w-20 h-20 object-cover rounded-lg flex-shrink-0" onerror="this.style.display='none'">
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
-                                    <a :href="article.url" target="_blank" class="hover:text-blue-600" x-text="translateTitle(article.headline)"></a>
+                                <h3 class="text-lg font-semibold mb-2 line-clamp-2">
+                                    <a :href="article.url" target="_blank" class="hover:text-blue-600" x-text="article.translatedHeadline || translateTitle(article.headline)"></a>
                                 </h3>
-                                <p class="text-sm text-gray-600 mb-2 line-clamp-2" x-text="translateSummary(article.summary)"></p>
+                                <p class="text-sm text-gray-600 mb-2 line-clamp-2" x-text="article.translatedSummary || translateSummary(article.summary)"></p>
                                 <div class="flex items-center space-x-4 text-xs text-gray-500">
                                     <span x-text="article.source"></span>
                                     <span x-text="formatNewsDate(article.datetime)"></span>
@@ -485,6 +491,7 @@
                     // 检查缓存
                     if (this.newsCache && (now - this.newsCache.timestamp) < this.newsCacheExpiry) {
                         this.news = this.newsCache.data;
+                        await this.translateNewsContent();
                         return;
                     }
                     
@@ -509,6 +516,9 @@
                             data: newsData,
                             timestamp: now
                         };
+                        
+                        // 异步翻译新闻内容
+                        await this.translateNewsContent();
                     } catch (error) {
                         console.error('新闻加载失败:', error);
                         this.news = [];
@@ -517,7 +527,81 @@
                     }
                 },
                 
-                translateText(text) {
+                async translateNewsContent() {
+                    if (this.language !== 'zh' || !this.news || this.news.length === 0) {
+                        return;
+                    }
+                    
+                    // 批量翻译新闻标题和摘要
+                    const translationPromises = this.news.map(async (article, index) => {
+                        try {
+                            // 翻译标题
+                            if (article.headline) {
+                                const translatedTitle = await this.translateWithAPI(article.headline);
+                                if (translatedTitle !== article.headline) {
+                                    this.news[index].translatedHeadline = translatedTitle;
+                                }
+                            }
+                            
+                            // 翻译摘要
+                            if (article.summary) {
+                                const translatedSummary = await this.translateWithAPI(article.summary);
+                                if (translatedSummary !== article.summary) {
+                                    this.news[index].translatedSummary = translatedSummary;
+                                }
+                            }
+                        } catch (error) {
+                            console.warn(`翻译新闻 ${index} 失败:`, error);
+                        }
+                    });
+                    
+                    // 等待所有翻译完成
+                    await Promise.allSettled(translationPromises);
+                },
+                
+                // 翻译缓存
+                translationCache: new Map(),
+                translationInProgress: new Set(),
+                
+                async translateWithAPI(text, fromLang = 'en', toLang = 'zh') {
+                    if (!text || text.trim() === '') return text;
+                    
+                    const cacheKey = `${fromLang}-${toLang}-${text}`;
+                    
+                    // 检查缓存
+                    if (this.translationCache.has(cacheKey)) {
+                        return this.translationCache.get(cacheKey);
+                    }
+                    
+                    // 避免重复请求
+                    if (this.translationInProgress.has(cacheKey)) {
+                        return text; // 返回原文本，避免阻塞
+                    }
+                    
+                    this.translationInProgress.add(cacheKey);
+                    
+                    try {
+                        // 使用MyMemory翻译API（免费，每日5000字符限制）
+                        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`);
+                        const data = await response.json();
+                        
+                        if (data.responseStatus === 200 && data.responseData) {
+                            const translatedText = data.responseData.translatedText;
+                            this.translationCache.set(cacheKey, translatedText);
+                            this.translationInProgress.delete(cacheKey);
+                            return translatedText;
+                        }
+                    } catch (error) {
+                        console.warn('翻译API调用失败，使用本地翻译:', error);
+                    }
+                    
+                    this.translationInProgress.delete(cacheKey);
+                    
+                    // API失败时使用本地翻译作为后备
+                    return this.translateTextLocal(text);
+                },
+                
+                translateTextLocal(text) {
                     if (this.language === 'zh' && text) {
                         // 扩展的英文到中文翻译映射
                         const translations = {
@@ -663,12 +747,24 @@
                     return text;
                 },
                 
+                translateText(text) {
+                    // 优先使用API翻译，失败时使用本地翻译
+                    if (this.language === 'zh' && text) {
+                        return this.translateWithAPI(text);
+                    }
+                    return text;
+                },
+                
                 translateTitle(title) {
-                    return this.translateText(title);
+                    // 优先使用已翻译的标题
+                    const article = this.news?.find(n => n.headline === title);
+                    return article?.translatedHeadline || this.translateText(title);
                 },
                 
                 translateSummary(summary) {
-                    return this.translateText(summary);
+                    // 优先使用已翻译的摘要
+                    const article = this.news?.find(n => n.summary === summary);
+                    return article?.translatedSummary || this.translateText(summary);
                 },
                 
                 formatNewsDate(timestamp) {
