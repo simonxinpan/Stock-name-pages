@@ -135,27 +135,34 @@
                             </div>
                         </div>
                         
-                        <!-- 视频内容 -->
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '相关视频' : 'Related Videos'"></h3>
-                            <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                </svg>
-                                <span x-text="language === 'zh' ? '观看相关视频' : 'Watch Related Videos'"></span>
-                            </button>
-                        </div>
-                        
-                        <!-- 社区内容 -->
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '社区讨论' : 'Community Discussion'"></h3>
-                            <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                                </svg>
-                                <span x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Community'"></span>
-                            </button>
-                        </div>
+
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 相关视频和社区讨论 - 横排布局 -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 视频内容 -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '相关视频' : 'Related Videos'"></h3>
+                        <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                            <span x-text="language === 'zh' ? '观看相关视频' : 'Watch Related Videos'"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- 社区内容 -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '社区讨论' : 'Community Discussion'"></h3>
+                        <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <span x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Community'"></span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -189,7 +196,7 @@
                                 <h3 class="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
                                     <a :href="article.url" target="_blank" class="hover:text-blue-600" x-text="translateTitle(article.headline)"></a>
                                 </h3>
-                                <p class="text-sm text-gray-600 mb-2 line-clamp-2" x-text="article.summary"></p>
+                                <p class="text-sm text-gray-600 mb-2 line-clamp-2" x-text="translateSummary(article.summary)"></p>
                                 <div class="flex items-center space-x-4 text-xs text-gray-500">
                                     <span x-text="article.source"></span>
                                     <span x-text="formatNewsDate(article.datetime)"></span>
@@ -510,55 +517,158 @@
                     }
                 },
                 
-                translateTitle(title) {
-                    if (this.language === 'zh') {
-                        // 基本的英文到中文翻译映射
+                translateText(text) {
+                    if (this.language === 'zh' && text) {
+                        // 扩展的英文到中文翻译映射
                         const translations = {
+                            // 公司名称
                             'Apple': '苹果',
                             'Tesla': '特斯拉',
                             'Microsoft': '微软',
                             'Google': '谷歌',
+                            'Alphabet': '谷歌母公司',
                             'Amazon': '亚马逊',
                             'NVIDIA': '英伟达',
+                            'Meta': 'Meta',
+                            'Netflix': '奈飞',
+                            'Intel': '英特尔',
+                            'AMD': 'AMD',
+                            'Salesforce': 'Salesforce',
+                            'Oracle': '甲骨文',
+                            'IBM': 'IBM',
+                            'Cisco': '思科',
+                            
+                            // 金融术语
                             'stock': '股票',
+                            'stocks': '股票',
                             'shares': '股份',
+                            'share': '股份',
                             'earnings': '财报',
                             'revenue': '营收',
+                            'revenues': '营收',
                             'profit': '利润',
+                            'profits': '利润',
+                            'loss': '亏损',
+                            'losses': '亏损',
                             'quarterly': '季度',
                             'annual': '年度',
                             'report': '报告',
+                            'reports': '报告',
+                            'financial': '财务',
+                            'results': '业绩',
+                            'performance': '表现',
+                            
+                            // 市场动作
                             'announces': '宣布',
+                            'announced': '宣布了',
                             'beats': '超越',
+                            'beat': '超越了',
                             'misses': '不及',
+                            'missed': '不及',
                             'expectations': '预期',
+                            'expected': '预期',
+                            'forecast': '预测',
+                            'guidance': '指引',
+                            
+                            // 价格变动
                             'rises': '上涨',
+                            'rose': '上涨了',
+                            'rising': '上涨',
                             'falls': '下跌',
+                            'fell': '下跌了',
+                            'falling': '下跌',
                             'gains': '上涨',
+                            'gained': '上涨了',
                             'drops': '下跌',
+                            'dropped': '下跌了',
                             'surges': '飙升',
+                            'surged': '飙升了',
                             'plunges': '暴跌',
+                            'plunged': '暴跌了',
+                            'climbs': '攀升',
+                            'climbed': '攀升了',
+                            'slides': '下滑',
+                            'slid': '下滑了',
+                            
+                            // 市场相关
                             'market': '市场',
+                            'markets': '市场',
                             'trading': '交易',
+                            'trade': '交易',
                             'investors': '投资者',
+                            'investor': '投资者',
                             'analyst': '分析师',
+                            'analysts': '分析师',
                             'upgrade': '上调',
+                            'upgraded': '上调了',
                             'downgrade': '下调',
+                            'downgraded': '下调了',
                             'target': '目标',
-                            'price': '价格'
+                            'price': '价格',
+                            'prices': '价格',
+                            'valuation': '估值',
+                            'value': '价值',
+                            
+                            // 业务相关
+                            'sales': '销售',
+                            'growth': '增长',
+                            'decline': '下降',
+                            'increase': '增加',
+                            'decrease': '减少',
+                            'expansion': '扩张',
+                            'acquisition': '收购',
+                            'merger': '合并',
+                            'partnership': '合作',
+                            'investment': '投资',
+                            'funding': '融资',
+                            
+                            // 时间相关
+                            'quarter': '季度',
+                            'Q1': '第一季度',
+                            'Q2': '第二季度',
+                            'Q3': '第三季度',
+                            'Q4': '第四季度',
+                            'year': '年',
+                            'month': '月',
+                            'week': '周',
+                            'today': '今天',
+                            'yesterday': '昨天',
+                            'tomorrow': '明天',
+                            
+                            // 其他常用词
+                            'company': '公司',
+                            'business': '业务',
+                            'industry': '行业',
+                            'sector': '板块',
+                            'technology': '技术',
+                            'innovation': '创新',
+                            'product': '产品',
+                            'service': '服务',
+                            'customer': '客户',
+                            'user': '用户'
                         };
                         
-                        let translatedTitle = title;
+                        let translatedText = text;
                         
-                        // 替换公司名称
-                        Object.keys(translations).forEach(english => {
-                            const regex = new RegExp(english, 'gi');
-                            translatedTitle = translatedTitle.replace(regex, translations[english]);
+                        // 按词长度排序，优先替换长词
+                        const sortedKeys = Object.keys(translations).sort((a, b) => b.length - a.length);
+                        
+                        sortedKeys.forEach(english => {
+                            const regex = new RegExp(`\\b${english}\\b`, 'gi');
+                            translatedText = translatedText.replace(regex, translations[english]);
                         });
                         
-                        return translatedTitle;
+                        return translatedText;
                     }
-                    return title;
+                    return text;
+                },
+                
+                translateTitle(title) {
+                    return this.translateText(title);
+                },
+                
+                translateSummary(summary) {
+                    return this.translateText(summary);
                 },
                 
                 formatNewsDate(timestamp) {
