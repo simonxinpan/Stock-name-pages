@@ -160,12 +160,32 @@
                     this.chart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: this.candles.t.map(ts => new Date(ts * 1000).toLocaleDateString()),
-                            datasets: [{ label: this.symbol, data: this.candles.c, borderColor: color, backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0 }]
+                            labels: this.candles.t || [],
+                            datasets: [{
+                                label: this.symbol, data: this.candles.c || [],
+                                borderColor: color, backgroundColor: gradient, borderWidth: 2,
+                                fill: true, tension: 0.1, pointRadius: 0
+                            }]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        title: (context) => {
+                                            if (!context || context.length === 0) return '';
+                                            const timestamp = context[0].label || '';
+                                            return new Date(timestamp * 1000).toLocaleDateString();
+                                        },
+                                        label: (context) => {
+                                            if (!context || !context.dataset) return '';
+                                            const price = context.parsed.y;
+                                            return `${context.dataset.label || ''}: ${this.formatPrice(price)}`;
+                                        }
+                                    }
+                                }
+                            },
                             scales: { 
                                 x: { display: false }, 
                                 y: { position: 'right', ticks: { color: color } } 
@@ -181,8 +201,6 @@
                 formatPercent(p) { return p != null ? `(${(p >= 0 ? '+' : '')}${p.toFixed(2)}%)` : ''; },
                 formatRatio(v) { return v ? v.toFixed(2) : 'N/A'; },
                 formatYield(v) { return v ? v.toFixed(2) + '%' : 'N/A'; },
-                
-                // *** 重新加入 formatMarketCap 函数 ***
                 formatMarketCap(capInMillions) {
                     if (!capInMillions) return 'N/A';
                     if (this.language === 'zh') {
