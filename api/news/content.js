@@ -3,6 +3,10 @@
 
 import { JSDOM } from 'jsdom';
 
+// 翻译API调用频率控制
+let lastTranslationCall = 0;
+const TRANSLATION_DELAY = 2000; // 2秒间隔
+
 export default async function handler(req, res) {
   const { url, lang } = req.query;
   
@@ -33,6 +37,14 @@ export default async function handler(req, res) {
     // 如果需要中文翻译
     if (lang === 'zh' && articleData.content) {
       try {
+        // 控制翻译API调用频率
+        const now = Date.now();
+        if (now - lastTranslationCall < TRANSLATION_DELAY) {
+          const waitTime = TRANSLATION_DELAY - (now - lastTranslationCall);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        lastTranslationCall = Date.now();
+        
         const translatedContent = await translateToChineseWithVolcano(articleData.content);
         const translatedTitle = await translateToChineseWithVolcano(articleData.title);
         

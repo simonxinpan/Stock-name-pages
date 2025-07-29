@@ -277,6 +277,8 @@
                 isModalOpen: false,
                 articleLoading: false,
                 currentArticle: { title: '', content: '' },
+                lastCandleRequest: 0, // 记录上次K线请求时间
+                candleRequestDelay: 15000, // 15秒间隔
                 
                 // 时间周期选项
                 periods: [
@@ -337,6 +339,14 @@
                 // 加载K线数据
                 async loadCandles() {
                     try {
+                        // 检查请求频率限制
+                        const now = Date.now();
+                        if (now - this.lastCandleRequest < this.candleRequestDelay) {
+                            console.log('K线请求过于频繁，跳过此次请求');
+                            return;
+                        }
+                        this.lastCandleRequest = now;
+                        
                         const to = Math.floor(Date.now() / 1000);
                         const from = to - (30 * 24 * 60 * 60); // 30天前
                         
@@ -376,6 +386,8 @@
                 // 切换时间周期
                 async changePeriod(period) {
                     this.selectedPeriod = period;
+                    // 重置请求时间限制，允许立即切换周期
+                    this.lastCandleRequest = 0;
                     await this.loadCandles();
                 },
 
@@ -395,13 +407,27 @@
                     
                     // 销毁现有图表
                     if (this.chart) {
-                        this.chart.destroy();
+                        try {
+                            this.chart.destroy();
+                        } catch (e) {
+                            console.warn('Error destroying chart:', e);
+                        }
                         this.chart = null;
                     }
                     
                     try {
                         if (!this.candles || !this.candles.c || this.candles.c.length === 0) {
                             console.warn('No candle data available for chart');
+                            // 显示无数据信息
+                            canvas.clearRect(0, 0, ctx.width, ctx.height);
+                            canvas.fillStyle = '#666';
+                            canvas.font = '16px Arial';
+                            canvas.textAlign = 'center';
+                            canvas.fillText(
+                                this.language === 'zh' ? '暂无图表数据' : 'No chart data available',
+                                ctx.width / 2,
+                                ctx.height / 2
+                            );
                             return;
                         }
                         
@@ -461,23 +487,25 @@
                                         borderWidth: 1,
                                         callbacks: {
                                             title: function(context) {
+                                                if (!context || !context[0]) return '';
                                                 return context[0].label;
                                             },
                                             label: function(context) {
+                                                if (!context || !context.chart) return '';
                                                 const index = context.dataIndex;
-                                                const candles = context.chart.data.datasets[0].data;
-                                                const open = context.chart.config._config.data.opens?.[index];
-                                                const high = context.chart.config._config.data.highs?.[index];
-                                                const low = context.chart.config._config.data.lows?.[index];
+                                                const chart = context.chart;
+                                                const opens = chart.config._config?.data?.opens;
+                                                const highs = chart.config._config?.data?.highs;
+                                                const lows = chart.config._config?.data?.lows;
+                                                const volumes = chart.config._config?.data?.volumes;
                                                 const close = context.parsed.y;
-                                                const volume = context.chart.config._config.data.volumes?.[index];
                                                 
                                                 const labels = [];
-                                                if (open !== undefined) labels.push(`开盘: $${open.toFixed(2)}`);
-                                                if (high !== undefined) labels.push(`最高: $${high.toFixed(2)}`);
-                                                if (low !== undefined) labels.push(`最低: $${low.toFixed(2)}`);
-                                                labels.push(`收盘: $${close.toFixed(2)}`);
-                                                if (volume !== undefined) labels.push(`成交量: ${(volume / 1000000).toFixed(2)}M`);
+                                                if (opens && opens[index] !== undefined) labels.push(`开盘: $${opens[index].toFixed(2)}`);
+                                                if (highs && highs[index] !== undefined) labels.push(`最高: $${highs[index].toFixed(2)}`);
+                                                if (lows && lows[index] !== undefined) labels.push(`最低: $${lows[index].toFixed(2)}`);
+                                                if (close !== undefined) labels.push(`收盘: $${close.toFixed(2)}`);
+                                                if (volumes && volumes[index] !== undefined) labels.push(`成交量: ${(volumes[index] / 1000000).toFixed(2)}M`);
                                                 
                                                 return labels;
                                             }
@@ -523,6 +551,12 @@
                         
                         // 存储额外数据用于tooltip
                         if (this.chart && this.candles) {
+                            if (!this.chart.config._config) {
+                                this.chart.config._config = { data: {} };
+                            }
+                            if (!this.chart.config._config.data) {
+                                this.chart.config._config.data = {};
+                            }
                             this.chart.config._config.data.opens = this.candles.o;
                             this.chart.config._config.data.highs = this.candles.h;
                             this.chart.config._config.data.lows = this.candles.l;
@@ -570,9 +604,41 @@
 
                 // 打开YouTube搜索
                 openYouTubeSearch() {
-                    const query = `${this.symbol} ${this.profile?.name || ''} stock analysis`;
+                    let query;
+                    if (this.language === 'zh') {
+                        // 中文模式：使用中文股票名+股票
+                        const chineseName = this.getChineseStockName(this.symbol);
+                        query = `${chineseName}股票`;
+                    } else {
+                        // 英文模式：使用原有逻辑
+                        query = `${this.symbol} ${this.profile?.name || ''} stock analysis`;
+                    }
                     const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
                     window.open(url, '_blank');
+                },
+                
+                // 获取中文股票名
+                getChineseStockName(symbol) {
+                    const chineseNames = {
+                        'AAPL': '苹果',
+                        'GOOGL': '谷歌',
+                        'MSFT': '微软',
+                        'AMZN': '亚马逊',
+                        'TSLA': '特斯拉',
+                        'META': 'Meta',
+                        'NVDA': '英伟达',
+                        'NFLX': '奈飞',
+                        'BABA': '阿里巴巴',
+                        'JD': '京东',
+                        'PDD': '拼多多',
+                        'BIDU': '百度',
+                        'NIO': '蔚来',
+                        'XPEV': '小鹏汽车',
+                        'LI': '理想汽车',
+                        'TME': '腾讯音乐',
+                        'BILI': '哔哩哔哩'
+                    };
+                    return chineseNames[symbol] || symbol;
                 },
 
                 // 打开雪球搜索
@@ -610,13 +676,16 @@
                 formatMarketCap(marketCap) {
                     if (!marketCap) return 'N/A';
                     
+                    // marketCap单位是十亿美元(Billion)
                     if (this.language === 'zh') {
-                        if (marketCap >= 10000) {
-                            return `${(marketCap / 10000).toFixed(2)}万亿美元`;
-                        } else if (marketCap >= 100) {
-                            return `${(marketCap / 100).toFixed(2)}千亿美元`;
+                        if (marketCap >= 1000) {
+                            // 1000 billion = 1 trillion = 1万亿
+                            return `${(marketCap / 1000).toFixed(2)}万亿美元`;
+                        } else if (marketCap >= 10) {
+                            // 10 billion = 100亿
+                            return `${(marketCap * 10).toFixed(0)}亿美元`;
                         } else {
-                            return `${marketCap.toFixed(2)}亿美元`;
+                            return `${(marketCap * 10).toFixed(1)}亿美元`;
                         }
                     } else {
                         if (marketCap >= 1000) {
@@ -651,7 +720,23 @@
                 // 格式化财务指标
                 formatMetric(value) {
                     if (value === null || value === undefined || isNaN(value)) return 'N/A';
-                    return parseFloat(value).toFixed(2);
+                    
+                    const numValue = parseFloat(value);
+                    
+                    // 处理大数值格式化
+                    if (Math.abs(numValue) >= 1e12) {
+                        // 1 trillion = 1万亿
+                        return `${(numValue / 1e12).toFixed(2)}${this.language === 'zh' ? '万亿' : 'T'}`;
+                    } else if (Math.abs(numValue) >= 1e9) {
+                        // 1 billion = 10亿
+                        return `${(numValue / 1e8).toFixed(2)}${this.language === 'zh' ? '亿' : 'B'}`;
+                    } else if (Math.abs(numValue) >= 1e6) {
+                        return `${(numValue / 1e6).toFixed(2)}${this.language === 'zh' ? '百万' : 'M'}`;
+                    } else if (Math.abs(numValue) >= 1e3) {
+                        return `${(numValue / 1e3).toFixed(2)}${this.language === 'zh' ? '千' : 'K'}`;
+                    }
+                    
+                    return numValue.toFixed(2);
                 },
 
                 // 格式化百分比
