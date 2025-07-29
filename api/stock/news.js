@@ -1,72 +1,115 @@
-// /api/stock/news.js (最终修复版：校准时间 + 官方SDK)
-import { Service } from '@volcengine/openapi';
+// /api/stock/news.js (优化版：使用内部翻译API + 智能新闻筛选)
 
-// --- 火山引擎翻译引擎 ---
-async function translateWithVolcEngine(text, accessKeyId, secretAccessKey) {
-  // 1. 初始化火山引擎通用服务客户端
-  const service = new Service({
-    host: 'open.volcengineapi.com',
-    serviceName: 'translate',
-    region: 'cn-north-1',
-    accessKeyId,
-    secretAccessKey,
-    // ** 关键修复：Vercel Serverless 环境可能存在时间偏差，
-    // ** 但 SDK 通常能通过内部机制处理。我们先不手动干预。
-    // ** 如果仍然报错，可以尝试获取服务器时间来计算一个 offset。
-  });
-  
-  // 2. 获取请求器，SDK会自动处理签名和时间戳
-  const fetchApi = service.fetchApi();
-  
-  const params = {
-    Action: 'TranslateText',
-    Version: '2020-06-01',
-  };
-  const body = {
-    TargetLanguage: 'zh',
-    TextList: [text],
-  };
-
+// --- 火山引擎翻译引擎 (通过内部API) ---
+async function translateWithVolcEngine(text) {
   try {
-    // 3. 发起请求
-    const res = await fetchApi(params, body);
+    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/translate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: text,
+        targetLang: 'zh'
+      })
+    });
     
-    // 4. 处理返回结果
-    if (res.ResponseMetadata?.Error) {
-      // ** 更详细的错误日志 **
-      console.error("Volcengine API returned an error:", JSON.stringify(res.ResponseMetadata.Error));
-      throw new Error(`Volcengine API Error: ${res.ResponseMetadata.Error.Message}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-    if (res.TranslationList && res.TranslationList[0] && res.TranslationList[0].Translation) {
-      return res.TranslationList[0].Translation;
-    }
-    throw new Error("Volcengine API returned an unexpected format");
+    
+    const data = await response.json();
+    return data.translatedText || data.translation || text;
   } catch (error) {
-    console.warn("Volcengine translator failed:", error.message || error);
-    throw error;
+    console.warn("Internal translate API failed:", error.message);
+    return text; // 返回原文作为降级
   }
 }
 
-// --- 并行翻译所有新闻标题 ---
-async function translateNewsHeadlines(news, ak, sk) {
+// --- 智能新闻筛选：优先选择与股票相关的新闻 ---
+function filterRelevantNews(news, symbol) {
   if (!news || news.length === 0) return [];
   
-  // 为了避免短时间内大量并发请求可能导致的问题，我们分批进行翻译
-  const CHUNK_SIZE = 5; // 每次并行翻译5条
+  const symbolLower = symbol.toLowerCase();
+  const companyKeywords = {
+    'aapl': ['apple', 'iphone', 'ipad', 'mac', 'ios', 'tim cook'],
+    'tsla': ['tesla', 'elon musk', 'electric vehicle', 'ev', 'model', 'cybertruck'],
+    'msft': ['microsoft', 'windows', 'azure', 'office', 'xbox', 'satya nadella'],
+    'googl': ['google', 'alphabet', 'search', 'android', 'youtube', 'sundar pichai'],
+    'amzn': ['amazon', 'aws', 'prime', 'alexa', 'jeff bezos', 'andy jassy'],
+    'nvda': ['nvidia', 'gpu', 'ai', 'gaming', 'data center', 'jensen huang'],
+    'meta': ['meta', 'facebook', 'instagram', 'whatsapp', 'metaverse', 'mark zuckerberg']
+  };
+  
+  const keywords = companyKeywords[symbolLower] || [symbolLower];
+  
+  // 按相关性评分排序
+  const scoredNews = news.map(article => {
+    let score = 0;
+    const title = (article.headline || '').toLowerCase();
+    const summary = (article.summary || '').toLowerCase();
+    
+    // 标题中包含关键词得分更高
+    keywords.forEach(keyword => {
+      if (title.includes(keyword)) score += 10;
+      if (summary.includes(keyword)) score += 5;
+    });
+    
+    // 股票代码匹配得分最高
+    if (title.includes(symbolLower) || title.includes(symbol.toUpperCase())) score += 20;
+    if (summary.includes(symbolLower) || summary.includes(symbol.toUpperCase())) score += 10;
+    
+    return { ...article, relevanceScore: score };
+  });
+  
+  // 按相关性排序，取前20条最相关的新闻
+  return scoredNews
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, 20);
+}
+
+// --- 高效并行翻译新闻标题和摘要 ---
+async function translateNewsContent(news) {
+  if (!news || news.length === 0) return [];
+  
+  // 增加并发数，减少批次间等待时间
+  const CHUNK_SIZE = 10; // 每次并行翻译10条
   const translatedNews = [];
+  
   for (let i = 0; i < news.length; i += CHUNK_SIZE) {
-      const chunk = news.slice(i, i + CHUNK_SIZE);
-      const promises = chunk.map(async (article) => {
-          let translatedHeadline = article.headline;
-          try {
-              translatedHeadline = await translateWithVolcEngine(article.headline, ak, sk);
-          } catch (e) {
-              console.error(`Translation failed for "${article.headline.substring(0, 20)}...":`, e.message);
-          }
-          return { ...article, headline: translatedHeadline };
-      });
-      translatedNews.push(...await Promise.all(promises));
+    const chunk = news.slice(i, i + CHUNK_SIZE);
+    const promises = chunk.map(async (article) => {
+      const translatedArticle = { ...article };
+      
+      try {
+        // 并行翻译标题和摘要
+        const [translatedHeadline, translatedSummary] = await Promise.all([
+          article.headline ? translateWithVolcEngine(article.headline) : Promise.resolve(''),
+          article.summary ? translateWithVolcEngine(article.summary) : Promise.resolve('')
+        ]);
+        
+        if (translatedHeadline && translatedHeadline !== article.headline) {
+          translatedArticle.headline = translatedHeadline;
+        }
+        if (translatedSummary && translatedSummary !== article.summary) {
+          translatedArticle.summary = translatedSummary;
+        }
+      } catch (e) {
+        console.error(`Translation failed for article "${article.headline?.substring(0, 30)}...":`, e.message);
+      }
+      
+      return translatedArticle;
+    });
+    
+    const chunkResults = await Promise.all(promises);
+    translatedNews.push(...chunkResults);
+    
+    // 减少批次间等待时间到300ms
+    if (i + CHUNK_SIZE < news.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
   }
+  
   return translatedNews;
 }
 
@@ -76,12 +119,10 @@ export default async function handler(request, response) {
   if (!symbol) return response.status(400).json({ error: 'Stock symbol is required' });
 
   const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-  const VOLC_AK = process.env.VOLC_ACCESS_KEY_ID;
-  const VOLC_SK = process.env.VOLC_SECRET_ACCESS_KEY;
-
   if (!FINNHUB_API_KEY) return response.status(500).json({ error: 'Finnhub API key is not configured' });
   
-  const today = new Date(), priorDate = new Date(new Date().setDate(today.getDate() - 30));
+  // 扩大时间范围到60天，获取更多新闻用于筛选
+  const today = new Date(), priorDate = new Date(new Date().setDate(today.getDate() - 60));
   const from = priorDate.toISOString().split('T')[0], to = today.toISOString().split('T')[0];
   const url = `https://finnhub.io/api/v1/company-news?symbol=${symbol.toUpperCase()}&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`;
 
@@ -91,12 +132,18 @@ export default async function handler(request, response) {
     
     let newsData = await apiResponse.json();
     
-    if (lang === 'zh' && VOLC_AK && VOLC_SK && newsData && newsData.length > 0) {
-      newsData = await translateNewsHeadlines(newsData, VOLC_AK, VOLC_SK);
+    // 智能筛选相关新闻
+    newsData = filterRelevantNews(newsData, symbol);
+    
+    // 如果需要中文翻译，进行高效翻译
+    if (lang === 'zh' && newsData && newsData.length > 0) {
+      console.log(`🔄 开始翻译 ${newsData.length} 条相关新闻...`);
+      newsData = await translateNewsContent(newsData);
+      console.log(`✅ 新闻翻译完成`);
     }
 
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+    response.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate'); // 减少缓存时间到30分钟
     response.status(200).json(newsData);
   } catch (error) {
     console.error('API /stock/news Error:', error.message);

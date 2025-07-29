@@ -532,10 +532,10 @@
                         return;
                     }
                     
-                    console.log(`🔄 开始使用火山引擎翻译 ${this.news.length} 条新闻...`);
+                    console.log(`🔄 开始高效翻译 ${this.news.length} 条新闻...`);
                     
-                    // 分批翻译，每批5条，提高效率
-                    const batchSize = 5;
+                    // 优化：增加批次大小，减少等待时间
+                    const batchSize = 10; // 从5增加到10
                     const batches = [];
                     
                     for (let i = 0; i < this.news.length; i += batchSize) {
@@ -545,42 +545,52 @@
                     for (let [batchIndex, batch] of batches.entries()) {
                         console.log(`🔄 翻译第 ${batchIndex + 1}/${batches.length} 批新闻...`);
                         
-                        // 并行翻译每条新闻，提高速度
+                        // 并行翻译每条新闻的标题和摘要
                         const translationPromises = batch.map(async (article, index) => {
                             const actualIndex = batchIndex * batchSize + index;
                             
                             try {
-                                // 翻译标题
+                                // 同时翻译标题和摘要，提高效率
+                                const promises = [];
+                                
                                 if (article.headline) {
-                                    try {
-                                        const translatedTitle = await this.translateWithVolcEngine(article.headline);
-                                        if (translatedTitle && translatedTitle !== article.headline) {
-                                            this.news[actualIndex].translatedHeadline = translatedTitle;
-                                            console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
-                                        } else {
-                                            this.news[actualIndex].translatedHeadline = article.headline;
-                                        }
-                                    } catch (e) {
-                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 标题翻译失败，使用原文`);
-                                        this.news[actualIndex].translatedHeadline = article.headline;
-                                    }
+                                    promises.push(
+                                        this.translateWithVolcEngine(article.headline)
+                                            .then(translated => {
+                                                if (translated && translated !== article.headline) {
+                                                    this.news[actualIndex].translatedHeadline = translated;
+                                                    console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
+                                                } else {
+                                                    this.news[actualIndex].translatedHeadline = article.headline;
+                                                }
+                                            })
+                                            .catch(e => {
+                                                console.warn(`⚠️ 新闻 ${actualIndex + 1} 标题翻译失败，使用原文`);
+                                                this.news[actualIndex].translatedHeadline = article.headline;
+                                            })
+                                    );
                                 }
                                 
-                                // 翻译摘要
                                 if (article.summary) {
-                                    try {
-                                        const translatedSummary = await this.translateWithVolcEngine(article.summary);
-                                        if (translatedSummary && translatedSummary !== article.summary) {
-                                            this.news[actualIndex].translatedSummary = translatedSummary;
-                                            console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
-                                        } else {
-                                            this.news[actualIndex].translatedSummary = article.summary;
-                                        }
-                                    } catch (e) {
-                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 摘要翻译失败，使用原文`);
-                                        this.news[actualIndex].translatedSummary = article.summary;
-                                    }
+                                    promises.push(
+                                        this.translateWithVolcEngine(article.summary)
+                                            .then(translated => {
+                                                if (translated && translated !== article.summary) {
+                                                    this.news[actualIndex].translatedSummary = translated;
+                                                    console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
+                                                } else {
+                                                    this.news[actualIndex].translatedSummary = article.summary;
+                                                }
+                                            })
+                                            .catch(e => {
+                                                console.warn(`⚠️ 新闻 ${actualIndex + 1} 摘要翻译失败，使用原文`);
+                                                this.news[actualIndex].translatedSummary = article.summary;
+                                            })
+                                    );
                                 }
+                                
+                                // 等待该新闻的所有翻译完成
+                                await Promise.all(promises);
                                 
                             } catch (error) {
                                 console.error(`❌ 新闻 ${actualIndex + 1} 翻译过程出错:`, error.message);
@@ -597,35 +607,22 @@
                         // 等待当前批次完成
                         await Promise.all(translationPromises);
                         
-                        // 批次之间暂停1秒，避免API限流
+                        // 优化：减少批次间等待时间从1秒到300ms
                         if (batchIndex < batches.length - 1) {
-                            console.log(`⏳ 等待1秒后继续下一批...`);
-                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            console.log(`⏳ 等待300ms后继续下一批...`);
+                            await new Promise(resolve => setTimeout(resolve, 300));
                         }
                     }
                     
-                    console.log('🎉 火山引擎翻译完成，检查翻译质量...');
+                    console.log('🎉 高效翻译完成！');
                     
-                    // 检查翻译完成情况
-                    let translatedCount = 0;
-                    let totalCount = 0;
+                    // 简化统计逻辑
+                    const translatedCount = this.news.filter(article => 
+                        (article.translatedHeadline && article.translatedHeadline !== article.headline) ||
+                        (article.translatedSummary && article.translatedSummary !== article.summary)
+                    ).length;
                     
-                    this.news.forEach((article, index) => {
-                        if (article.headline) {
-                            totalCount++;
-                            if (article.translatedHeadline && article.translatedHeadline !== article.headline) {
-                                translatedCount++;
-                            }
-                        }
-                        if (article.summary) {
-                            totalCount++;
-                            if (article.translatedSummary && article.translatedSummary !== article.summary) {
-                                translatedCount++;
-                            }
-                        }
-                    });
-                    
-                    console.log(`📊 翻译统计: ${translatedCount}/${totalCount} 项内容已翻译 (${Math.round(translatedCount/totalCount*100)}%)`);
+                    console.log(`📊 翻译统计: ${translatedCount}/${this.news.length} 条新闻已翻译 (${Math.round(translatedCount/this.news.length*100)}%)`);
                 },
                 
                 // 翻译缓存
