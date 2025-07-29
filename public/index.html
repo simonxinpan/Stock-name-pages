@@ -532,10 +532,10 @@
                         return;
                     }
                     
-                    console.log(`🔄 开始强制翻译 ${this.news.length} 条新闻...`);
+                    console.log(`🔄 开始使用火山引擎翻译 ${this.news.length} 条新闻...`);
                     
-                    // 分批翻译，每批3条，减少并发压力
-                    const batchSize = 3;
+                    // 分批翻译，每批5条，提高效率
+                    const batchSize = 5;
                     const batches = [];
                     
                     for (let i = 0; i < this.news.length; i += batchSize) {
@@ -545,87 +545,42 @@
                     for (let [batchIndex, batch] of batches.entries()) {
                         console.log(`🔄 翻译第 ${batchIndex + 1}/${batches.length} 批新闻...`);
                         
-                        // 串行翻译每条新闻，确保稳定性
-                        for (let [index, article] of batch.entries()) {
+                        // 并行翻译每条新闻，提高速度
+                        const translationPromises = batch.map(async (article, index) => {
                             const actualIndex = batchIndex * batchSize + index;
                             
                             try {
-                                // 强制翻译标题
+                                // 翻译标题
                                 if (article.headline) {
-                                    let translatedTitle = null;
-                                    
-                                    // 尝试多种翻译方式
-                                    const translationMethods = [
-                                        () => this.translateWithGoogle(article.headline),
-                                        () => this.translateWithDeepL(article.headline),
-                                        () => this.translateWithMyMemory(article.headline),
-                                        () => Promise.resolve(this.translateTextLocal(article.headline))
-                                    ];
-                                    
-                                    for (let method of translationMethods) {
-                                        try {
-                                            const result = await Promise.race([
-                                                method(),
-                                                new Promise((_, reject) => setTimeout(() => reject(new Error('超时')), 6000))
-                                            ]);
-                                            
-                                            if (result && result !== article.headline && result.trim() !== '') {
-                                                translatedTitle = result;
-                                                console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
-                                                break;
-                                            }
-                                        } catch (e) {
-                                            console.warn(`翻译方法失败，尝试下一个...`);
-                                            continue;
+                                    try {
+                                        const translatedTitle = await this.translateWithVolcEngine(article.headline);
+                                        if (translatedTitle && translatedTitle !== article.headline) {
+                                            this.news[actualIndex].translatedHeadline = translatedTitle;
+                                            console.log(`✅ 新闻 ${actualIndex + 1} 标题翻译成功`);
+                                        } else {
+                                            this.news[actualIndex].translatedHeadline = article.headline;
                                         }
-                                    }
-                                    
-                                    // 设置翻译结果
-                                    this.news[actualIndex].translatedHeadline = translatedTitle || article.headline;
-                                    if (!translatedTitle) {
-                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 标题所有翻译方法都失败，使用原文`);
+                                    } catch (e) {
+                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 标题翻译失败，使用原文`);
+                                        this.news[actualIndex].translatedHeadline = article.headline;
                                     }
                                 }
                                 
-                                // 强制翻译摘要
+                                // 翻译摘要
                                 if (article.summary) {
-                                    let translatedSummary = null;
-                                    
-                                    // 尝试多种翻译方式
-                                    const translationMethods = [
-                                        () => this.translateWithGoogle(article.summary),
-                                        () => this.translateWithDeepL(article.summary),
-                                        () => this.translateWithMyMemory(article.summary),
-                                        () => Promise.resolve(this.translateTextLocal(article.summary))
-                                    ];
-                                    
-                                    for (let method of translationMethods) {
-                                        try {
-                                            const result = await Promise.race([
-                                                method(),
-                                                new Promise((_, reject) => setTimeout(() => reject(new Error('超时')), 6000))
-                                            ]);
-                                            
-                                            if (result && result !== article.summary && result.trim() !== '') {
-                                                translatedSummary = result;
-                                                console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
-                                                break;
-                                            }
-                                        } catch (e) {
-                                            console.warn(`翻译方法失败，尝试下一个...`);
-                                            continue;
+                                    try {
+                                        const translatedSummary = await this.translateWithVolcEngine(article.summary);
+                                        if (translatedSummary && translatedSummary !== article.summary) {
+                                            this.news[actualIndex].translatedSummary = translatedSummary;
+                                            console.log(`✅ 新闻 ${actualIndex + 1} 摘要翻译成功`);
+                                        } else {
+                                            this.news[actualIndex].translatedSummary = article.summary;
                                         }
-                                    }
-                                    
-                                    // 设置翻译结果
-                                    this.news[actualIndex].translatedSummary = translatedSummary || article.summary;
-                                    if (!translatedSummary) {
-                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 摘要所有翻译方法都失败，使用原文`);
+                                    } catch (e) {
+                                        console.warn(`⚠️ 新闻 ${actualIndex + 1} 摘要翻译失败，使用原文`);
+                                        this.news[actualIndex].translatedSummary = article.summary;
                                     }
                                 }
-                                
-                                // 每条新闻翻译完成后暂停500ms
-                                await new Promise(resolve => setTimeout(resolve, 500));
                                 
                             } catch (error) {
                                 console.error(`❌ 新闻 ${actualIndex + 1} 翻译过程出错:`, error.message);
@@ -637,16 +592,19 @@
                                     this.news[actualIndex].translatedSummary = article.summary;
                                 }
                             }
-                        }
+                        });
                         
-                        // 批次之间暂停2秒，避免API限流
+                        // 等待当前批次完成
+                        await Promise.all(translationPromises);
+                        
+                        // 批次之间暂停1秒，避免API限流
                         if (batchIndex < batches.length - 1) {
-                            console.log(`⏳ 等待2秒后继续下一批...`);
-                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            console.log(`⏳ 等待1秒后继续下一批...`);
+                            await new Promise(resolve => setTimeout(resolve, 1000));
                         }
                     }
                     
-                    console.log('🎉 强制翻译完成，检查翻译质量...');
+                    console.log('🎉 火山引擎翻译完成，检查翻译质量...');
                     
                     // 检查翻译完成情况
                     let translatedCount = 0;
@@ -674,1108 +632,94 @@
                 translationCache: new Map(),
                 translationInProgress: new Set(),
                 
-                // 专用翻译函数 - Google 公共代理接口（最稳定）
-                async translateWithGoogle(text, fromLang = 'en', toLang = 'zh') {
-                    try {
-                        console.log('🚀 使用 Google 公共代理翻译...');
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 3000);
-                        
-                        // 使用稳定的 Google 公共代理接口
-                        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`;
-                        
-                        const response = await fetch(url, {
-                            method: 'GET',
-                            signal: controller.signal,
-                            headers: {
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            }
-                        });
-                        
-                        clearTimeout(timeoutId);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        let translatedText = '';
-                        
-                        if (Array.isArray(data) && data[0] && Array.isArray(data[0])) {
-                            translatedText = data[0].map(item => item[0]).join('');
-                        }
-                        
-                        if (this.validateTranslation(text, translatedText)) {
-                            console.log('✅ Google 翻译成功');
-                            return translatedText;
-                        }
-                        
-                        throw new Error('翻译质量验证失败');
-                        
-                    } catch (error) {
-                        console.warn('❌ Google 翻译失败:', error.message);
-                        throw error;
+                // 火山引擎翻译函数
+                async translateWithVolcEngine(text) {
+                    if (!text || text.trim() === '') {
+                        return text;
                     }
-                },
-                
-                // DeepL 免费接口翻译
-                async translateWithDeepL(text, fromLang = 'en', toLang = 'zh') {
-                    try {
-                        console.log('🚀 使用 DeepL 翻译...');
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 4000);
-                        
-                        // DeepL 语言代码转换
-                        const deepLLangMap = {
-                            'en': 'EN',
-                            'zh': 'ZH',
-                            'zh-cn': 'ZH',
-                            'zh-tw': 'ZH'
-                        };
-                        
-                        const sourceLang = deepLLangMap[fromLang.toLowerCase()] || 'EN';
-                        const targetLang = deepLLangMap[toLang.toLowerCase()] || 'ZH';
-                        
-                        const response = await fetch('https://www2.deepl.com/jsonrpc', {
-                            method: 'POST',
-                            signal: controller.signal,
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            },
-                            body: JSON.stringify({
-                                jsonrpc: '2.0',
-                                method: 'LMT_handle_jobs',
-                                params: {
-                                    jobs: [{
-                                        kind: 'default',
-                                        raw_en_sentence: text,
-                                        raw_en_context_before: [],
-                                        raw_en_context_after: [],
-                                        preferred_num_beams: 4
-                                    }],
-                                    lang: {
-                                        source_lang_user_selected: sourceLang,
-                                        target_lang: targetLang
-                                    },
-                                    priority: -1,
-                                    commonJobParams: {
-                                        wasSpoken: false,
-                                        transcribe_as: ''
-                                    },
-                                    timestamp: Date.now()
-                                },
-                                id: Math.floor(Math.random() * 1000000)
-                            })
-                        });
-                        
-                        clearTimeout(timeoutId);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        const translatedText = data.result?.translations?.[0]?.beams?.[0]?.postprocessed_sentence || '';
-                        
-                        if (this.validateTranslation(text, translatedText)) {
-                            console.log('✅ DeepL 翻译成功');
-                            return translatedText;
-                        }
-                        
-                        throw new Error('翻译质量验证失败');
-                        
-                    } catch (error) {
-                        console.warn('❌ DeepL 翻译失败:', error.message);
-                        throw error;
-                    }
-                },
-                
-                // MyMemory 备用翻译
-                async translateWithMyMemory(text, fromLang = 'en', toLang = 'zh') {
-                    try {
-                        console.log('🚀 使用 MyMemory 备用翻译...');
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 3000);
-                        
-                        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`;
-                        
-                        const response = await fetch(url, {
-                            method: 'GET',
-                            signal: controller.signal
-                        });
-                        
-                        clearTimeout(timeoutId);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        const translatedText = data.responseData?.translatedText || '';
-                        
-                        if (this.validateTranslation(text, translatedText)) {
-                            console.log('✅ MyMemory 翻译成功');
-                            return translatedText;
-                        }
-                        
-                        throw new Error('翻译质量验证失败');
-                        
-                    } catch (error) {
-                        console.warn('❌ MyMemory 翻译失败:', error.message);
-                        throw error;
-                    }
-                },
-                
-                // 翻译服务提供商配置（按优先级排序）
-                translationProviders: [
-                    {
-                        name: 'GoogleTranslate',
-                        url: (text, fromLang, toLang) => `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${fromLang}&tl=${toLang}&dt=t&q=${encodeURIComponent(text)}`,
-                        parseResponse: (data) => {
-                            if (Array.isArray(data) && data[0] && Array.isArray(data[0]) && data[0][0] && data[0][0][0]) {
-                                return data[0].map(item => item[0]).join('');
-                            }
-                            throw new Error('Google翻译失败');
-                        },
-                        timeout: 2500
-                    },
-                    {
-                        name: 'MyMemory',
-                        url: (text, fromLang, toLang) => `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`,
-                        parseResponse: (data) => {
-                            if (data.responseStatus === 200 && data.responseData && data.responseData.translatedText) {
-                                return data.responseData.translatedText;
-                            }
-                            throw new Error('MyMemory翻译失败');
-                        },
-                        timeout: 3000
-                    },
-                    {
-                        name: 'LibreTranslate',
-                        url: (text, fromLang, toLang) => 'https://libretranslate.de/translate',
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: (text, fromLang, toLang) => JSON.stringify({
-                            q: text,
-                            source: fromLang,
-                            target: toLang,
-                            format: 'text'
-                        }),
-                        parseResponse: (data) => {
-                            if (data.translatedText) {
-                                return data.translatedText;
-                            }
-                            throw new Error('LibreTranslate翻译失败');
-                        },
-                        timeout: 4000
-                    },
-                    {
-                        name: 'YandexTranslate',
-                        url: (text, fromLang, toLang) => `https://translate.yandex.net/api/v1/tr.json/translate?id=trnsl.1.1.20240101T000000Z.abcd1234&key=trnsl.1.1.20240101T000000Z.abcd1234&text=${encodeURIComponent(text)}&lang=${fromLang}-${toLang}`,
-                        parseResponse: (data) => {
-                            if (data.code === 200 && data.text && data.text[0]) {
-                                return data.text[0];
-                            }
-                            throw new Error('Yandex翻译失败');
-                        },
-                        timeout: 3500
-                    },
-                    {
-                        name: 'BingTranslator',
-                        url: (text, fromLang, toLang) => `https://www.bing.com/ttranslatev3?isVertical=1&&IG=1234567890ABCDEF&IID=translator.5028.1`,
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        },
-                        body: (text, fromLang, toLang) => `fromLang=${fromLang}&to=${toLang}&text=${encodeURIComponent(text)}`,
-                        parseResponse: (data) => {
-                            if (data && data[0] && data[0].translations && data[0].translations[0]) {
-                                return data[0].translations[0].text;
-                            }
-                            throw new Error('Bing翻译失败');
-                        },
-                        timeout: 3000
-                    },
-                    {
-                        name: 'DeepLFree',
-                        url: (text, fromLang, toLang) => 'https://api-free.deepl.com/v2/translate',
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Authorization': 'DeepL-Auth-Key free-trial'
-                        },
-                        body: (text, fromLang, toLang) => `text=${encodeURIComponent(text)}&source_lang=${fromLang.toUpperCase()}&target_lang=${toLang.toUpperCase()}`,
-                        parseResponse: (data) => {
-                            if (data.translations && data.translations[0] && data.translations[0].text) {
-                                return data.translations[0].text;
-                            }
-                            throw new Error('DeepL翻译失败');
-                        },
-                        timeout: 4000
-                    },
-                    {
-                        name: 'PapagoTranslate',
-                        url: (text, fromLang, toLang) => 'https://papago.naver.com/apis/n2mt/translate',
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Referer': 'https://papago.naver.com/'
-                        },
-                        body: (text, fromLang, toLang) => `source=${fromLang}&target=${toLang}&text=${encodeURIComponent(text)}`,
-                        parseResponse: (data) => {
-                            if (data.translatedText) {
-                                return data.translatedText;
-                            }
-                            throw new Error('Papago翻译失败');
-                        },
-                        timeout: 3500
-                    },
-                    {
-                        name: 'BaiduTranslate',
-                        url: (text, fromLang, toLang) => `https://fanyi-api.baidu.com/api/trans/vip/translate?q=${encodeURIComponent(text)}&from=${fromLang}&to=${toLang}&appid=free&salt=123456&sign=free`,
-                        parseResponse: (data) => {
-                            if (data.trans_result && data.trans_result[0] && data.trans_result[0].dst) {
-                                return data.trans_result[0].dst;
-                            }
-                            throw new Error('百度翻译失败');
-                        },
-                        timeout: 3000
-                    },
-                    {
-                        name: 'TencentTranslate',
-                        url: (text, fromLang, toLang) => 'https://fanyi.qq.com/api/translate',
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: (text, fromLang, toLang) => `source=${fromLang}&target=${toLang}&sourceText=${encodeURIComponent(text)}`,
-                        parseResponse: (data) => {
-                            if (data.translate && data.translate.records && data.translate.records[0]) {
-                                return data.translate.records[0].targetText;
-                            }
-                            throw new Error('腾讯翻译失败');
-                        },
-                        timeout: 3500
-                    },
-                    {
-                        name: 'YoudaoTranslate',
-                        url: (text, fromLang, toLang) => 'https://fanyi.youdao.com/translate_o?smartresult=dict&smartresult=rule',
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Referer': 'https://fanyi.youdao.com/'
-                        },
-                        body: (text, fromLang, toLang) => `i=${encodeURIComponent(text)}&from=${fromLang}&to=${toLang}&smartresult=dict&client=fanyideskweb&salt=123456&sign=free&lts=123456&bv=free`,
-                        parseResponse: (data) => {
-                            if (data.translateResult && data.translateResult[0] && data.translateResult[0][0]) {
-                                return data.translateResult[0][0].tgt;
-                            }
-                            throw new Error('有道翻译失败');
-                        },
-                        timeout: 3000
-                    },
-                    {
-                        name: 'SogouTranslate',
-                        url: (text, fromLang, toLang) => 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Referer': 'https://fanyi.sogou.com/'
-                        },
-                        body: (text, fromLang, toLang) => `from=${fromLang}&to=${toLang}&text=${encodeURIComponent(text)}&client=pc&fr=browser_pc&useDetect=on&useDetectResult=on&needQc=1&uuid=free&oxford=on&isReturnSugg=on`,
-                        parseResponse: (data) => {
-                            if (data.translation) {
-                                return data.translation;
-                            }
-                            throw new Error('搜狗翻译失败');
-                        },
-                        timeout: 3500
-                    }
-                ],
-
-                // 翻译服务状态监控
-                providerStats: new Map(),
-                
-                getProviderStats(providerName) {
-                    if (!this.providerStats.has(providerName)) {
-                        this.providerStats.set(providerName, {
-                            successCount: 0,
-                            failureCount: 0,
-                            lastSuccess: 0,
-                            lastFailure: 0,
-                            avgResponseTime: 0,
-                            isBlacklisted: false,
-                            blacklistUntil: 0
-                        });
-                    }
-                    return this.providerStats.get(providerName);
-                },
-                
-                updateProviderStats(providerName, success, responseTime = 0) {
-                    const stats = this.getProviderStats(providerName);
-                    const now = Date.now();
-                    
-                    if (success) {
-                        stats.successCount++;
-                        stats.lastSuccess = now;
-                        stats.avgResponseTime = (stats.avgResponseTime + responseTime) / 2;
-                        // 成功后解除黑名单
-                        stats.isBlacklisted = false;
-                        stats.blacklistUntil = 0;
-                    } else {
-                        stats.failureCount++;
-                        stats.lastFailure = now;
-                        // 连续失败3次则加入黑名单5分钟
-                        if (stats.failureCount >= 3 && (stats.failureCount - stats.successCount) >= 3) {
-                            stats.isBlacklisted = true;
-                            stats.blacklistUntil = now + 5 * 60 * 1000; // 5分钟
-                        }
-                    }
-                },
-                
-                isProviderAvailable(providerName) {
-                    const stats = this.getProviderStats(providerName);
-                    const now = Date.now();
-                    
-                    // 检查是否在黑名单中且未过期
-                    if (stats.isBlacklisted && now < stats.blacklistUntil) {
-                        return false;
-                    }
-                    
-                    // 黑名单过期，重置状态
-                    if (stats.isBlacklisted && now >= stats.blacklistUntil) {
-                        stats.isBlacklisted = false;
-                        stats.blacklistUntil = 0;
-                        stats.failureCount = 0; // 重置失败计数
-                    }
-                    
-                    return true;
-                },
-                
-                getAvailableProviders() {
-                    return this.translationProviders.filter(provider => 
-                        this.isProviderAvailable(provider.name)
-                    ).sort((a, b) => {
-                        const statsA = this.getProviderStats(a.name);
-                        const statsB = this.getProviderStats(b.name);
-                        
-                        // 按成功率和响应时间排序
-                        const successRateA = statsA.successCount / (statsA.successCount + statsA.failureCount) || 0.5;
-                        const successRateB = statsB.successCount / (statsB.successCount + statsB.failureCount) || 0.5;
-                        
-                        if (successRateA !== successRateB) {
-                            return successRateB - successRateA; // 成功率高的优先
-                        }
-                        
-                        return (statsA.avgResponseTime || 3000) - (statsB.avgResponseTime || 3000); // 响应时间短的优先
-                    });
-                },
-
-                // 智能降级翻译函数（按优先级：Google -> DeepL -> MyMemory -> 原文）
-                async translateWithAPI(text, fromLang = 'en', toLang = 'zh') {
-                    if (!text || text.trim() === '') return text;
-                    
-                    const cacheKey = `${fromLang}-${toLang}-${text}`;
                     
                     // 检查缓存
+                    const cacheKey = `volc_${text}`;
                     if (this.translationCache.has(cacheKey)) {
                         return this.translationCache.get(cacheKey);
                     }
                     
-                    // 避免重复请求
+                    // 避免重复翻译
                     if (this.translationInProgress.has(cacheKey)) {
-                        // 等待正在进行的翻译，最多等待2秒
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                        if (this.translationCache.has(cacheKey)) {
-                            return this.translationCache.get(cacheKey);
-                        }
-                        return text; // 返回原文
+                        return text;
                     }
                     
                     this.translationInProgress.add(cacheKey);
                     
                     try {
-                        // 第一优先级：Google 公共代理接口（最稳定）
-                        try {
-                            const googleResult = await this.translateWithGoogle(text, fromLang, toLang);
-                            this.translationCache.set(cacheKey, googleResult);
-                            this.translationInProgress.delete(cacheKey);
-                            console.log('🎉 Google 翻译成功，缓存结果');
-                            return googleResult;
-                        } catch (googleError) {
-                            console.log('⚠️ Google 翻译失败，尝试 DeepL...');
+                        console.log('🚀 使用火山引擎翻译...');
+                        
+                        const response = await fetch('/api/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: text,
+                                targetLang: 'zh'
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
                         }
                         
-                        // 第二优先级：DeepL 翻译
-                        try {
-                            const deeplResult = await this.translateWithDeepL(text, fromLang, toLang);
-                            this.translationCache.set(cacheKey, deeplResult);
+                        const data = await response.json();
+                        const translatedText = data.translatedText || data.translation || '';
+                        
+                        if (translatedText && translatedText.trim() !== '' && translatedText !== text) {
+                            this.translationCache.set(cacheKey, translatedText);
                             this.translationInProgress.delete(cacheKey);
-                            console.log('🎉 DeepL 翻译成功，缓存结果');
-                            return deeplResult;
-                        } catch (deeplError) {
-                            console.log('⚠️ DeepL 翻译失败，尝试 MyMemory...');
+                            console.log('✅ 火山引擎翻译成功');
+                            return translatedText;
                         }
                         
-                        // 第三优先级：MyMemory 备用翻译
-                        try {
-                            const mymemoryResult = await this.translateWithMyMemory(text, fromLang, toLang);
-                            this.translationCache.set(cacheKey, mymemoryResult);
-                            this.translationInProgress.delete(cacheKey);
-                            console.log('🎉 MyMemory 翻译成功，缓存结果');
-                            return mymemoryResult;
-                        } catch (mymemoryError) {
-                            console.log('⚠️ MyMemory 翻译失败，尝试本地翻译...');
-                        }
-                        
-                        // 最终降级：本地翻译
-                        const localResult = this.translateTextLocal(text);
-                        if (localResult && localResult !== text) {
-                            this.translationCache.set(cacheKey, localResult);
-                            this.translationInProgress.delete(cacheKey);
-                            console.log('🔄 使用本地翻译');
-                            return localResult;
-                        }
-                        
-                        // 最终保障：返回原文
-                        this.translationInProgress.delete(cacheKey);
-                        console.log('📝 所有翻译方式都失败，返回原文');
-                        return text;
+                        throw new Error('翻译结果为空或无效');
                         
                     } catch (error) {
-                        // 异常处理：确保永远不会崩溃
+                        console.warn('❌ 火山引擎翻译失败:', error.message);
                         this.translationInProgress.delete(cacheKey);
-                        console.error('💥 翻译过程发生异常:', error.message);
                         return text; // 返回原文
                     }
                 },
                 
-                validateTranslation(originalText, translatedText) {
-                    if (!translatedText || translatedText.trim() === '') return false;
-                    if (translatedText === originalText) return false;
-                    if (translatedText.length < originalText.length * 0.3) return false; // 翻译结果太短
-                    if (translatedText.length > originalText.length * 3) return false; // 翻译结果太长
-                    
-                    // 检查是否包含中文字符
-                    const chineseRegex = /[\u4e00-\u9fff]/;
-                    if (!chineseRegex.test(translatedText)) return false;
-                    
-                    return true;
-                },
+
+
                 
-                translateTextLocal(text) {
-                    if (this.language === 'zh' && text) {
-                        // 扩展的英文到中文翻译映射
-                        const translations = {
-                            // 公司名称
-                            'Apple Inc': '苹果公司',
-                            'Apple': '苹果',
-                            'Tesla Inc': '特斯拉公司',
-                            'Tesla': '特斯拉',
-                            'Microsoft Corporation': '微软公司',
-                            'Microsoft': '微软',
-                            'Google': '谷歌',
-                            'Alphabet Inc': '谷歌母公司',
-                            'Alphabet': '谷歌母公司',
-                            'Amazon.com Inc': '亚马逊公司',
-                            'Amazon': '亚马逊',
-                            'NVIDIA Corporation': '英伟达公司',
-                            'NVIDIA': '英伟达',
-                            'Meta Platforms Inc': 'Meta公司',
-                            'Meta': 'Meta',
-                            'Netflix Inc': '奈飞公司',
-                            'Netflix': '奈飞',
-                            'Intel Corporation': '英特尔公司',
-                            'Intel': '英特尔',
-                            'Advanced Micro Devices': 'AMD公司',
-                            'AMD': 'AMD',
-                            'Salesforce Inc': 'Salesforce公司',
-                            'Salesforce': 'Salesforce',
-                            'Oracle Corporation': '甲骨文公司',
-                            'Oracle': '甲骨文',
-                            'International Business Machines': 'IBM公司',
-                            'IBM': 'IBM',
-                            'Cisco Systems': '思科公司',
-                            'Cisco': '思科',
-                            'JPMorgan Chase': '摩根大通',
-                            'Bank of America': '美国银行',
-                            'Wells Fargo': '富国银行',
-                            'Goldman Sachs': '高盛',
-                            'Morgan Stanley': '摩根士丹利',
-                            'Berkshire Hathaway': '伯克希尔哈撒韦',
-                            'Johnson & Johnson': '强生',
-                            'Procter & Gamble': '宝洁',
-                            'Coca-Cola': '可口可乐',
-                            'PepsiCo': '百事可乐',
-                            'Walmart': '沃尔玛',
-                            'Home Depot': '家得宝',
-                            'Visa': '维萨',
-                            'Mastercard': '万事达',
-                            'PayPal': '贝宝',
-                            'Adobe': '奥多比',
-                            'Zoom': 'Zoom',
-                            'Slack': 'Slack',
-                            'Twitter': '推特',
-                            'Facebook': '脸书',
-                            'Instagram': 'Instagram',
-                            'WhatsApp': 'WhatsApp',
-                            'YouTube': 'YouTube',
-                            'TikTok': 'TikTok',
-                            'Snapchat': 'Snapchat',
-                            'LinkedIn': '领英',
-                            'Uber': '优步',
-                            'Lyft': 'Lyft',
-                            'Airbnb': '爱彼迎',
-                            'SpaceX': 'SpaceX',
-                            'Boeing': '波音',
-                            'Lockheed Martin': '洛克希德马丁',
-                            'General Electric': '通用电气',
-                            'Ford Motor': '福特汽车',
-                            'General Motors': '通用汽车',
-                            'Chevrolet': '雪佛兰',
-                            'Toyota': '丰田',
-                            'Honda': '本田',
-                            'Nissan': '日产',
-                            'BMW': '宝马',
-                            'Mercedes-Benz': '奔驰',
-                            'Volkswagen': '大众',
-                            'Audi': '奥迪',
-                            'Porsche': '保时捷',
-                            'Ferrari': '法拉利',
-                            'Lamborghini': '兰博基尼',
-                            
-                            // 金融术语
-                            'stock market': '股票市场',
-                            'stock price': '股价',
-                            'stock': '股票',
-                            'stocks': '股票',
-                            'share price': '股价',
-                            'shares': '股份',
-                            'share': '股份',
-                            'earnings report': '财报',
-                            'earnings': '财报',
-                            'quarterly earnings': '季度财报',
-                            'annual earnings': '年度财报',
-                            'revenue growth': '营收增长',
-                            'revenue': '营收',
-                            'revenues': '营收',
-                            'net income': '净收入',
-                            'gross profit': '毛利润',
-                            'operating profit': '营业利润',
-                            'profit margin': '利润率',
-                            'profit': '利润',
-                            'profits': '利润',
-                            'net loss': '净亏损',
-                            'operating loss': '营业亏损',
-                            'loss': '亏损',
-                            'losses': '亏损',
-                            'quarterly results': '季度业绩',
-                            'quarterly': '季度',
-                            'annual results': '年度业绩',
-                            'annual': '年度',
-                            'financial report': '财务报告',
-                            'financial results': '财务业绩',
-                            'financial statement': '财务报表',
-                            'report': '报告',
-                            'reports': '报告',
-                            'financial': '财务',
-                            'results': '业绩',
-                            'performance': '表现',
-                            'market cap': '市值',
-                            'market capitalization': '市值',
-                            'market value': '市场价值',
-                            'book value': '账面价值',
-                            'enterprise value': '企业价值',
-                            'free cash flow': '自由现金流',
-                            'cash flow': '现金流',
-                            'operating cash flow': '经营现金流',
-                            'balance sheet': '资产负债表',
-                            'income statement': '损益表',
-                            'cash flow statement': '现金流量表',
-                            'SEC filing': 'SEC文件',
-                            '10-K': '年报',
-                            '10-Q': '季报',
-                            '8-K': '临时报告',
-                            'IPO': '首次公开募股',
-                            'initial public offering': '首次公开募股',
-                            'secondary offering': '二次发行',
-                            'stock split': '股票分割',
-                            'stock buyback': '股票回购',
-                            'dividend payment': '股息支付',
-                            'dividend yield': '股息收益率',
-                            'ex-dividend': '除息',
-                            'record date': '登记日',
-                            'payment date': '支付日',
-                            
-                            // 市场动作
-                            'announces earnings': '公布财报',
-                            'announces results': '公布业绩',
-                            'announces': '宣布',
-                            'announced': '宣布了',
-                            'beats estimates': '超预期',
-                            'beats expectations': '超预期',
-                            'beats': '超越',
-                            'beat': '超越了',
-                            'misses estimates': '不及预期',
-                            'misses expectations': '不及预期',
-                            'misses': '不及',
-                            'missed': '不及',
-                            'meets expectations': '符合预期',
-                            'meets estimates': '符合预期',
-                            'exceeds expectations': '超出预期',
-                            'falls short of': '低于',
-                            'analyst expectations': '分析师预期',
-                            'market expectations': '市场预期',
-                            'expectations': '预期',
-                            'expected': '预期',
-                            'estimates': '预估',
-                            'consensus estimate': '一致预期',
-                            'revenue forecast': '营收预测',
-                            'earnings forecast': '盈利预测',
-                            'forecast': '预测',
-                            'forward guidance': '前瞻指引',
-                            'guidance': '指引',
-                            'outlook': '展望',
-                            'projections': '预测',
-                            'targets': '目标',
-                            'raises guidance': '上调指引',
-                            'lowers guidance': '下调指引',
-                            'reaffirms guidance': '重申指引',
-                            'withdraws guidance': '撤回指引',
-                            
-                            // 价格变动
-                            'stock rises': '股价上涨',
-                            'stock falls': '股价下跌',
-                            'price rises': '价格上涨',
-                            'price falls': '价格下跌',
-                            'shares rise': '股价上涨',
-                            'shares fall': '股价下跌',
-                            'rises sharply': '大幅上涨',
-                            'falls sharply': '大幅下跌',
-                            'rises': '上涨',
-                            'rose': '上涨了',
-                            'rising': '上涨',
-                            'falls': '下跌',
-                            'fell': '下跌了',
-                            'falling': '下跌',
-                            'gains ground': '上涨',
-                            'loses ground': '下跌',
-                            'gains': '上涨',
-                            'gained': '上涨了',
-                            'drops': '下跌',
-                            'dropped': '下跌了',
-                            'surges ahead': '大幅上涨',
-                            'surges': '飙升',
-                            'surged': '飙升了',
-                            'plunges': '暴跌',
-                            'plunged': '暴跌了',
-                            'climbs higher': '继续攀升',
-                            'climbs': '攀升',
-                            'climbed': '攀升了',
-                            'slides lower': '继续下滑',
-                            'slides': '下滑',
-                            'slid': '下滑了',
-                            'jumps': '跳涨',
-                            'jumped': '跳涨了',
-                            'tumbles': '暴跌',
-                            'tumbled': '暴跌了',
-                            'soars': '飙升',
-                            'soared': '飙升了',
-                            'crashes': '暴跌',
-                            'crashed': '暴跌了',
-                            'rallies': '反弹',
-                            'rallied': '反弹了',
-                            'rebounds': '反弹',
-                            'rebounded': '反弹了',
-                            'recovers': '回升',
-                            'recovered': '回升了',
-                            'declines': '下降',
-                            'declined': '下降了',
-                            'advances': '上涨',
-                            'advanced': '上涨了',
-                            'retreats': '回落',
-                            'retreated': '回落了',
-                            'spikes': '急升',
-                            'spiked': '急升了',
-                            'dips': '下跌',
-                            'dipped': '下跌了',
-                            'extends gains': '扩大涨幅',
-                            'extends losses': '扩大跌幅',
-                            'pares gains': '收窄涨幅',
-                            'pares losses': '收窄跌幅',
-                            'hits new high': '创新高',
-                            'hits new low': '创新低',
-                            'reaches high': '触及高点',
-                            'reaches low': '触及低点',
-                            'breaks out': '突破',
-                            'breaks down': '跌破',
-                            'tests resistance': '测试阻力',
-                            'tests support': '测试支撑',
-                            
-                            // 市场相关
-                            'market': '市场',
-                            'markets': '市场',
-                            'trading': '交易',
-                            'trade': '交易',
-                            'investors': '投资者',
-                            'investor': '投资者',
-                            'analyst': '分析师',
-                            'analysts': '分析师',
-                            'upgrade': '上调',
-                            'upgraded': '上调了',
-                            'downgrade': '下调',
-                            'downgraded': '下调了',
-                            'target': '目标',
-                            'price': '价格',
-                            'prices': '价格',
-                            'valuation': '估值',
-                            'value': '价值',
-                            
-                            // 业务相关
-                            'sales': '销售',
-                            'growth': '增长',
-                            'decline': '下降',
-                            'increase': '增加',
-                            'decrease': '减少',
-                            'expansion': '扩张',
-                            'acquisition': '收购',
-                            'merger': '合并',
-                            'partnership': '合作',
-                            'investment': '投资',
-                            'funding': '融资',
-                            
-                            // 时间相关
-                            'quarter': '季度',
-                            'Q1': '第一季度',
-                            'Q2': '第二季度',
-                            'Q3': '第三季度',
-                            'Q4': '第四季度',
-                            'year': '年',
-                            'month': '月',
-                            'week': '周',
-                            'today': '今天',
-                            'yesterday': '昨天',
-                            'tomorrow': '明天',
-                            
-                            // 其他常用词
-                            'company': '公司',
-                            'business': '业务',
-                            'industry': '行业',
-                            'sector': '板块',
-                            'technology': '技术',
-                            'innovation': '创新',
-                            'product': '产品',
-                            'service': '服务',
-                            'customer': '客户',
-                            'user': '用户',
-                            
-                            // 新闻常用词
-                            'breaking news': '突发新闻',
-                            'market news': '市场新闻',
-                            'financial news': '财经新闻',
-                            'business news': '商业新闻',
-                            'economic news': '经济新闻',
-                            'earnings news': '财报新闻',
-                            'news': '新闻',
-                            'news article': '新闻文章',
-                            'news report': '新闻报道',
-                            'article': '文章',
-                            'report': '报道',
-                            'latest update': '最新更新',
-                            'market update': '市场更新',
-                            'earnings update': '财报更新',
-                            'update': '更新',
-                            'breaking': '突发',
-                            'latest': '最新',
-                            'recent': '最近',
-                            'current': '当前',
-                            'today': '今日',
-                            'this week': '本周',
-                            'this month': '本月',
-                            'this quarter': '本季度',
-                            'this year': '今年',
-                            'market analysis': '市场分析',
-                            'stock analysis': '股票分析',
-                            'financial analysis': '财务分析',
-                            'technical analysis': '技术分析',
-                            'fundamental analysis': '基本面分析',
-                            'analysis': '分析',
-                            'expert opinion': '专家观点',
-                            'analyst opinion': '分析师观点',
-                            'market opinion': '市场观点',
-                            'opinion': '观点',
-                            'exclusive interview': '独家采访',
-                            'CEO interview': 'CEO采访',
-                            'management interview': '管理层采访',
-                            'interview': '采访',
-                            'press release': '新闻稿',
-                            'company statement': '公司声明',
-                            'official statement': '官方声明',
-                            'statement': '声明',
-                            'earnings conference': '财报会议',
-                            'investor conference': '投资者会议',
-                            'press conference': '新闻发布会',
-                            'conference': '会议',
-                            'board meeting': '董事会会议',
-                            'shareholder meeting': '股东大会',
-                            'annual meeting': '年会',
-                            'meeting': '会议',
-                            'earnings call': '财报电话会议',
-                            'investor call': '投资者电话会议',
-                            'conference call': '电话会议',
-                            'call': '电话会议',
-                            'investor presentation': '投资者演示',
-                            'earnings presentation': '财报演示',
-                            'company presentation': '公司演示',
-                            'presentation': '演示',
-                            'roadshow': '路演',
-                            'investor day': '投资者日',
-                            'analyst day': '分析师日',
-                            
-                            // 财务指标
-                            'EPS': '每股收益',
-                            'P/E': '市盈率',
-                            'dividend': '股息',
-                            'yield': '收益率',
-                            'margin': '利润率',
-                            'debt': '债务',
-                            'cash': '现金',
-                            'assets': '资产',
-                            'liabilities': '负债',
-                            'equity': '股权',
-                            'ROE': '净资产收益率',
-                            'ROI': '投资回报率',
-                            
-                            // 动作词汇
-                            'launches new product': '推出新产品',
-                            'launches service': '推出服务',
-                            'launches': '推出',
-                            'launched': '推出了',
-                            'introduces new': '推出新的',
-                            'introduces': '推介',
-                            'introduced': '推介了',
-                            'releases earnings': '发布财报',
-                            'releases results': '发布业绩',
-                            'releases': '发布',
-                            'released': '发布了',
-                            'develops technology': '开发技术',
-                            'develops': '开发',
-                            'developed': '开发了',
-                            'expands business': '扩展业务',
-                            'expands operations': '扩大运营',
-                            'expands': '扩展',
-                            'expanded': '扩展了',
-                            'enters market': '进入市场',
-                            'enters partnership': '建立合作',
-                            'enters': '进入',
-                            'entered': '进入了',
-                            'exits business': '退出业务',
-                            'exits market': '退出市场',
-                            'exits': '退出',
-                            'exited': '退出了',
-                            'acquires company': '收购公司',
-                            'acquires': '收购',
-                            'acquired': '收购了',
-                            'merges with': '与...合并',
-                            'completes merger': '完成合并',
-                            'completes acquisition': '完成收购',
-                            'completes deal': '完成交易',
-                            'completes': '完成',
-                            'completed': '完成了',
-                            'signs agreement': '签署协议',
-                            'signs deal': '签署交易',
-                            'signs contract': '签署合同',
-                            'signs': '签署',
-                            'signed': '签署了',
-                            'partners with': '与...合作',
-                            'forms partnership': '建立合作',
-                            'establishes': '建立',
-                            'established': '建立了',
-                            'invests in': '投资于',
-                            'makes investment': '进行投资',
-                            'receives funding': '获得融资',
-                            'raises capital': '筹集资金',
-                            'raises funds': '筹集资金',
-                            'secures funding': '获得资金',
-                            'closes round': '完成融资',
-                            'hires': '聘用',
-                            'hired': '聘用了',
-                            'appoints': '任命',
-                            'appointed': '任命了',
-                            'promotes': '提升',
-                            'promoted': '提升了',
-                            'names': '任命',
-                            'named': '任命了',
-                            
-                            // 情感词汇
-                            'strong': '强劲',
-                            'weak': '疲软',
-                            'positive': '积极',
-                            'negative': '消极',
-                            'bullish': '看涨',
-                            'bearish': '看跌',
-                            'optimistic': '乐观',
-                            'pessimistic': '悲观',
-                            'confident': '信心',
-                            'concerned': '担忧',
-                            
-                            // 时间表达
-                            'pre-market trading': '盘前交易',
-                            'pre-market': '盘前',
-                            'after-hours trading': '盘后交易',
-                            'after-hours': '盘后',
-                            'market opening': '开盘',
-                            'opening bell': '开盘铃',
-                            'opening': '开盘',
-                            'market closing': '收盘',
-                            'closing bell': '收盘铃',
-                            'closing': '收盘',
-                            'trading session': '交易时段',
-                            'session': '交易时段',
-                            'trading day': '交易日',
-                            'business day': '工作日',
-                            'market day': '交易日',
-                            'weekend': '周末',
-                            'holiday': '假期',
-                            'market holiday': '市场休市',
-                            'early this morning': '今天早些时候',
-                            'this morning': '今天上午',
-                            'this afternoon': '今天下午',
-                            'this evening': '今天晚上',
-                            'earlier today': '今天早些时候',
-                            'later today': '今天晚些时候',
-                            'last week': '上周',
-                            'next week': '下周',
-                            'last month': '上个月',
-                            'next month': '下个月',
-                            'last quarter': '上季度',
-                            'next quarter': '下季度',
-                            'last year': '去年',
-                            'next year': '明年',
-                            'year-over-year': '同比',
-                            'quarter-over-quarter': '环比',
-                            'month-over-month': '月环比',
-                            'year-to-date': '年初至今',
-                            
-                            // 常见新闻短语
-                            'according to': '据',
-                            'sources say': '消息人士称',
-                            'reports suggest': '报道显示',
-                            'analysts say': '分析师表示',
-                            'experts believe': '专家认为',
-                            'investors are': '投资者',
-                            'the company said': '该公司表示',
-                            'in a statement': '在声明中',
-                            'during the call': '在电话会议中',
-                            'on the call': '在电话会议上',
-                            'in the report': '在报告中',
-                            'the report shows': '报告显示',
-                            'data shows': '数据显示',
-                            'figures show': '数据显示',
-                            'results show': '结果显示',
-                            'as expected': '如预期',
-                            'better than expected': '好于预期',
-                            'worse than expected': '差于预期',
-                            'in line with': '符合',
-                            'compared to': '相比',
-                            'versus': '对比',
-                            'up from': '高于',
-                            'down from': '低于',
-                            'for the quarter': '本季度',
-                            'for the year': '本年度',
-                            'going forward': '展望未来',
-                            'looking ahead': '展望未来',
-                            'moving forward': '展望未来'
-                        };
-                        
-                        let translatedText = text;
-                        
-                        // 按词长度排序，优先替换长词
-                        const sortedKeys = Object.keys(translations).sort((a, b) => b.length - a.length);
-                        
-                        sortedKeys.forEach(english => {
-                            const regex = new RegExp(`\\b${english}\\b`, 'gi');
-                            translatedText = translatedText.replace(regex, translations[english]);
-                        });
-                        
-                        return translatedText;
-                    }
-                    return text;
-                },
+
+
                 
-                translateText(text) {
-                    // 同步本地翻译，确保稳定性
-                    return this.translateTextLocal(text);
-                },
-                
+
+
                 translateTitle(title) {
                     if (!title) return '';
                     
-                    // 优先使用API翻译结果，回退到本地翻译
+                    // 优先使用火山引擎翻译结果
                     const article = this.news?.find(n => n.headline === title);
                     if (article?.translatedHeadline) {
                         return article.translatedHeadline;
                     }
                     
-                    // 如果没有找到匹配的新闻或没有翻译结果，使用本地翻译
-                    const localTranslation = this.translateTextLocal(title);
-                    if (localTranslation && localTranslation !== title) {
-                        return localTranslation;
-                    }
-                    
-                    // 如果本地翻译也失败，尝试使用API直接翻译
-                    try {
-                        // 异步翻译，但同步返回，确保UI不会闪烁
-                        this.translateWithAPI(title).then(translatedTitle => {
-                            if (translatedTitle && translatedTitle !== title) {
-                                // 找到对应的新闻并更新其翻译标题
-                                const index = this.news?.findIndex(n => n.headline === title);
-                                if (index !== -1 && index !== undefined) {
-                                    this.news[index].translatedHeadline = translatedTitle;
-                                    // 触发视图更新
-                                    this.$forceUpdate();
-                                }
-                            }
-                        }).catch(() => {});
-                    } catch (e) {}
-                    
-                    // 立即返回最佳可用结果
-                    return localTranslation || title;
+                    // 如果没有翻译结果，返回原文
+                    return title;
                 },
                 
                 translateSummary(summary) {
                     if (!summary) return '';
                     
-                    // 优先使用API翻译结果，回退到本地翻译
+                    // 优先使用火山引擎翻译结果
                     const article = this.news?.find(n => n.summary === summary);
                     if (article?.translatedSummary) {
                         return article.translatedSummary;
                     }
                     
-                    // 如果没有找到匹配的新闻或没有翻译结果，使用本地翻译
-                    const localTranslation = this.translateTextLocal(summary);
-                    if (localTranslation && localTranslation !== summary) {
-                        return localTranslation;
-                    }
-                    
-                    // 如果本地翻译也失败，尝试使用API直接翻译
-                    try {
-                        // 异步翻译，但同步返回，确保UI不会闪烁
-                        this.translateWithAPI(summary).then(translatedSummary => {
-                            if (translatedSummary && translatedSummary !== summary) {
-                                // 找到对应的新闻并更新其翻译摘要
-                                const index = this.news?.findIndex(n => n.summary === summary);
-                                if (index !== -1 && index !== undefined) {
-                                    this.news[index].translatedSummary = translatedSummary;
-                                    // 触发视图更新
-                                    this.$forceUpdate();
-                                }
-                            }
-                        }).catch(() => {});
-                    } catch (e) {}
-                    
-                    // 立即返回最佳可用结果
-                    return localTranslation || summary;
+                    // 如果没有翻译结果，返回原文
+                    return summary;
                 },
                 
                 formatNewsDate(timestamp) {
