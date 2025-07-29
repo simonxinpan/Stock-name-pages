@@ -64,7 +64,10 @@
         <div class="bg-white rounded-lg card-shadow p-6 mb-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900" x-text="profile?.name || symbol"></h2>
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <span x-text="profile?.name || symbol"></span>
+                        <span x-show="language === 'zh' && getChineseStockName(symbol) !== symbol" class="text-xl text-gray-600 ml-2" x-text="'(' + getChineseStockName(symbol) + ')'"></span>
+                    </h2>
                     <p class="text-sm text-gray-500" x-text="symbol"></p>
                 </div>
                 <div class="mt-4 sm:mt-0 text-right">
@@ -454,23 +457,77 @@
                             return close >= this.candles.c[index - 1] ? 'rgb(34, 197, 94)' : 'rgb(239, 68, 68)';
                         });
                         
+                        // 根据时间周期创建不同的数据集
+                        const datasets = [];
+                        
+                        // 主要收盘价线
+                        datasets.push({
+                            label: this.language === 'zh' ? '收盘价' : 'Close Price',
+                            data: this.candles.c,
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.1,
+                            pointBackgroundColor: priceColors,
+                            pointBorderColor: priceColors,
+                            pointRadius: 3,
+                            pointHoverRadius: 6
+                        });
+                        
+                        // 添加开盘价线（稍微错开）
+                        if (this.candles.o && this.candles.o.length > 0) {
+                            datasets.push({
+                                label: this.language === 'zh' ? '开盘价' : 'Open Price',
+                                data: this.candles.o,
+                                borderColor: 'rgb(34, 197, 94)',
+                                backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                                borderWidth: 1.5,
+                                fill: false,
+                                tension: 0.1,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                borderDash: [5, 5]
+                            });
+                        }
+                        
+                        // 添加最高价线
+                        if (this.candles.h && this.candles.h.length > 0) {
+                            datasets.push({
+                                label: this.language === 'zh' ? '最高价' : 'High Price',
+                                data: this.candles.h,
+                                borderColor: 'rgb(239, 68, 68)',
+                                backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                                borderWidth: 1,
+                                fill: false,
+                                tension: 0.1,
+                                pointRadius: 1,
+                                pointHoverRadius: 4,
+                                borderDash: [2, 3]
+                            });
+                        }
+                        
+                        // 添加最低价线
+                        if (this.candles.l && this.candles.l.length > 0) {
+                            datasets.push({
+                                label: this.language === 'zh' ? '最低价' : 'Low Price',
+                                data: this.candles.l,
+                                borderColor: 'rgb(168, 85, 247)',
+                                backgroundColor: 'rgba(168, 85, 247, 0.05)',
+                                borderWidth: 1,
+                                fill: false,
+                                tension: 0.1,
+                                pointRadius: 1,
+                                pointHoverRadius: 4,
+                                borderDash: [3, 2]
+                            });
+                        }
+                        
                         this.chart = new Chart(ctx, {
                             type: 'line',
                             data: {
                                 labels: labels,
-                                datasets: [{
-                                    label: this.language === 'zh' ? '收盘价' : 'Close Price',
-                                    data: this.candles.c,
-                                    borderColor: 'rgb(59, 130, 246)',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    borderWidth: 2,
-                                    fill: true,
-                                    tension: 0.1,
-                                    pointBackgroundColor: priceColors,
-                                    pointBorderColor: priceColors,
-                                    pointRadius: 3,
-                                    pointHoverRadius: 6
-                                }]
+                                datasets: datasets
                             },
                             options: {
                                 responsive: true,
@@ -687,23 +744,17 @@
                 formatMarketCap(marketCap) {
                     if (!marketCap) return 'N/A';
                     
-                    // marketCap单位是十亿美元(Billion)
+                    // 先除以1000进行单位转换
+                    const adjustedMarketCap = marketCap / 1000;
+                    
                     if (this.language === 'zh') {
-                        if (marketCap >= 1000) {
-                            // 1000 billion = 1 trillion = 1万亿
-                            return `${(marketCap / 1000).toFixed(2)}万亿美元`;
-                        } else if (marketCap >= 10) {
-                            // 10 billion = 100亿
-                            return `${(marketCap * 10).toFixed(0)}亿美元`;
+                        if (adjustedMarketCap >= 1) {
+                            return `${adjustedMarketCap.toFixed(3)}万亿美元`;
                         } else {
-                            return `${(marketCap * 10).toFixed(1)}亿美元`;
+                            return `${(adjustedMarketCap * 10000).toFixed(0)}亿美元`;
                         }
                     } else {
-                        if (marketCap >= 1000) {
-                            return `$${(marketCap / 1000).toFixed(2)}T`;
-                        } else {
-                            return `$${marketCap.toFixed(2)}B`;
-                        }
+                        return `$${adjustedMarketCap.toFixed(3)}T`;
                     }
                 },
 
@@ -756,7 +807,8 @@
                 // 格式化百分比
                 formatPercentage(value) {
                     if (value === null || value === undefined || isNaN(value)) return 'N/A';
-                    return (parseFloat(value) * 100).toFixed(2) + '%';
+                    // 数据已经是百分比形式，直接除以100显示
+                    return (parseFloat(value) / 100).toFixed(2) + '%';
                 },
 
                 // 创建模拟K线数据
