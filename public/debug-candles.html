@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Candles API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .error { background-color: #ffe6e6; }
+        .success { background-color: #e6ffe6; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>Debug Candles API</h1>
+    <button onclick="testCandlesAPI()">Test AAPL Candles API</button>
+    <div id="results"></div>
+
+    <script>
+        async function testCandlesAPI() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div>Testing...</div>';
+            
+            // 计算时间范围（最近30天）
+            const to = Math.floor(Date.now() / 1000);
+            const from = to - (30 * 24 * 60 * 60);
+            
+            const url = `/api/stock/candles?symbol=AAPL&resolution=D&from=${from}&to=${to}`;
+            
+            try {
+                console.log('Testing URL:', url);
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                let resultHtml = `
+                    <div class="result ${response.ok ? 'success' : 'error'}">
+                        <h3>Response Status: ${response.status}</h3>
+                        <h4>URL:</h4>
+                        <pre>${url}</pre>
+                        <h4>Response Data:</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = resultHtml;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>Network Error</h3>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

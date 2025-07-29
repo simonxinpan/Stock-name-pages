@@ -21,10 +21,13 @@
   "author": "FE-Core Team",
   "license": "MIT",
   "dependencies": {
+    "@volcengine/openapi": "^1.30.2",
     "axios": "^1.6.0",
     "chart.js": "^4.4.0",
-    "pg": "^8.11.0",
-    "dotenv": "^16.3.0"
+    "cheerio": "^1.1.2",
+    "dotenv": "^16.3.0",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.11.0"
   },
   "devDependencies": {
     "@vercel/node": "^3.0.0",
@@ -35,9 +38,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/smart-stock-detail.git"
+    "url": "https://github.com/simonxinpan/Stock-name-pages.git"
   },
-  "homepage": "https://smart-stock-detail.vercel.app",
+  "homepage": "https://stock-name-pages-10-git-v2-simon-pans-projects.vercel.app",
   "vercel": {
     "framework": null,
     "buildCommand": null,

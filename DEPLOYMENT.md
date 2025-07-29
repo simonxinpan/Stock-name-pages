@@ -1,6 +1,25 @@
 # 智能个股详情页 - 部署指南
 
-## 🚀 快速开始
+## 🚀 快速部署指南
+
+### 当前状态
+✅ **V5版本已完成开发，可直接部署到Vercel**
+
+#### 核心功能
+- ✅ 前端界面：完整的股票详情页面
+- ✅ API接口：股票报价、公司资料、新闻数据
+- ✅ K线图：使用Polygon.io API的历史数据
+- ✅ 市值显示：中文单位（万亿美元、亿美元）
+- ✅ 多时间轴：日线、周线、月线切换
+- ✅ 降级机制：API失败时的友好提示
+- ✅ 环境配置：生产环境变量设置
+
+#### 技术栈
+- 前端：HTML5 + TailwindCSS + Alpine.js + Chart.js
+- 后端：Node.js + Vercel Serverless Functions
+- 数据源：Finnhub API + Polygon.io API
+- 数据库：PostgreSQL (可选)
+- 部署平台：Vercel
 
 ### 1. 环境准备
 
@@ -24,14 +43,14 @@ cp .env.example .env
 
 编辑 `.env` 文件，配置以下环境变量：
 
-#### 3.1 Finnhub API 配置
+#### 3.1 Finnhub API 配置（已配置）
 
-1. 访问 [Finnhub.io](https://finnhub.io) 注册免费账户
-2. 获取 API 密钥
-3. 在 `.env` 文件中设置：
+- ✅ 当前使用密钥：`ctbr9k9r01qnc8qhvqpgctbr9k9r01qnc8qhvqq0`
+- 如需更换，访问 [Finnhub.io](https://finnhub.io) 获取新密钥
+- 在 `.env` 文件中设置：
 
 ```env
-FINNHUB_API_KEY=your_actual_api_key_here
+FINNHUB_API_KEY=ctbr9k9r01qnc8qhvqpgctbr9k9r01qnc8qhvqq0
 ```
 
 #### 3.2 数据库配置 (可选)
@@ -78,22 +97,41 @@ npm run start
 
 ### Vercel 部署
 
-1. 安装 Vercel CLI：
+1. **连接GitHub仓库**
+   ```bash
+   # 推送代码到GitHub
+   git add .
+   git commit -m "Deploy to Vercel"
+   git push origin main
+   ```
 
-```bash
-npm install -g vercel
-```
+2. **在Vercel中导入项目**
+   - 访问 [Vercel Dashboard](https://vercel.com/dashboard)
+   - 点击 "New Project"
+   - 选择GitHub仓库
+   - 配置构建设置（通常自动检测）
 
-2. 登录并部署：
+3. **配置环境变量**
+   在Vercel项目设置 → Environment Variables 中添加：
+   ```
+   FINNHUB_API_KEY=ctbr9k9r01qnc8qhvqpgctbr9k9r01qnc8qhvqq0
+   POLYGON_API_KEY=your_polygon_api_key_here
+   NODE_ENV=production
+   ```
+   
+   可选数据库配置：
+   ```
+   DATABASE_URL=postgresql://username:password@hostname/database?sslmode=require
+   ```
 
-```bash
-vercel login
-vercel --prod
-```
+   **注意：**
+   - `FINNHUB_API_KEY`：用于获取股票报价、公司资料和新闻数据
+   - `POLYGON_API_KEY`：用于获取K线图历史数据，已在Vercel环境变量中配置
 
-3. 在 Vercel 控制台配置环境变量：
-   - `FINNHUB_API_KEY`
-   - `DATABASE_URL` (可选)
+4. **部署**
+   - Vercel会自动部署
+   - 每次推送到main分支都会触发重新部署
+   - 部署完成后可通过提供的URL访问应用
 
 ### Netlify 部署
 

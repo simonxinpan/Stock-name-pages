@@ -40,8 +40,8 @@ export default async function handler(req, res) {
     let chartData = await getChartDataFromDatabase(symbol.toUpperCase(), period, timeRange);
     
     if (!chartData || chartData.length === 0) {
-      // 如果没有缓存数据，从Finnhub获取
-      chartData = await fetchChartDataFromFinnhub(symbol, timeRange);
+      // 如果没有缓存数据，从Polygon获取
+      chartData = await fetchChartDataFromPolygon(symbol, timeRange);
       
       // 保存到数据库
       if (chartData && chartData.length > 0) {
@@ -172,35 +172,66 @@ async function getChartDataFromDatabase(symbol, period, timeRange) {
   }
 }
 
-// 从Finnhub获取K线数据
-async function fetchChartDataFromFinnhub(symbol, timeRange) {
-  const apiKey = process.env.FINNHUB_API_KEY;
+// 从Polygon获取K线数据
+async function fetchChartDataFromPolygon(symbol, timeRange) {
+  const apiKey = process.env.POLYGON_API_KEY;
   
   if (!apiKey) {
-    throw new Error('Finnhub API key not configured');
+    throw new Error('Polygon API key not configured');
   }
   
-  const url = `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=${timeRange.resolution}&from=${timeRange.from}&to=${timeRange.to}&token=${apiKey}`;
+  // 转换时间戳为日期格式
+  const fromDate = new Date(timeRange.from * 1000).toISOString().split('T')[0];
+  const toDate = new Date(timeRange.to * 1000).toISOString().split('T')[0];
+  
+  // 根据分辨率确定时间跨度
+  let timespan = 'day';
+  let multiplier = 1;
+  
+  switch (timeRange.resolution) {
+    case '5':
+      timespan = 'minute';
+      multiplier = 5;
+      break;
+    case '15':
+      timespan = 'minute';
+      multiplier = 15;
+      break;
+    case '60':
+      timespan = 'hour';
+      multiplier = 1;
+      break;
+    case 'D':
+      timespan = 'day';
+      multiplier = 1;
+      break;
+    case 'W':
+      timespan = 'week';
+      multiplier = 1;
+      break;
+    default:
+      timespan = 'day';
+      multiplier = 1;
+  }
+  
+  const url = `https://api.polygon.io/v2/aggs/ticker/${symbol}/range/${multiplier}/${timespan}/${fromDate}/${toDate}?adjusted=true&sort=asc&apikey=${apiKey}`;
   
   const response = await fetch(url);
   const data = await response.json();
   
-  if (data.s !== 'ok' || !data.c) {
+  if (data.status !== 'OK' || !data.results || data.results.length === 0) {
     throw new Error('No data available for this symbol and time range');
   }
   
-  // 转换Finnhub数据格式
-  const chartData = [];
-  for (let i = 0; i < data.c.length; i++) {
-    chartData.push({
-      timestamp: data.t[i],
-      open: data.o[i],
-      high: data.h[i],
-      low: data.l[i],
-      close: data.c[i],
-      volume: data.v[i]
-    });
-  }
+  // 转换Polygon数据格式
+  const chartData = data.results.map(candle => ({
+    timestamp: Math.floor(candle.t / 1000), // 转换为秒级时间戳
+    open: candle.o,
+    high: candle.h,
+    low: candle.l,
+    close: candle.c,
+    volume: candle.v
+  }));
   
   return chartData;
 }
