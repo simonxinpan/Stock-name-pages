@@ -344,8 +344,29 @@
                 async loadCandles() {
                     try {
                         const to = Math.floor(Date.now() / 1000);
-                        const from = to - (30 * 24 * 60 * 60); // 30天前
-                        const requestParams = `${this.symbol}-${this.selectedPeriod}-${from}-${to}`;
+                        let from;
+                        
+                        // 根据不同时间周期设置数据范围
+                        switch(this.selectedPeriod) {
+                            case '1':
+                            case '5':
+                            case '15':
+                                from = to - (30 * 24 * 60 * 60); // 30天
+                                break;
+                            case 'D':
+                                from = to - (30 * 24 * 60 * 60); // 30天
+                                break;
+                            case 'W':
+                                from = to - (30 * 7 * 24 * 60 * 60); // 30周
+                                break;
+                            case 'M':
+                                from = to - (30 * 30 * 24 * 60 * 60); // 30个月
+                                break;
+                            default:
+                                from = to - (30 * 24 * 60 * 60); // 默认30天
+                        }
+                        
+                        const requestParams = `${this.symbol}-${this.selectedPeriod}-${from}-${to}`;}]}}}
                         
                         // 检查是否是重复请求
                         if (this.lastRequestParams === requestParams) {
@@ -744,17 +765,14 @@
                 formatMarketCap(marketCap) {
                     if (!marketCap) return 'N/A';
                     
-                    // 先除以1000进行单位转换
-                    const adjustedMarketCap = marketCap / 1000;
+                    // 数据库中的市值单位是billion，需要转换为万亿显示
+                    // 3197 billion = 3.197 万亿
+                    const trillionValue = marketCap / 1000;
                     
                     if (this.language === 'zh') {
-                        if (adjustedMarketCap >= 1) {
-                            return `${adjustedMarketCap.toFixed(3)}万亿美元`;
-                        } else {
-                            return `${(adjustedMarketCap * 10000).toFixed(0)}亿美元`;
-                        }
+                        return `${trillionValue.toFixed(3)}万亿美元`;
                     } else {
-                        return `$${adjustedMarketCap.toFixed(3)}T`;
+                        return `$${trillionValue.toFixed(3)}T`;
                     }
                 },
 
@@ -807,8 +825,9 @@
                 // 格式化百分比
                 formatPercentage(value) {
                     if (value === null || value === undefined || isNaN(value)) return 'N/A';
-                    // 数据已经是百分比形式，直接除以100显示
-                    return (parseFloat(value) / 100).toFixed(2) + '%';
+                    // 数据库中的百分比数据需要除以100或乘以1%
+                    // 例如：0.48 -> 0.48%, 151 -> 151%
+                    return parseFloat(value).toFixed(2) + '%';
                 },
 
                 // 创建模拟K线数据
