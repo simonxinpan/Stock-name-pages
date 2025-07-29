@@ -1,55 +1,39 @@
-// /api/stock/news.js (使用官方 @volcengine/openapi SDK)
-import { Service } from '@volcengine/openapi';
+// /api/stock/news.js (使用内部翻译API)
 
 // --- 火山引擎翻译引擎 ---
-async function translateWithVolcEngine(text, accessKeyId, secretAccessKey) {
-  // 1. 初始化火山引擎通用服务客户端
-  const service = new Service({
-    host: 'open.volcengineapi.com',
-    serviceName: 'translate', // ** 关键：指定服务为 'translate' **
-    region: 'cn-north-1',
-    accessKeyId,
-    secretAccessKey,
-  });
-  
-  // 2. 获取请求器，SDK会自动处理签名
-  const fetchApi = service.fetchApi();
-  
-  const params = {
-    Action: 'TranslateText',
-    Version: '2020-06-01',
-  };
-  const body = {
-    TargetLanguage: 'zh',
-    TextList: [text],
-  };
-
+async function translateWithVolcEngine(text) {
   try {
-    // 3. 发起请求
-    const res = await fetchApi(params, body);
+    const response = await fetch('/api/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        text: text,
+        targetLang: 'zh'
+      })
+    });
     
-    // 4. 处理返回结果
-    if (res.ResponseMetadata?.Error) {
-      throw new Error(`Volcengine API Error: ${res.ResponseMetadata.Error.Message}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-    if (res.TranslationList && res.TranslationList[0] && res.TranslationList[0].Translation) {
-      return res.TranslationList[0].Translation;
-    }
-    throw new Error("Volcengine API returned an unexpected format");
+    
+    const data = await response.json();
+    return data.translatedText || data.translation || text;
   } catch (error) {
     console.warn("Volcengine translator failed:", error.message || error);
-    throw error;
+    return text; // 返回原文
   }
 }
 
 // --- 并行翻译所有新闻标题 ---
-async function translateNewsHeadlines(news, ak, sk) {
+async function translateNewsHeadlines(news) {
   if (!news || news.length === 0) return [];
   
   const translationPromises = news.map(async (article) => {
     let translatedHeadline = article.headline;
     try {
-      translatedHeadline = await translateWithVolcEngine(article.headline, ak, sk);
+      translatedHeadline = await translateWithVolcEngine(article.headline);
     } catch (e) {
       console.error(`Translation failed for "${article.headline.substring(0, 20)}...":`, e.message);
     }
@@ -80,7 +64,7 @@ export default async function handler(request, response) {
     let newsData = await apiResponse.json();
     
     if (lang === 'zh' && VOLC_AK && VOLC_SK && newsData && newsData.length > 0) {
-      newsData = await translateNewsHeadlines(newsData, VOLC_AK, VOLC_SK);
+      newsData = await translateNewsHeadlines(newsData);
     }
 
     response.setHeader('Access-Control-Allow-Origin', '*');
