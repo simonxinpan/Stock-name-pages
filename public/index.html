@@ -1,9 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <!-- ... 省略 <head> ... -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能个股详情页</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ... 省略之前的样式 ... */
+        [x-cloak] { display: none !important; }
+        .card-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 40; }
         .modal-content { max-height: 80vh; }
         .prose-styles h1, .prose-styles h2 { font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; }
@@ -11,20 +18,93 @@
         .prose-styles a { color: #3b82f6; text-decoration: underline; }
     </style>
 </head>
-<body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
-    
-    <!-- ... 省略 nav 和 main HTML 结构，只在 main 内部修改新闻部分 ... -->
+<body class="bg-gray-50" x-data="stockApp()" x-init="init()">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">智能个股详情页</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <input 
+                        type="text" 
+                        x-model="symbol" 
+                        @keyup.enter="loadStock()"
+                        placeholder="输入股票代码 (如: AAPL)"
+                        class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                    <button 
+                        @click="loadStock()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        :disabled="loading"
+                    >
+                        <span x-show="!loading">搜索</span>
+                        <span x-show="loading">加载中...</span>
+                    </button>
+                    <button 
+                        @click="toggleLanguage()" 
+                        class="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                    >
+                        <span x-text="language === 'zh' ? 'EN' : '中文'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 加载状态 -->
+    <div x-show="loading" class="flex justify-center items-center h-64" x-cloak>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- 主要内容 -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-show="!loading && quote" x-cloak>
+        <!-- 股票基本信息 -->
+        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900" x-text="profile?.name || symbol"></h2>
+                    <p class="text-sm text-gray-500" x-text="symbol"></p>
+                </div>
+                <div class="mt-4 sm:mt-0 text-right">
+                    <div class="text-3xl font-bold" :class="quote?.dp >= 0 ? 'text-green-600' : 'text-red-600'" x-text="'$' + quote?.c?.toFixed(2)"></div>
+                    <div class="text-sm" :class="quote?.dp >= 0 ? 'text-green-600' : 'text-red-600'">
+                        <span x-text="(quote?.dp >= 0 ? '+' : '') + quote?.d?.toFixed(2)"></span>
+                        <span x-text="'(' + (quote?.dp >= 0 ? '+' : '') + quote?.dp?.toFixed(2) + '%)'" class="ml-1"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧：K线图 -->
             <div class="lg:col-span-2 space-y-6">
-                <!-- ... 省略 K线图部分 ... -->
-                
-                <!-- 相关新闻 (已修改) -->
+                <!-- K线图 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900" x-text="language === 'zh' ? 'K线图' : 'Chart'"></h3>
+                        <div class="flex space-x-2">
+                            <template x-for="period in periods" :key="period.value">
+                                <button 
+                                    @click="changePeriod(period.value)"
+                                    :class="selectedPeriod === period.value ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                                    class="px-3 py-1 text-sm rounded-md"
+                                    x-text="period.label"
+                                ></button>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="h-96">
+                        <canvas id="stockChart" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <!-- 相关新闻 -->
                 <div class="bg-white rounded-lg card-shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h3>
                     <div class="max-h-96 overflow-y-auto space-y-3">
                         <template x-for="article in news.slice(0, 10)" :key="article.id">
-                            <!-- *** 关键改动：点击时调用 openArticleModal *** -->
                             <div @click="openArticleModal(article.url)" class="cursor-pointer border-b border-gray-100 pb-3 last:border-b-0">
                                 <div class="block hover:bg-gray-50 rounded p-2 transition-colors">
                                     <h4 class="text-sm font-medium text-gray-900 mb-1 line-clamp-2" x-text="article.headline"></h4>
@@ -33,15 +113,84 @@
                                 </div>
                             </div>
                         </template>
-                        <!-- ... -->
+                        <div x-show="news.length === 0" class="text-center text-gray-500 py-4">
+                            <span x-text="language === 'zh' ? '暂无新闻' : 'No news available'"></span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- ... 省略右侧边栏 ... -->
+
+            <!-- 右侧：股票信息 -->
+            <div class="space-y-6">
+                <!-- 关键指标 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '开盘价' : 'Open'"></span>
+                            <span class="text-sm font-medium" x-text="'$' + quote?.o?.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '最高价' : 'High'"></span>
+                            <span class="text-sm font-medium" x-text="'$' + quote?.h?.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '最低价' : 'Low'"></span>
+                            <span class="text-sm font-medium" x-text="'$' + quote?.l?.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '前收盘' : 'Prev Close'"></span>
+                            <span class="text-sm font-medium" x-text="'$' + quote?.pc?.toFixed(2)"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 公司信息 -->
+                <div class="bg-white rounded-lg card-shadow p-6" x-show="profile">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h3>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
+                            <p class="text-sm font-medium" x-text="profile?.finnhubIndustry || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '国家' : 'Country'"></span>
+                            <p class="text-sm font-medium" x-text="profile?.country || 'N/A'"></p>
+                        </div>
+                        <div x-show="profile?.weburl">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '官网' : 'Website'"></span>
+                            <a :href="profile?.weburl" target="_blank" class="text-sm font-medium text-blue-600 hover:underline block" x-text="profile?.weburl"></a>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '市值' : 'Market Cap'"></span>
+                            <p class="text-sm font-medium" x-text="formatMarketCap(profile?.marketCapitalization)"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 相关链接 -->
+                <div class="bg-white rounded-lg card-shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '相关链接' : 'Related Links'"></h3>
+                    <div class="space-y-3">
+                        <button 
+                            @click="openYouTubeSearch()"
+                            class="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                        >
+                            <span x-text="language === 'zh' ? 'YouTube 分析视频' : 'YouTube Analysis'"></span>
+                        </button>
+                        <button 
+                            @click="openXueqiuSearch()"
+                            class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                        >
+                            <span x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Discussion'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <!-- *** 新增的新闻模态框 *** -->
+    <!-- 新闻模态框 -->
     <div x-show="isModalOpen" class="modal-overlay flex items-center justify-center" @click.self="isModalOpen = false" x-cloak>
         <div class="bg-white rounded-lg card-shadow w-11/12 md:w-3/4 lg:w-1/2" @click.stop>
             <div class="p-6">
@@ -58,22 +207,141 @@
                 </div>
             </div>
             <div class="bg-gray-50 px-6 py-3 flex justify-end">
-                <button @click="isModalOpen = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+                <button @click="isModalOpen = false" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                    <span x-text="language === 'zh' ? '关闭' : 'Close'"></span>
+                </button>
             </div>
         </div>
     </div>
 
+    <!-- 错误提示 -->
+    <div x-show="error" class="fixed bottom-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" x-cloak>
+        <span x-text="error"></span>
+        <button @click="error = ''" class="ml-2 text-red-500 hover:text-red-700">&times;</button>
+    </div>
+
     <script>
-        function liveStockApp() {
+        function stockApp() {
             return {
-                // ... 省略所有 state ...
-                isModalOpen: false, // <-- 新增
-                articleLoading: false, // <-- 新增
-                currentArticle: { title: '', content: '' }, // <-- 新增
+                // 状态变量
+                symbol: 'AAPL',
+                loading: false,
+                error: '',
+                language: 'zh',
+                quote: null,
+                profile: null,
+                news: [],
+                candles: null,
+                chart: null,
+                selectedPeriod: 'D',
+                isModalOpen: false,
+                articleLoading: false,
+                currentArticle: { title: '', content: '' },
+                
+                // 时间周期选项
+                periods: [
+                    { value: '1', label: '1分钟' },
+                    { value: '5', label: '5分钟' },
+                    { value: '15', label: '15分钟' },
+                    { value: 'D', label: '日线' },
+                    { value: 'W', label: '周线' },
+                    { value: 'M', label: '月线' }
+                ],
 
-                // ... 省略 init, loadStock, changePeriod 等函数 ...
+                // 初始化
+                async init() {
+                    await this.loadStock();
+                },
 
-                // *** 新增的打开文章模态框函数 ***
+                // 加载股票数据
+                async loadStock() {
+                    if (!this.symbol) return;
+                    
+                    this.loading = true;
+                    this.error = '';
+                    
+                    try {
+                        // 并行加载数据
+                        const [quoteRes, profileRes, newsRes] = await Promise.all([
+                            fetch(`/api/stock/${this.symbol}?type=quote`),
+                            fetch(`/api/stock/${this.symbol}?type=profile`),
+                            fetch(`/api/stock/news?symbol=${this.symbol}`)
+                        ]);
+                        
+                        this.quote = await this.handleResponse(quoteRes);
+                        this.profile = await this.handleResponse(profileRes);
+                        this.news = await this.handleResponse(newsRes) || [];
+                        
+                        // 加载K线数据
+                        await this.loadCandles();
+                        
+                    } catch (error) {
+                        this.error = `加载失败: ${error.message}`;
+                        console.error('Load stock error:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                // 加载K线数据
+                async loadCandles() {
+                    try {
+                        const to = Math.floor(Date.now() / 1000);
+                        const from = to - (30 * 24 * 60 * 60); // 30天前
+                        
+                        const response = await fetch(`/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`);
+                        this.candles = await this.handleResponse(response);
+                        
+                        this.updateChart();
+                    } catch (error) {
+                        console.error('Load candles error:', error);
+                    }
+                },
+
+                // 切换时间周期
+                async changePeriod(period) {
+                    this.selectedPeriod = period;
+                    await this.loadCandles();
+                },
+
+                // 更新图表
+                updateChart() {
+                    const ctx = document.getElementById('stockChart');
+                    if (!ctx || !this.candles || !this.candles.c) return;
+                    
+                    if (this.chart) {
+                        this.chart.destroy();
+                    }
+                    
+                    const labels = this.candles.t.map(timestamp => 
+                        new Date(timestamp * 1000).toLocaleDateString()
+                    );
+                    
+                    this.chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: this.symbol,
+                                data: this.candles.c,
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            }
+                        }
+                    });
+                },
+
+                // 打开文章模态框
                 async openArticleModal(url) {
                     this.isModalOpen = true;
                     this.articleLoading = true;
@@ -90,8 +358,95 @@
                         this.articleLoading = false;
                     }
                 },
-                
-                // ... 省略其他所有函数 ...
+
+                // 打开YouTube搜索
+                openYouTubeSearch() {
+                    const query = `${this.symbol} ${this.profile?.name || ''} stock analysis`;
+                    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+                    window.open(url, '_blank');
+                },
+
+                // 打开雪球搜索
+                openXueqiuSearch() {
+                    const url = `https://xueqiu.com/S/${this.symbol}`;
+                    window.open(url, '_blank');
+                },
+
+                // 切换语言
+                toggleLanguage() {
+                    this.language = this.language === 'zh' ? 'en' : 'zh';
+                    // 更新时间周期标签
+                    if (this.language === 'zh') {
+                        this.periods = [
+                            { value: '1', label: '1分钟' },
+                            { value: '5', label: '5分钟' },
+                            { value: '15', label: '15分钟' },
+                            { value: 'D', label: '日线' },
+                            { value: 'W', label: '周线' },
+                            { value: 'M', label: '月线' }
+                        ];
+                    } else {
+                        this.periods = [
+                            { value: '1', label: '1min' },
+                            { value: '5', label: '5min' },
+                            { value: '15', label: '15min' },
+                            { value: 'D', label: 'Daily' },
+                            { value: 'W', label: 'Weekly' },
+                            { value: 'M', label: 'Monthly' }
+                        ];
+                    }
+                },
+
+                // 格式化市值
+                formatMarketCap(marketCap) {
+                    if (!marketCap) return 'N/A';
+                    
+                    if (this.language === 'zh') {
+                        if (marketCap >= 10000) {
+                            return `${(marketCap / 10000).toFixed(2)}万亿美元`;
+                        } else if (marketCap >= 100) {
+                            return `${(marketCap / 100).toFixed(2)}千亿美元`;
+                        } else {
+                            return `${marketCap.toFixed(2)}亿美元`;
+                        }
+                    } else {
+                        if (marketCap >= 1000) {
+                            return `$${(marketCap / 1000).toFixed(2)}T`;
+                        } else {
+                            return `$${marketCap.toFixed(2)}B`;
+                        }
+                    }
+                },
+
+                // 格式化新闻时间
+                formatNewsTime(timestamp) {
+                    const date = new Date(timestamp * 1000);
+                    const now = new Date();
+                    const diff = now - date;
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const days = Math.floor(hours / 24);
+                    
+                    if (this.language === 'zh') {
+                        if (hours < 1) return '刚刚';
+                        if (hours < 24) return `${hours}小时前`;
+                        if (days < 7) return `${days}天前`;
+                        return date.toLocaleDateString('zh-CN');
+                    } else {
+                        if (hours < 1) return 'Just now';
+                        if (hours < 24) return `${hours}h ago`;
+                        if (days < 7) return `${days}d ago`;
+                        return date.toLocaleDateString('en-US');
+                    }
+                },
+
+                // 处理API响应
+                async handleResponse(response) {
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                    }
+                    return await response.json();
+                }
             }
         }
     </script>
