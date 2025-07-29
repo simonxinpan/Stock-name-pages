@@ -142,42 +142,46 @@
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? '前收盘' : 'Prev Close'"></span>
                             <span class="text-sm font-medium" x-text="'$' + quote?.pc?.toFixed(2)"></span>
                         </div>
+                        <div class="flex justify-between" x-show="metrics">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最高' : '52W High'"></span>
+                            <span class="text-sm font-medium" x-text="'$' + formatMetric(metrics?.['52WeekHigh'])"></span>
+                        </div>
+                        <div class="flex justify-between" x-show="metrics">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最低' : '52W Low'"></span>
+                            <span class="text-sm font-medium" x-text="'$' + formatMetric(metrics?.['52WeekLow'])"></span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 财务指标 -->
-                <div class="bg-white rounded-lg card-shadow p-6" x-show="metrics">
+                <div class="bg-white rounded-lg card-shadow p-6" x-show="metrics || profile">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '财务指标' : 'Financial Metrics'"></h3>
                     <div class="space-y-3">
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" x-show="profile?.marketCapitalization">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '市值' : 'Market Cap'"></span>
+                            <span class="text-sm font-medium" x-text="formatMarketCap(profile?.marketCapitalization)"></span>
+                        </div>
+                        <div class="flex justify-between" x-show="metrics?.peBasicExclExtraTTM">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? '市盈率(TTM)' : 'P/E Ratio (TTM)'"></span>
                             <span class="text-sm font-medium" x-text="formatMetric(metrics?.peBasicExclExtraTTM)"></span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" x-show="metrics?.epsBasicExclExtraAnnual">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? '每股收益' : 'EPS'"></span>
                             <span class="text-sm font-medium" x-text="'$' + formatMetric(metrics?.epsBasicExclExtraAnnual)"></span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" x-show="metrics?.dividendYieldIndicatedAnnual">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? '股息收益率' : 'Dividend Yield'"></span>
                             <span class="text-sm font-medium" x-text="formatPercentage(metrics?.dividendYieldIndicatedAnnual)"></span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" x-show="metrics?.beta">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? 'Beta系数' : 'Beta'"></span>
                             <span class="text-sm font-medium" x-text="formatMetric(metrics?.beta)"></span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最高' : '52W High'"></span>
-                            <span class="text-sm font-medium" x-text="'$' + formatMetric(metrics?.['52WeekHigh'])"></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最低' : '52W Low'"></span>
-                            <span class="text-sm font-medium" x-text="'$' + formatMetric(metrics?.['52WeekLow'])"></span>
-                        </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" x-show="metrics?.pbAnnual">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? '市净率' : 'P/B Ratio'"></span>
                             <span class="text-sm font-medium" x-text="formatMetric(metrics?.pbAnnual)"></span>
                         </div>
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" x-show="metrics?.roeTTM">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? 'ROE' : 'ROE'"></span>
                             <span class="text-sm font-medium" x-text="formatPercentage(metrics?.roeTTM)"></span>
                         </div>
@@ -199,10 +203,6 @@
                         <div x-show="profile?.weburl">
                             <span class="text-sm text-gray-600" x-text="language === 'zh' ? '官网' : 'Website'"></span>
                             <a :href="profile?.weburl" target="_blank" class="text-sm font-medium text-blue-600 hover:underline block" x-text="profile?.weburl"></a>
-                        </div>
-                        <div>
-                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '市值' : 'Market Cap'"></span>
-                            <p class="text-sm font-medium" x-text="formatMarketCap(profile?.marketCapitalization)"></p>
                         </div>
                     </div>
                 </div>
@@ -278,7 +278,8 @@
                 articleLoading: false,
                 currentArticle: { title: '', content: '' },
                 lastCandleRequest: 0, // 记录上次K线请求时间
-                candleRequestDelay: 15000, // 15秒间隔
+                candleRequestDelay: 20000, // 20秒间隔，避免Polygon API频率限制
+                lastRequestParams: null, // 记录上次请求参数，避免重复请求
                 
                 // 时间周期选项
                 periods: [
@@ -339,16 +340,26 @@
                 // 加载K线数据
                 async loadCandles() {
                     try {
+                        const to = Math.floor(Date.now() / 1000);
+                        const from = to - (30 * 24 * 60 * 60); // 30天前
+                        const requestParams = `${this.symbol}-${this.selectedPeriod}-${from}-${to}`;
+                        
+                        // 检查是否是重复请求
+                        if (this.lastRequestParams === requestParams) {
+                            console.log('重复的K线请求，跳过');
+                            return;
+                        }
+                        
                         // 检查请求频率限制
                         const now = Date.now();
                         if (now - this.lastCandleRequest < this.candleRequestDelay) {
-                            console.log('K线请求过于频繁，跳过此次请求');
+                            const remainingTime = Math.ceil((this.candleRequestDelay - (now - this.lastCandleRequest)) / 1000);
+                            console.log(`K线请求过于频繁，需等待 ${remainingTime} 秒`);
                             return;
                         }
-                        this.lastCandleRequest = now;
                         
-                        const to = Math.floor(Date.now() / 1000);
-                        const from = to - (30 * 24 * 60 * 60); // 30天前
+                        this.lastCandleRequest = now;
+                        this.lastRequestParams = requestParams;
                         
                         const response = await fetch(`/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`);
                         const data = await this.handleResponse(response);
@@ -386,8 +397,8 @@
                 // 切换时间周期
                 async changePeriod(period) {
                     this.selectedPeriod = period;
-                    // 重置请求时间限制，允许立即切换周期
-                    this.lastCandleRequest = 0;
+                    // 重置请求参数，允许立即切换周期，但保持频率限制
+                    this.lastRequestParams = null;
                     await this.loadCandles();
                 },
 
@@ -729,7 +740,10 @@
                         return `${(numValue / 1e12).toFixed(2)}${this.language === 'zh' ? '万亿' : 'T'}`;
                     } else if (Math.abs(numValue) >= 1e9) {
                         // 1 billion = 10亿
-                        return `${(numValue / 1e8).toFixed(2)}${this.language === 'zh' ? '亿' : 'B'}`;
+                        return `${(numValue / 1e9).toFixed(2)}${this.language === 'zh' ? '十亿' : 'B'}`;
+                    } else if (Math.abs(numValue) >= 1e8) {
+                        // 1亿
+                        return `${(numValue / 1e8).toFixed(2)}${this.language === 'zh' ? '亿' : '00M'}`;
                     } else if (Math.abs(numValue) >= 1e6) {
                         return `${(numValue / 1e6).toFixed(2)}${this.language === 'zh' ? '百万' : 'M'}`;
                     } else if (Math.abs(numValue) >= 1e3) {

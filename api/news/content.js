@@ -5,7 +5,7 @@ import { JSDOM } from 'jsdom';
 
 // 翻译API调用频率控制
 let lastTranslationCall = 0;
-const TRANSLATION_DELAY = 2000; // 2秒间隔
+const TRANSLATION_DELAY = 3000; // 3秒间隔，避免调用过快
 
 export default async function handler(req, res) {
   const { url, lang } = req.query;
@@ -37,18 +37,26 @@ export default async function handler(req, res) {
     // 如果需要中文翻译
     if (lang === 'zh' && articleData.content) {
       try {
-        // 控制翻译API调用频率
-        const now = Date.now();
-        if (now - lastTranslationCall < TRANSLATION_DELAY) {
-          const waitTime = TRANSLATION_DELAY - (now - lastTranslationCall);
+        // 先翻译标题
+        const now1 = Date.now();
+        if (now1 - lastTranslationCall < TRANSLATION_DELAY) {
+          const waitTime = TRANSLATION_DELAY - (now1 - lastTranslationCall);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        lastTranslationCall = Date.now();
+        
+        const translatedTitle = await translateToChineseWithVolcano(articleData.title);
+        articleData.title = translatedTitle || articleData.title;
+        
+        // 再翻译内容，确保间隔
+        const now2 = Date.now();
+        if (now2 - lastTranslationCall < TRANSLATION_DELAY) {
+          const waitTime = TRANSLATION_DELAY - (now2 - lastTranslationCall);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
         lastTranslationCall = Date.now();
         
         const translatedContent = await translateToChineseWithVolcano(articleData.content);
-        const translatedTitle = await translateToChineseWithVolcano(articleData.title);
-        
-        articleData.title = translatedTitle || articleData.title;
         articleData.content = translatedContent || articleData.content;
       } catch (translateError) {
         console.warn('Translation failed, using original content:', translateError);
