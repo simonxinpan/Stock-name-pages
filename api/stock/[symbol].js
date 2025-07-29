@@ -1,8 +1,9 @@
 // API路由: /api/stock/[symbol]
-// 获取指定股票代码的详细信息
+// 统一股票数据API，支持多种数据类型
+// 查询参数: type=quote|profile|metrics|candles|news (默认为完整数据)
 
 export default async function handler(req, res) {
-  const { symbol } = req.query;
+  const { symbol, type } = req.query;
   
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,20 +26,30 @@ export default async function handler(req, res) {
   }
   
   try {
-    // 这里后端工程师可以连接真实数据库
-    // 示例：从Neon数据库获取股票数据
-    const stockData = await getStockFromDatabase(symbol.toUpperCase());
+    const apiKey = process.env.FINNHUB_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'API key not configured' });
+    }
     
-    if (!stockData) {
-      // 如果数据库中没有数据，从Finnhub API获取
-      const finnhubData = await fetchFromFinnhub(symbol);
-      
-      // 保存到数据库供下次使用
-      await saveStockToDatabase(symbol, finnhubData);
-      
-      res.status(200).json(finnhubData);
-    } else {
-      res.status(200).json(stockData);
+    // 根据type参数返回不同类型的数据
+    switch (type) {
+      case 'quote':
+        return await handleQuote(symbol, apiKey, res);
+      case 'profile':
+        return await handleProfile(symbol, apiKey, res);
+      case 'metrics':
+        return await handleMetrics(symbol, apiKey, res);
+      default:
+        // 默认返回完整股票数据
+        const stockData = await getStockFromDatabase(symbol.toUpperCase());
+        
+        if (!stockData) {
+          const finnhubData = await fetchFromFinnhub(symbol, apiKey);
+          await saveStockToDatabase(symbol, finnhubData);
+          res.status(200).json(finnhubData);
+        } else {
+          res.status(200).json(stockData);
+        }
     }
     
   } catch (error) {
@@ -47,6 +58,73 @@ export default async function handler(req, res) {
       error: 'Internal server error',
       message: error.message 
     });
+  }
+}
+
+// 处理股价查询
+async function handleQuote(symbol, apiKey, res) {
+  const url = `https://finnhub.io/api/v1/quote?symbol=${symbol.toUpperCase()}&token=${apiKey}`;
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Finnhub API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    
+    if (data.c === 0 && data.d === 0) {
+      return res.status(404).json({ error: `No quote data found for symbol: ${symbol}` });
+    }
+    
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Quote API Error:', error);
+    res.status(500).json({ error: 'Failed to fetch stock quote' });
+  }
+}
+
+// 处理公司资料查询
+async function handleProfile(symbol, apiKey, res) {
+  const url = `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol.toUpperCase()}&token=${apiKey}`;
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Finnhub API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    
+    if (Object.keys(data).length === 0) {
+      return res.status(404).json({ error: `No profile found for symbol: ${symbol}` });
+    }
+    
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Profile API Error:', error);
+    res.status(500).json({ error: 'Failed to fetch company profile' });
+  }
+}
+
+// 处理财务指标查询
+async function handleMetrics(symbol, apiKey, res) {
+  const url = `https://finnhub.io/api/v1/stock/metric?symbol=${symbol.toUpperCase()}&metric=all&token=${apiKey}`;
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Finnhub API error: ${response.statusText}`);
+    }
+    const data = await response.json();
+    
+    if (!data || !data.metric || Object.keys(data.metric).length === 0) {
+      return res.status(404).json({ error: `No metrics found for symbol: ${symbol}` });
+    }
+    
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate');
+    res.status(200).json(data.metric);
+  } catch (error) {
+    console.error('Metrics API Error:', error);
+    res.status(500).json({ error: 'Failed to fetch financial metrics' });
   }
 }
 
@@ -103,9 +181,7 @@ async function getStockFromDatabase(symbol) {
 }
 
 // 从Finnhub API获取数据
-async function fetchFromFinnhub(symbol) {
-  const apiKey = process.env.FINNHUB_API_KEY;
-  
+async function fetchFromFinnhub(symbol, apiKey) {
   if (!apiKey) {
     throw new Error('Finnhub API key not configured');
   }

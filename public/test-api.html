@@ -84,11 +84,11 @@
         }
         
         async function testQuote() {
-            return await testAPI('/api/stock/quote?symbol=AAPL', 'quote-result');
+            return await testAPI('/api/stock/AAPL?type=quote', 'quote-result');
         }
         
         async function testProfile() {
-            return await testAPI('/api/stock/profile?symbol=AAPL', 'profile-result');
+            return await testAPI('/api/stock/AAPL?type=profile', 'profile-result');
         }
         
         async function testCandles() {
