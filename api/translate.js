@@ -15,11 +15,11 @@ async function translateWithVolcEngine(text, accessKeyId, secretAccessKey, targe
     TextList: [text]
   });
   
-  // 生成时间戳
+  // 生成时间戳 - 使用正确的AWS V4格式
   const now = new Date();
   const timestamp = Math.floor(now.getTime() / 1000);
   const date = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const dateTime = now.toISOString().replace(/[:\-]|\..*/g, '');
+  const dateTime = now.toISOString().replace(/[:\-]|\..*/g, '').slice(0, 15) + 'Z';
   
   // 构建请求头
   const headers = {
@@ -62,12 +62,16 @@ async function translateWithVolcEngine(text, accessKeyId, secretAccessKey, targe
     crypto.createHash('sha256').update(canonicalRequest).digest('hex')
   ].join('\n');
   
-  // 计算签名
+  // 计算签名 - 使用正确的AWS V4签名算法
   const kDate = crypto.createHmac('sha256', secretAccessKey).update(date).digest();
   const kRegion = crypto.createHmac('sha256', kDate).update(region).digest();
   const kService = crypto.createHmac('sha256', kRegion).update(service).digest();
   const kSigning = crypto.createHmac('sha256', kService).update('request').digest();
   const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
+  
+  console.log('Debug - Date:', date);
+  console.log('Debug - DateTime:', dateTime);
+  console.log('Debug - StringToSign:', stringToSign);
   
   // 构建授权头
   const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
