@@ -21,6 +21,7 @@
   "author": "FE-Core Team",
   "license": "MIT",
   "dependencies": {
+    "@volcengine/openapi": "^1.30.2",
     "axios": "^1.6.0",
     "chart.js": "^4.4.0",
     "dotenv": "^16.3.0",
