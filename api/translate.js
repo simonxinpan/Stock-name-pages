@@ -1,46 +1,106 @@
 // /api/translate.js - 火山引擎翻译API
-import { Service } from '@volcengine/openapi';
+import crypto from 'crypto';
 
 // 火山引擎翻译函数
 async function translateWithVolcEngine(text, accessKeyId, secretAccessKey, targetLang = 'zh') {
-  // 初始化火山引擎通用服务客户端
-  const service = new Service({
-    host: 'open.volcengineapi.com',
-    serviceName: 'translate',
-    region: 'cn-north-1',
-    accessKeyId,
-    secretAccessKey,
+  const host = 'translate.volcengineapi.com';
+  const service = 'translate';
+  const region = 'cn-north-1';
+  const action = 'TranslateText';
+  const version = '2020-06-01';
+  
+  // 构建请求体
+  const body = JSON.stringify({
+    TargetLanguage: targetLang,
+    TextList: [text]
   });
   
-  // 获取请求器，SDK会自动处理签名
-  const fetchApi = service.fetchApi();
+  // 生成时间戳
+  const now = new Date();
+  const timestamp = Math.floor(now.getTime() / 1000);
+  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const dateTime = now.toISOString().replace(/[:\-]|\..*/g, '');
   
-  const params = {
-    Action: 'TranslateText',
-    Version: '2020-06-01',
+  // 构建请求头
+  const headers = {
+    'Content-Type': 'application/json',
+    'Host': host,
+    'X-Date': dateTime,
+    'X-Content-Sha256': crypto.createHash('sha256').update(body).digest('hex')
   };
   
-  const body = {
-    TargetLanguage: targetLang,
-    TextList: [text],
-  };
-
+  // 构建签名
+  const credentialScope = `${date}/${region}/${service}/request`;
+  const algorithm = 'HMAC-SHA256';
+  
+  // 构建规范请求
+  const canonicalHeaders = Object.keys(headers)
+    .sort()
+    .map(key => `${key.toLowerCase()}:${headers[key]}`)
+    .join('\n');
+  
+  const signedHeaders = Object.keys(headers)
+    .sort()
+    .map(key => key.toLowerCase())
+    .join(';');
+  
+  const canonicalRequest = [
+    'POST',
+    '/',
+    `Action=${action}&Version=${version}`,
+    canonicalHeaders,
+    '',
+    signedHeaders,
+    headers['X-Content-Sha256']
+  ].join('\n');
+  
+  // 构建待签名字符串
+  const stringToSign = [
+    algorithm,
+    dateTime,
+    credentialScope,
+    crypto.createHash('sha256').update(canonicalRequest).digest('hex')
+  ].join('\n');
+  
+  // 计算签名
+  const kDate = crypto.createHmac('sha256', secretAccessKey).update(date).digest();
+  const kRegion = crypto.createHmac('sha256', kDate).update(region).digest();
+  const kService = crypto.createHmac('sha256', kRegion).update(service).digest();
+  const kSigning = crypto.createHmac('sha256', kService).update('request').digest();
+  const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
+  
+  // 构建授权头
+  const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  
+  headers['Authorization'] = authorization;
+  
   try {
-    // 发起请求
-    const res = await fetchApi(params, body);
+    const response = await fetch(`https://${host}/?Action=${action}&Version=${version}`, {
+      method: 'POST',
+      headers,
+      body
+    });
     
-    // 处理返回结果
-    if (res.ResponseMetadata?.Error) {
-      throw new Error(`Volcengine API Error: ${res.ResponseMetadata.Error.Message}`);
+    const responseText = await response.text();
+    console.log('Volcengine API Response:', responseText);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${responseText}`);
     }
     
-    if (res.TranslationList && res.TranslationList[0] && res.TranslationList[0].Translation) {
-      return res.TranslationList[0].Translation;
+    const result = JSON.parse(responseText);
+    
+    if (result.ResponseMetadata?.Error) {
+      throw new Error(`Volcengine API Error: ${result.ResponseMetadata.Error.Message}`);
+    }
+    
+    if (result.TranslationList && result.TranslationList[0] && result.TranslationList[0].Translation) {
+      return result.TranslationList[0].Translation;
     }
     
     throw new Error("Volcengine API returned an unexpected format");
   } catch (error) {
-    console.warn("Volcengine translator failed:", error.message || error);
+    console.error("Volcengine translator failed:", error.message || error);
     throw error;
   }
 }
