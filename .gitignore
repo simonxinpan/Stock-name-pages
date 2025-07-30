@@ -129,3 +129,5 @@ logs
 .env.development
 .env.test
 .env.production
+# Ignore local scripts and tests
+/_scripts
