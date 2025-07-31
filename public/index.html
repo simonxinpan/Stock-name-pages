@@ -210,7 +210,7 @@
         
         <!-- 相关新闻模块 -->
         <div class="bg-white rounded-lg card-shadow p-6 mt-6">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
                 <div class="flex items-center space-x-4">
                     <div x-show="language === 'zh' && news && news.length > 0 && translationInProgress.size > 0" class="flex items-center text-sm text-blue-600">
@@ -218,6 +218,15 @@
                         <span>AI翻译中...</span>
                     </div>
                     <button @click="loadNews()" class="text-blue-600 hover:text-blue-800 text-sm font-medium" x-text="language === 'zh' ? '刷新' : 'Refresh'"></button>
+                </div>
+            </div>
+            <div x-show="language === 'zh'" class="mb-4 p-3 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center space-x-2 text-sm">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-blue-800 font-medium">💡 翻译提示：</span>
+                    <span class="text-gray-700">点击新闻标题查看原文，Chrome/Edge浏览器会自动提示翻译整篇文章</span>
                 </div>
             </div>
             
@@ -240,14 +249,26 @@
                             <img x-show="article.image" :src="article.image" :alt="article.headline" class="w-20 h-20 object-cover rounded-lg flex-shrink-0" onerror="this.style.display='none'">
                             <div class="flex-1 min-w-0">
                                 <h3 class="text-lg font-semibold mb-2 line-clamp-2">
-                                    <a :href="article.url" target="_blank" class="hover:text-blue-600" x-text="article.translatedHeadline || translateTitle(article.headline)"></a>
+                                    <a :href="article.url" target="_blank" class="hover:text-blue-600 flex items-start space-x-2 group" title="点击查看原文，浏览器可自动翻译">
+                                        <span class="flex-1" x-text="article.translatedHeadline || translateTitle(article.headline)"></span>
+                                        <svg class="w-4 h-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    </a>
                                 </h3>
                                 <p class="text-sm text-gray-600 mb-2 line-clamp-2" x-text="article.translatedSummary || translateSummary(article.summary)"></p>
                                 <div class="flex items-center space-x-4 text-xs text-gray-500">
                                     <span x-text="article.source"></span>
                                     <span x-text="formatNewsDate(article.datetime)"></span>
-                                    <a :href="article.url" target="_blank" class="text-blue-600 hover:text-blue-800" x-text="language === 'zh' ? '查看原文' : 'Read More'"></a>
-                                    <button x-show="language === 'zh'" @click="openTranslatedNews(article)" class="text-green-600 hover:text-green-800 ml-2" x-text="'中文翻译'"></button>
+                                    <a :href="article.url" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center space-x-1">
+                                        <span x-text="language === 'zh' ? '查看原文' : 'Read More'"></span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    </a>
+                                    <span x-show="language === 'zh'" class="text-green-600 text-xs bg-green-50 px-2 py-1 rounded-full">
+                                        💡 浏览器可自动翻译
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -261,83 +282,7 @@
         </div>
     </main>
 
-    <!-- 新闻翻译弹窗 -->
-    <div x-show="showTranslationModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeTranslationModal()">
-        <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl">
-            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900">📰 新闻全文中译</h3>
-                        <p class="text-sm text-gray-600 mt-1">AI智能翻译 · 完整内容呈现</p>
-                    </div>
-                    <button @click="closeTranslationModal()" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="overflow-y-auto" style="max-height: calc(90vh - 120px);">
-                <div x-show="translationLoading" class="text-center py-16">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p class="text-lg text-gray-600">🔄 正在获取并翻译原文内容...</p>
-                    <p class="text-sm text-gray-500 mt-2">这可能需要几秒钟时间</p>
-                </div>
-                <div x-show="!translationLoading && translatedContent" class="p-8">
-                    <div class="mb-6">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-3" x-text="translatedContent?.title"></h1>
-                        <div class="flex items-center text-sm text-gray-500 space-x-4">
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                                </svg>
-                                AI翻译
-                            </span>
-                            <span class="flex items-center">
-                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                完整内容
-                            </span>
-                        </div>
-                    </div>
-                    <div class="prose prose-lg max-w-none text-gray-800 leading-relaxed">
-                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
-                            <p class="text-blue-800 font-medium">💡 以下为英文原文的完整中文翻译</p>
-                        </div>
-                        <div x-html="translatedContent?.content" class="article-content"></div>
-                    </div>
-                    <div class="mt-8 pt-6 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"></path>
-                                </svg>
-                                想要查看英文原文？
-                            </div>
-                            <a :href="translatedContent?.originalUrl" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                </svg>
-                                查看英文原文
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div x-show="!translationLoading && translationError" class="text-center py-16">
-                    <div class="mb-4">
-                        <svg class="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                    </div>
-                    <p class="text-red-600 mb-6 text-lg" x-text="translationError"></p>
-                    <button @click="retryTranslation()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                        🔄 重新翻译
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <script>
         function liveStockApp() {
@@ -362,12 +307,7 @@
                 newsCache: null,
                 newsCacheExpiry: 10 * 60 * 1000, // 10分钟缓存
                 
-                // 新闻翻译弹窗相关
-                showTranslationModal: false,
-                translationLoading: false,
-                translatedContent: null,
-                translationError: null,
-                currentArticle: null,
+
                 
                 async init() {
                     console.log('初始化股票应用，API调用间隔：20秒');
@@ -877,71 +817,7 @@
                     window.open(`https://xueqiu.com/S/${query}`, '_blank');
                 },
                 
-                // 打开新闻翻译弹窗
-                async openTranslatedNews(article) {
-                    this.currentArticle = article;
-                    this.showTranslationModal = true;
-                    this.translationLoading = true;
-                    this.translatedContent = null;
-                    this.translationError = null;
-                    
-                    try {
-                        // 获取原文内容并翻译
-                        const response = await fetch('/api/translate-news', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                url: article.url,
-                                title: article.headline,
-                                summary: article.summary
-                            })
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`翻译服务错误: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        this.translatedContent = {
-                            title: data.translatedTitle || article.translatedHeadline || article.headline,
-                            content: data.translatedContent || data.translatedSummary || article.translatedSummary || article.summary,
-                            originalUrl: article.url
-                        };
-                        
-                    } catch (error) {
-                        console.error('新闻翻译失败:', error);
-                        this.translationError = '翻译失败，请稍后重试';
-                        
-                        // 降级方案：使用已有的翻译内容
-                        if (article.translatedHeadline || article.translatedSummary) {
-                            this.translatedContent = {
-                                title: article.translatedHeadline || article.headline,
-                                content: article.translatedSummary || article.summary,
-                                originalUrl: article.url
-                            };
-                            this.translationError = null;
-                        }
-                    } finally {
-                        this.translationLoading = false;
-                    }
-                },
-                
-                // 关闭翻译弹窗
-                closeTranslationModal() {
-                    this.showTranslationModal = false;
-                    this.translatedContent = null;
-                    this.translationError = null;
-                    this.currentArticle = null;
-                },
-                
-                // 重试翻译
-                async retryTranslation() {
-                    if (this.currentArticle) {
-                        await this.openTranslatedNews(this.currentArticle);
-                    }
-                }
+
             }
         }
     </script>
