@@ -17,15 +17,58 @@ export default async function handler(req, res) {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                 },
-                timeout: 10000
+                timeout: 15000
             });
             
             if (newsResponse.ok) {
                 const html = await newsResponse.text();
-                // 简单的内容提取（实际项目中可能需要更复杂的解析）
-                const textMatch = html.match(/<p[^>]*>([^<]+)</p>/gi);
-                if (textMatch) {
-                    content = textMatch.slice(0, 5).map(p => p.replace(/<[^>]*>/g, '')).join(' ');
+                
+                // 更智能的内容提取策略
+                let extractedContent = '';
+                
+                // 尝试提取文章主体内容
+                const articleSelectors = [
+                    /<article[^>]*>([\s\S]*?)<\/article>/gi,
+                    /<div[^>]*class="[^"]*article[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+                    /<div[^>]*class="[^"]*content[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+                    /<div[^>]*class="[^"]*story[^"]*"[^>]*>([\s\S]*?)<\/div>/gi
+                ];
+                
+                for (const selector of articleSelectors) {
+                    const match = html.match(selector);
+                    if (match && match[0]) {
+                        extractedContent = match[0];
+                        break;
+                    }
+                }
+                
+                // 如果没有找到文章容器，提取所有段落
+                if (!extractedContent) {
+                    const paragraphs = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+                    if (paragraphs && paragraphs.length > 0) {
+                        // 取前10个段落，确保获取足够的内容
+                        extractedContent = paragraphs.slice(0, 10).join(' ');
+                    }
+                }
+                
+                // 清理HTML标签并提取纯文本
+                if (extractedContent) {
+                    content = extractedContent
+                        .replace(/<script[\s\S]*?<\/script>/gi, '') // 移除脚本
+                        .replace(/<style[\s\S]*?<\/style>/gi, '') // 移除样式
+                        .replace(/<[^>]*>/g, '') // 移除所有HTML标签
+                        .replace(/\s+/g, ' ') // 合并多个空格
+                        .replace(/&nbsp;/g, ' ') // 替换HTML实体
+                        .replace(/&amp;/g, '&')
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .trim();
+                    
+                    // 限制内容长度，避免翻译API超时
+                    if (content.length > 3000) {
+                        content = content.substring(0, 3000) + '...';
+                    }
                 }
             }
         } catch (fetchError) {

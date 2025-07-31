@@ -9,6 +9,46 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .price-up-us { color: #10b981; } .price-down-us { color: #ef4444; } .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); } .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } } [x-cloak] { display: none !important; } .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        /* 翻译弹窗内容样式优化 */
+        .article-content {
+            line-height: 1.8;
+            font-size: 16px;
+        }
+        .article-content p {
+            margin-bottom: 1.2em;
+            text-align: justify;
+        }
+        .article-content h1, .article-content h2, .article-content h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.8em;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .article-content h1 { font-size: 1.5em; }
+        .article-content h2 { font-size: 1.3em; }
+        .article-content h3 { font-size: 1.1em; }
+        .article-content ul, .article-content ol {
+            margin: 1em 0;
+            padding-left: 1.5em;
+        }
+        .article-content li {
+            margin-bottom: 0.5em;
+        }
+        .article-content blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 1em;
+            margin: 1.5em 0;
+            font-style: italic;
+            color: #6b7280;
+        }
+        .article-content strong {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .article-content em {
+            font-style: italic;
+        }
     </style>
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
@@ -222,33 +262,78 @@
     </main>
 
     <!-- 新闻翻译弹窗 -->
-    <div x-show="showTranslationModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeTranslationModal()">
-        <div class="bg-white rounded-lg max-w-4xl max-h-[80vh] overflow-hidden shadow-xl">
-            <div class="p-6 border-b border-gray-200">
+    <div x-show="showTranslationModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeTranslationModal()">
+        <div class="bg-white rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-semibold text-gray-900">新闻中文翻译</h3>
-                    <button @click="closeTranslationModal()" class="text-gray-400 hover:text-gray-600">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">📰 新闻全文中译</h3>
+                        <p class="text-sm text-gray-600 mt-1">AI智能翻译 · 完整内容呈现</p>
+                    </div>
+                    <button @click="closeTranslationModal()" class="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh]">
-                <div x-show="translationLoading" class="text-center py-8">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p class="mt-2 text-gray-600">正在翻译原文内容...</p>
+            <div class="overflow-y-auto" style="max-height: calc(90vh - 120px);">
+                <div x-show="translationLoading" class="text-center py-16">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p class="text-lg text-gray-600">🔄 正在获取并翻译原文内容...</p>
+                    <p class="text-sm text-gray-500 mt-2">这可能需要几秒钟时间</p>
                 </div>
-                <div x-show="!translationLoading && translatedContent">
-                    <h4 class="text-xl font-bold mb-4" x-text="translatedContent?.title"></h4>
-                    <div class="prose max-w-none text-gray-700 leading-relaxed" x-html="translatedContent?.content"></div>
-                    <div class="mt-6 pt-4 border-t border-gray-200">
-                        <a :href="translatedContent?.originalUrl" target="_blank" class="text-blue-600 hover:text-blue-800">查看英文原文 →</a>
+                <div x-show="!translationLoading && translatedContent" class="p-8">
+                    <div class="mb-6">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-3" x-text="translatedContent?.title"></h1>
+                        <div class="flex items-center text-sm text-gray-500 space-x-4">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                </svg>
+                                AI翻译
+                            </span>
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                完整内容
+                            </span>
+                        </div>
+                    </div>
+                    <div class="prose prose-lg max-w-none text-gray-800 leading-relaxed">
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
+                            <p class="text-blue-800 font-medium">💡 以下为英文原文的完整中文翻译</p>
+                        </div>
+                        <div x-html="translatedContent?.content" class="article-content"></div>
+                    </div>
+                    <div class="mt-8 pt-6 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd"></path>
+                                </svg>
+                                想要查看英文原文？
+                            </div>
+                            <a :href="translatedContent?.originalUrl" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
+                                查看英文原文
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div x-show="!translationLoading && translationError" class="text-center py-8">
-                    <p class="text-red-600 mb-4" x-text="translationError"></p>
-                    <button @click="retryTranslation()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">重试翻译</button>
+                <div x-show="!translationLoading && translationError" class="text-center py-16">
+                    <div class="mb-4">
+                        <svg class="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-red-600 mb-6 text-lg" x-text="translationError"></p>
+                    <button @click="retryTranslation()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        🔄 重新翻译
+                    </button>
                 </div>
             </div>
         </div>
