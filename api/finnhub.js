@@ -1,83 +1,69 @@
 // /api/finnhub.js
 import { Service } from '@volcengine/openapi';
 
-// 翻译函数
-async function translateWithVolcEngine(texts, accessKeyId, secretAccessKey) {
-  try {
+// --- 辅助函数：火山引擎翻译 ---
+async function translateWithVolcEngine(texts, ak, sk) {
+    if (!texts || texts.length === 0) return [];
+    
+    // 初始化火山引擎通用服务客户端
     const service = new Service({
-      host: 'translate.volcengineapi.com',
-      serviceName: 'translate',
-      region: 'cn-north-1',
-      accessKeyId,
-      secretAccessKey,
+        host: 'open.volcengineapi.com',
+        serviceName: 'translate',
+        region: 'cn-north-1',
+        accessKeyId: ak,
+        secretAccessKey: sk,
     });
-
-    const body = {
-      TargetLanguage: 'zh',
-      TextList: texts
-    };
-
-    const response = await service.post('TranslateText', {
-      query: {},
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (response.TranslationList) {
-      return response.TranslationList.map(item => item.Translation);
+    
+    // 获取请求器，SDK 会自动处理签名
+    const fetchApi = service.fetchApi();
+    
+    try {
+        const res = await fetchApi(
+            { Action: 'TranslateText', Version: '2020-06-01' }, 
+            { TargetLanguage: 'zh', TextList: texts }
+        );
+        if (res.ResponseMetadata?.Error) {
+            console.error("Volcengine API returned an error:", JSON.stringify(res.ResponseMetadata.Error));
+            throw new Error(`Volcengine API Error: ${res.ResponseMetadata.Error.Message}`);
+        }
+        return res.TranslationList?.map(item => item.Translation) || texts;
+    } catch (error) {
+        console.error("Volcengine translation failed:", error);
+        return texts; // 翻译失败则返回原文数组
     }
-    return texts; // 翻译失败时返回原文
-  } catch (error) {
-    console.error('Translation error:', error);
-    return texts; // 翻译失败时返回原文
-  }
 }
 
-// Finnhub API 调用函数
-async function fetchFromFinnhub(type, symbol, apiKey) {
-  const baseUrl = 'https://finnhub.io/api/v1';
-  let url;
-
-  switch (type) {
-    case 'quote':
-      url = `${baseUrl}/quote?symbol=${symbol}&token=${apiKey}`;
-      break;
-    case 'profile':
-      url = `${baseUrl}/stock/profile2?symbol=${symbol}&token=${apiKey}`;
-      break;
-    case 'metrics':
-      url = `${baseUrl}/stock/metric?symbol=${symbol}&metric=all&token=${apiKey}`;
-      break;
+// --- 辅助函数：从 Finnhub 获取数据 ---
+async function fetchFromFinnhub(endpoint, symbol, apiKey) {
+  let url = '';
+  switch (endpoint) {
+    case 'quote': url = `https://finnhub.io/api/v1/quote?symbol=${symbol.toUpperCase()}&token=${apiKey}`; break;
+    case 'profile': url = `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol.toUpperCase()}&token=${apiKey}`; break;
+    case 'metrics': url = `https://finnhub.io/api/v1/stock/metric?symbol=${symbol.toUpperCase()}&metric=all&token=${apiKey}`; break;
     case 'news':
-      const today = new Date();
-      const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const fromDate = lastWeek.toISOString().split('T')[0];
-      const toDate = today.toISOString().split('T')[0];
-      url = `${baseUrl}/company-news?symbol=${symbol}&from=${fromDate}&to=${toDate}&token=${apiKey}`;
+      const today = new Date(), priorDate = new Date(new Date().setDate(today.getDate() - 30));
+      const from = priorDate.toISOString().split('T')[0], to = today.toISOString().split('T')[0];
+      url = `https://finnhub.io/api/v1/company-news?symbol=${symbol.toUpperCase()}&from=${from}&to=${to}&token=${apiKey}`;
       break;
-    default:
-      throw new Error(`Unsupported type: ${type}`);
+    default: throw new Error('Invalid Finnhub endpoint requested.');
   }
-
   const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Finnhub API error: ${response.status} ${response.statusText}`);
-  }
-  return await response.json();
+  if (!response.ok) throw new Error(`Finnhub API error for ${endpoint}: ${response.statusText}`);
+  return response.json();
 }
 
+// --- API 主处理函数 ---
 export default async function handler(request, response) {
   const { symbol, type, lang } = request.query; 
   if (!symbol || !type) return response.status(400).json({ error: 'Parameters "symbol" and "type" are required.' });
+
   const FINNHUB_KEY = process.env.FINNHUB_API_KEY;
   if (!FINNHUB_KEY) return response.status(500).json({ error: 'Finnhub API key is not configured.' });
 
   try {
     let data = await fetchFromFinnhub(type, symbol, FINNHUB_KEY);
     
-    // ** 关键修复：确保即使翻译失败，也不会让整个 API 崩溃 **
+    // 只有当请求新闻且语言为中文时，才进行翻译
     if (type === 'news' && lang === 'zh' && data && Array.isArray(data) && data.length > 0) {
         const VOLC_AK = process.env.VOLC_ACCESS_KEY_ID;
         const VOLC_SK = process.env.VOLC_SECRET_ACCESS_KEY;
@@ -86,14 +72,19 @@ export default async function handler(request, response) {
             const headlines = data.map(article => article.headline);
             const translatedHeadlines = await translateWithVolcEngine(headlines, VOLC_AK, VOLC_SK);
             data.forEach((article, index) => {
-                // 即使某条翻译结果为空，也用原文兜底
                 article.headline = translatedHeadlines[index] || article.headline;
             });
         }
     }
     
     const responseData = type === 'metrics' && data.metric ? data.metric : data;
-    // ... 缓存逻辑和之前一样 ...
+    
+    let cacheControl = 's-maxage=60, stale-while-revalidate';
+    if (['profile', 'metrics'].includes(type)) cacheControl = 's-maxage=86400, stale-while-revalidate';
+    if (type === 'news') cacheControl = 's-maxage=3600, stale-while-revalidate';
+    
+    response.setHeader('Cache-Control', cacheControl);
+    response.setHeader('Access-Control-Allow-Origin', '*');
     response.status(200).json(responseData);
   } catch (error) {
     console.error(`API /finnhub Error (type: ${type}):`, error);
