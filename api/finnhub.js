@@ -17,12 +17,11 @@ async function translateWithVolcEngine(texts, accessKeyId, secretAccessKey) {
       TextList: texts
     };
 
-    const response = await service.post('TranslateText', {
-      query: {},
+    const response = await service.post('/TranslateText', {
+      body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
+      }
     });
 
     if (response.TranslationList) {

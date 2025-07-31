@@ -59,8 +59,8 @@
                 startIntervals() {
                     this.startQuoteRefresh(); this.startNewsRefresh();
                 },
-                startQuoteRefresh() { this.quoteInterval = setInterval(async () => { try { this.quote = await this.fetchFinnhubData('quote'); } catch (e) { console.error("Quote refresh failed:", e); } }, Math.floor(Math.random() * 6000) + 15000); },
-                startNewsRefresh() { this.newsInterval = setInterval(() => this.loadNews(true), Math.floor(Math.random() * 6000) + 15000); },
+                startQuoteRefresh() { this.quoteInterval = setInterval(async () => { try { this.quote = await this.fetchFinnhubData('quote'); } catch (e) { console.error("Quote refresh failed:", e); } }, 20000); },
+                startNewsRefresh() { this.newsInterval = setInterval(() => this.loadNews(true), 20000); },
 
                 async fetchFinnhubData(type, params = {}) {
                     const query = new URLSearchParams({ symbol: this.symbol, type, ...params }).toString();
@@ -94,7 +94,7 @@
                         
                         setTimeout(() => {
                             if (this.selectedPeriod) this.loadCandles();
-                        }, Math.floor(Math.random() * 6000) + 15000);
+                        }, 20000);
                     } catch (error) { this.error = `[Chart Load Error] ${error.message}`; } 
                     finally { this.chartLoading = false; }
                 },
