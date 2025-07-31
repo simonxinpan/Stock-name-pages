@@ -91,11 +91,11 @@
                             <div class="space-y-3">
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最高' : '52W High'"></span>
-                                    <span class="text-sm font-medium" x-text="formatPrice(quote?.h)"></span>
+                                    <span class="text-sm font-medium" x-text="formatPrice(metrics?.['52WeekHigh'])"></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最低' : '52W Low'"></span>
-                                    <span class="text-sm font-medium" x-text="formatPrice(quote?.l)"></span>
+                                    <span class="text-sm font-medium" x-text="formatPrice(metrics?.['52WeekLow'])"></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '开盘价' : 'Open'"></span>
@@ -206,7 +206,8 @@
                                 <div class="flex items-center space-x-4 text-xs text-gray-500">
                                     <span x-text="article.source"></span>
                                     <span x-text="formatNewsDate(article.datetime)"></span>
-                                    <span class="text-blue-600" x-text="language === 'zh' ? '查看原文' : 'Read More'"></span>
+                                    <a :href="article.url" target="_blank" class="text-blue-600 hover:text-blue-800" x-text="language === 'zh' ? '查看原文' : 'Read More'"></a>
+                                    <button x-show="language === 'zh'" @click="openTranslatedNews(article)" class="text-green-600 hover:text-green-800 ml-2" x-text="'中文翻译'"></button>
                                 </div>
                             </div>
                         </div>
@@ -219,6 +220,39 @@
             </div>
         </div>
     </main>
+
+    <!-- 新闻翻译弹窗 -->
+    <div x-show="showTranslationModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeTranslationModal()">
+        <div class="bg-white rounded-lg max-w-4xl max-h-[80vh] overflow-hidden shadow-xl">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">新闻中文翻译</h3>
+                    <button @click="closeTranslationModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[60vh]">
+                <div x-show="translationLoading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-gray-600">正在翻译原文内容...</p>
+                </div>
+                <div x-show="!translationLoading && translatedContent">
+                    <h4 class="text-xl font-bold mb-4" x-text="translatedContent?.title"></h4>
+                    <div class="prose max-w-none text-gray-700 leading-relaxed" x-html="translatedContent?.content"></div>
+                    <div class="mt-6 pt-4 border-t border-gray-200">
+                        <a :href="translatedContent?.originalUrl" target="_blank" class="text-blue-600 hover:text-blue-800">查看英文原文 →</a>
+                    </div>
+                </div>
+                <div x-show="!translationLoading && translationError" class="text-center py-8">
+                    <p class="text-red-600 mb-4" x-text="translationError"></p>
+                    <button @click="retryTranslation()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">重试翻译</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         function liveStockApp() {
@@ -242,6 +276,13 @@
                 newsCallInterval: 30000, // 30秒间隔
                 newsCache: null,
                 newsCacheExpiry: 10 * 60 * 1000, // 10分钟缓存
+                
+                // 新闻翻译弹窗相关
+                showTranslationModal: false,
+                translationLoading: false,
+                translatedContent: null,
+                translationError: null,
+                currentArticle: null
                 
                 async init() {
                     console.log('初始化股票应用，API调用间隔：20秒');
@@ -757,6 +798,72 @@
                 openXueqiuSearch() {
                     const query = encodeURIComponent(this.symbol);
                     window.open(`https://xueqiu.com/S/${query}`, '_blank');
+                },
+                
+                // 打开新闻翻译弹窗
+                async openTranslatedNews(article) {
+                    this.currentArticle = article;
+                    this.showTranslationModal = true;
+                    this.translationLoading = true;
+                    this.translatedContent = null;
+                    this.translationError = null;
+                    
+                    try {
+                        // 获取原文内容并翻译
+                        const response = await fetch('/api/translate-news', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                url: article.url,
+                                title: article.headline,
+                                summary: article.summary
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`翻译服务错误: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        this.translatedContent = {
+                            title: data.translatedTitle || article.translatedHeadline || article.headline,
+                            content: data.translatedContent || data.translatedSummary || article.translatedSummary || article.summary,
+                            originalUrl: article.url
+                        };
+                        
+                    } catch (error) {
+                        console.error('新闻翻译失败:', error);
+                        this.translationError = '翻译失败，请稍后重试';
+                        
+                        // 降级方案：使用已有的翻译内容
+                        if (article.translatedHeadline || article.translatedSummary) {
+                            this.translatedContent = {
+                                title: article.translatedHeadline || article.headline,
+                                content: article.translatedSummary || article.summary,
+                                originalUrl: article.url
+                            };
+                            this.translationError = null;
+                        }
+                    } finally {
+                        this.translationLoading = false;
+                    }
+                },
+                
+                // 关闭翻译弹窗
+                closeTranslationModal() {
+                    this.showTranslationModal = false;
+                    this.translatedContent = null;
+                    this.translationError = null;
+                    this.currentArticle = null;
+                },
+                
+                // 重试翻译
+                async retryTranslation() {
+                    if (this.currentArticle) {
+                        await this.openTranslatedNews(this.currentArticle);
+                    }
                 }
             }
         }

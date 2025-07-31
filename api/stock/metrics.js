@@ -11,7 +11,7 @@ export default async function handler(request, response) {
     return response.status(500).json({ error: 'Finnhub API key is not configured on Vercel' });
   }
 
-  // 使用 /stock/metric 端点获取所有计算好的财务指标
+  // 使用 /stock/metric 端点获取所有计算好的财务指标，包含52周最高最低价
   const url = `https://finnhub.io/api/v1/stock/metric?symbol=${symbol.toUpperCase()}&metric=all&token=${API_KEY}`;
 
   try {
