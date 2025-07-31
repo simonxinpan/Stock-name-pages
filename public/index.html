@@ -269,11 +269,8 @@
                 async loadStock() {
                     this.loading = true; this.error = null;
                     try {
-                        const [quoteData, profileData, metricsData] = await Promise.all([
-                            fetch(`/api/stock/quote?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/profile?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/metrics?symbol=${this.symbol}`).then(res => this.handleResponse(res))
-                        ]);
+                        const stockData = await fetch(`/api/stock-data?symbol=${this.symbol}&type=all`).then(res => this.handleResponse(res));
+                        const { quote: quoteData, profile: profileData, metrics: metricsData } = stockData;
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
