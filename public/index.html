@@ -288,7 +288,8 @@
         function liveStockApp() {
             return {
                 language: 'zh',
-                symbol: 'AAPL', loading: true, chartLoading: false, error: null,
+                symbol: new URLSearchParams(window.location.search).get('symbol') || 'AAPL', // 动态获取URL参数中的股票代码
+                loading: true, chartLoading: false, error: null,
                 quote: null, companyProfile: null, candles: null, metrics: null,
                 selectedPeriod: 'D',
                 timePeriods: [ { value: 'D', zh: '日线', en: 'Day' }, { value: 'W', zh: '周线', en: 'Week' }, { value: 'M', zh: '月线', en: 'Month' } ],
@@ -798,17 +799,11 @@
                 },
                 
                 openYouTubeSearch() {
-                    // 获取中文股票名称
-                    const stockNames = {
-                        'AAPL': '苹果',
-                        'TSLA': '特斯拉', 
-                        'MSFT': '微软',
-                        'GOOGL': '谷歌',
-                        'AMZN': '亚马逊',
-                        'NVDA': '英伟达'
-                    };
-                    const chineseName = stockNames[this.symbol] || this.companyProfile?.name || this.symbol;
-                    const query = encodeURIComponent(`${chineseName}股票`);
+                    // 动态获取股票名称，优先使用公司资料中的名称
+                    const companyName = this.companyProfile?.name || this.symbol;
+                    // 如果有公司名称，使用公司名称；否则使用股票代码
+                    const searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
+                    const query = encodeURIComponent(searchTerm);
                     window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
                 },
                 
