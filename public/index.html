@@ -311,6 +311,15 @@
 
                 
                 async init() {
+                    // *** 核心修复：在所有操作之前，先从 URL 读取 symbol ***
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const symbolFromUrl = urlParams.get('symbol');
+                    
+                    if (symbolFromUrl) {
+                        this.symbol = symbolFromUrl.toUpperCase();
+                        console.log(`从URL读取股票代码: ${this.symbol}`);
+                    }
+                    
                     console.log('初始化股票应用，API调用间隔：20秒');
                     const savedLang = localStorage.getItem('stock-lang');
                     if (savedLang) this.language = savedLang;
@@ -335,6 +344,11 @@
                 
                 async loadStock() {
                     this.loading = true; this.error = null;
+                    
+                    // 在加载数据时，更新浏览器地址栏
+                    const newUrl = `${window.location.pathname}?symbol=${this.symbol}`;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                    
                     try {
                         const [quoteData, profileData, metricsData] = await Promise.all([
                             fetch(`/api/stock/quote?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
