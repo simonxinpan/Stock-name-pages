@@ -30,17 +30,20 @@ export default async function handler(request, response) {
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (request.method === 'OPTIONS') {
-    response.status(200).end();
+    response.writeHead(200, { 'Content-Type': 'text/plain' });
+    response.end();
     return;
   }
   
   if (request.method !== 'GET') {
-    return response.status(405).json({ error: 'Method not allowed' });
+    response.writeHead(405, { 'Content-Type': 'application/json' });
+    return response.end(JSON.stringify({ error: 'Method not allowed' }));
   }
 
   const { symbol } = request.query;
   if (!symbol) {
-    return response.status(400).json({ error: 'Stock symbol is required' });
+    response.writeHead(400, { 'Content-Type': 'application/json' });
+    return response.end(JSON.stringify({ error: 'Stock symbol is required' }));
   }
 
   try {
@@ -51,33 +54,36 @@ export default async function handler(request, response) {
     const result = await dbPool.query(query, [symbol.toUpperCase()]);
     
     if (result.rows.length === 0) {
-      return response.status(404).json({ 
+      response.writeHead(404, { 'Content-Type': 'application/json' });
+      return response.end(JSON.stringify({ 
         error: `No stock found for symbol: ${symbol}`,
         symbol: symbol.toUpperCase(),
         chinese_name: null,
         company_name: null
-      });
+      }));
     }
     
     const stock = result.rows[0];
     
-    response.status(200).json({
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({
       symbol: stock.symbol,
       company_name: stock.company_name,
       chinese_name: stock.chinese_name || stock.company_name, // 如果没有中文名称，返回英文名称
       success: true
-    });
+    }));
     
   } catch (error) {
     console.error('Database error:', error);
     
     // 如果数据库连接失败，返回降级响应
-    response.status(500).json({ 
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ 
       error: 'Database connection failed',
       symbol: symbol.toUpperCase(),
       chinese_name: null,
       company_name: null,
       fallback: true
-    });
+    }));
   }
 }

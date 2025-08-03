@@ -59,7 +59,7 @@
                 <h1 class="text-xl font-bold text-gray-900" x-text="language === 'zh' ? '智能个股详情页' : 'Smart Stock Detail'"></h1>
                 <div class="flex items-center space-x-4">
                     <select x-model="symbol" @change.debounce.500ms="loadStock()" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
-                        <option value="AAPL">AAPL - 苹果</option><option value="TSLA">TSLA - 特斯拉</option><option value="MSFT">MSFT - 微软</option><option value="GOOGL">GOOGL - 谷歌</option><option value="AMZN">AMZN - 亚马逊</option><option value="NVDA">NVDA - 英伟达</option>
+                        <option value="AAPL">AAPL - 苹果</option><option value="TSLA">TSLA - 特斯拉</option><option value="MSFT">MSFT - 微软</option><option value="GOOGL">GOOGL - 谷歌</option><option value="AMZN">AMZN - 亚马逊</option><option value="NVDA">NVDA - 英伟达</option><option value="BRK.B">BRK.B - 伯克希尔</option>
                     </select>
                     <button @click="toggleLanguage()" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200" x-text="language === 'zh' ? 'EN' : '中文'"></button>
                 </div>
@@ -76,7 +76,11 @@
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex items-center space-x-4 mb-4 lg:mb-0">
                     <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-blue-600" x-text="symbol"></span></div>
-                    <div><h1 class="text-3xl font-bold text-gray-900" x-text="companyProfile?.name"></h1><p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p></div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900" x-text="getDisplayName()"></h1>
+                        <p class="text-sm text-gray-500" x-text="getSubtitleName()"></p>
+                        <p class="text-xs text-gray-400" x-text="companyProfile?.exchange"></p>
+                    </div>
                 </div>
                 <div class="text-right">
                     <div class="text-3xl font-bold" :class="quote?.d >= 0 ? 'price-up-us' : 'price-down-us'" x-text="formatPrice(quote?.c)"></div>
@@ -291,6 +295,7 @@
                 symbol: new URLSearchParams(window.location.search).get('symbol') || 'AAPL', // 动态获取URL参数中的股票代码
                 loading: true, chartLoading: false, error: null,
                 quote: null, companyProfile: null, candles: null, metrics: null,
+                chineseName: null, // 存储中文名称
                 selectedPeriod: 'D',
                 timePeriods: [ { value: 'D', zh: '日线', en: 'Day' }, { value: 'W', zh: '周线', en: 'Week' }, { value: 'M', zh: '月线', en: 'Month' } ],
                 chart: null,
@@ -307,8 +312,6 @@
                 newsCallInterval: 30000, // 30秒间隔
                 newsCache: null,
                 newsCacheExpiry: 10 * 60 * 1000, // 10分钟缓存
-                
-
                 
                 async init() {
                     // *** 核心修复：在所有操作之前，先从 URL 读取 symbol ***
@@ -350,17 +353,54 @@
                     window.history.pushState({ path: newUrl }, '', newUrl);
                     
                     try {
+                        const encodedSymbol = encodeURIComponent(this.symbol);
                         const [quoteData, profileData, metricsData] = await Promise.all([
-                            fetch(`/api/stock/quote?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/profile?symbol=${this.symbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/metrics?symbol=${this.symbol}`).then(res => this.handleResponse(res))
+                            fetch(`/api/stock/quote?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/profile?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res))
                         ]);
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
+                        
+                        // 获取中文名称
+                        await this.loadChineseName();
+                        
                         await this.loadCandles();
-                    } catch (error) { this.error = `[Data Load Error] ${error.message}`; } 
-                    finally { this.loading = false; }
+                    } catch (error) { 
+                        this.error = `[Data Load Error] ${error.message}`; 
+                    } finally { 
+                        this.loading = false; 
+                    }
+                },
+                
+                async loadChineseName() {
+                     try {
+                         const encodedSymbol = encodeURIComponent(this.symbol);
+                         const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
+                         const data = await response.json();
+                         if (data.success && data.chinese_name) {
+                             this.chineseName = data.chinese_name;
+                         } else {
+                             this.chineseName = null;
+                         }
+                     } catch (error) {
+                         console.warn('Failed to load Chinese name:', error);
+                         this.chineseName = null;
+                     }
+                 },
+                
+                getDisplayName() {
+                    // 优先显示中文名称，如果没有则显示英文名称
+                    return this.chineseName || this.companyProfile?.name || this.symbol;
+                },
+                
+                getSubtitleName() {
+                    // 如果有中文名称，副标题显示英文名称；否则显示股票代码
+                    if (this.chineseName && this.companyProfile?.name) {
+                        return this.companyProfile.name;
+                    }
+                    return this.symbol;
                 },
                 
                 async changePeriod(newPeriod) {
@@ -419,7 +459,8 @@
                             case 'M': from = to - (20 * 365 * 24 * 60 * 60); break;
                             default: from = to - (365 * 24 * 60 * 60);
                         }
-                        const url = `/api/stock/candles?symbol=${this.symbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const url = `/api/stock/candles?symbol=${encodedSymbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
                         
                         console.log(`正在获取K线数据: ${this.symbol} (${this.selectedPeriod})`);
                         this.candles = await fetch(url).then(res => this.handleResponse(res));
@@ -588,7 +629,8 @@
                     this.lastNewsCall = now;
                     
                     try {
-                        const response = await fetch(`/api/stock/news?symbol=${this.symbol}`);
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const response = await fetch(`/api/stock/news?symbol=${encodedSymbol}`);
                         const newsData = await this.handleResponse(response);
                         this.news = newsData;
                         
@@ -815,7 +857,8 @@
                 async openYouTubeSearch() {
                     try {
                         // 首先尝试从数据库获取中文名称
-                        const response = await fetch(`/api/stock/chinese-name?symbol=${this.symbol}`);
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
                         const data = await response.json();
                         
                         let searchTerm;
