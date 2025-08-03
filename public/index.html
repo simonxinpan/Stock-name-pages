@@ -798,13 +798,32 @@
                     }
                 },
                 
-                openYouTubeSearch() {
-                    // 动态获取股票名称，优先使用公司资料中的名称
-                    const companyName = this.companyProfile?.name || this.symbol;
-                    // 如果有公司名称，使用公司名称；否则使用股票代码
-                    const searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
-                    const query = encodeURIComponent(searchTerm);
-                    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+                async openYouTubeSearch() {
+                    try {
+                        // 首先尝试从数据库获取中文名称
+                        const response = await fetch(`/api/stock/chinese-name?symbol=${this.symbol}`);
+                        const data = await response.json();
+                        
+                        let searchTerm;
+                        if (data.success && data.chinese_name) {
+                            // 如果有中文名称，使用中文名称搜索
+                            searchTerm = `${data.chinese_name}股票`;
+                        } else {
+                            // 降级到使用公司资料中的名称或股票代码
+                            const companyName = this.companyProfile?.name || this.symbol;
+                            searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
+                        }
+                        
+                        const query = encodeURIComponent(searchTerm);
+                        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+                    } catch (error) {
+                        console.error('Failed to fetch Chinese name:', error);
+                        // 降级处理：使用公司资料中的名称或股票代码
+                        const companyName = this.companyProfile?.name || this.symbol;
+                        const searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
+                        const query = encodeURIComponent(searchTerm);
+                        window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+                    }
                 },
                 
                 openXueqiuSearch() {
