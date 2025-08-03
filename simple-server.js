@@ -38,8 +38,56 @@ const server = http.createServer((req, res) => {
   let filePath = '.' + req.url;
   if (filePath === './') {
     filePath = './public/index.html';
+  } else if (req.url.startsWith('/api/stock/chinese-name')) {
+    // 处理中文名称API
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const symbol = url.searchParams.get('symbol');
+    
+    // 本地中文名称字典
+    const localChineseNames = {
+      'AAPL': '苹果公司',
+      'MSFT': '微软公司', 
+      'GOOGL': '谷歌公司',
+      'TSLA': '特斯拉公司',
+      'NVDA': '英伟达公司',
+      'AMZN': '亚马逊公司',
+      'BRK.B': '伯克希尔哈撒韦公司',
+      'META': 'Meta公司',
+      'NFLX': '奈飞公司',
+      'BABA': '阿里巴巴集团'
+    };
+    
+    if (!symbol) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Stock symbol is required' }));
+      return;
+    }
+    
+    const upperSymbol = symbol.toUpperCase();
+    const chineseName = localChineseNames[upperSymbol];
+    
+    if (chineseName) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        symbol: upperSymbol,
+        company_name: null,
+        chinese_name: chineseName,
+        success: true,
+        source: 'local'
+      }));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        error: `No Chinese name found for symbol: ${symbol}`,
+        symbol: upperSymbol,
+        chinese_name: null,
+        company_name: null,
+        success: false
+      }));
+    }
+    return;
   } else if (req.url.startsWith('/api/')) {
-    // 简单的API响应
+    // 其他API响应
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ message: 'API endpoint working', url: req.url }));
     return;

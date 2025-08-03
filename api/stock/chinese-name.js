@@ -23,6 +23,20 @@ function getPool() {
   return pool;
 }
 
+// 本地中文名称字典 (作为数据库的备用方案)
+const localChineseNames = {
+  'AAPL': '苹果公司',
+  'MSFT': '微软公司', 
+  'GOOGL': '谷歌公司',
+  'TSLA': '特斯拉公司',
+  'NVDA': '英伟达公司',
+  'AMZN': '亚马逊公司',
+  'BRK.B': '伯克希尔哈撒韦公司',
+  'META': 'Meta公司',
+  'NFLX': '奈飞公司',
+  'BABA': '阿里巴巴集团'
+};
+
 export default async function handler(request, response) {
   // 设置CORS头
   response.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,44 +60,50 @@ export default async function handler(request, response) {
     return response.end(JSON.stringify({ error: 'Stock symbol is required' }));
   }
 
+  const upperSymbol = symbol.toUpperCase();
+  
   try {
+    // 首先尝试数据库查询
     const dbPool = getPool();
-    
-    // 查询股票的中文名称
     const query = 'SELECT symbol, company_name, chinese_name FROM stocks WHERE symbol = $1';
-    const result = await dbPool.query(query, [symbol.toUpperCase()]);
+    const result = await dbPool.query(query, [upperSymbol]);
     
-    if (result.rows.length === 0) {
-      response.writeHead(404, { 'Content-Type': 'application/json' });
-      return response.end(JSON.stringify({ 
-        error: `No stock found for symbol: ${symbol}`,
-        symbol: symbol.toUpperCase(),
-        chinese_name: null,
-        company_name: null
+    if (result.rows.length > 0) {
+      const stock = result.rows[0];
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({
+        symbol: stock.symbol,
+        company_name: stock.company_name,
+        chinese_name: stock.chinese_name || stock.company_name,
+        success: true,
+        source: 'database'
       }));
+      return;
     }
-    
-    const stock = result.rows[0];
-    
+  } catch (error) {
+    console.warn('Database query failed, using local fallback:', error.message);
+  }
+  
+  // 数据库查询失败或无结果时，使用本地字典
+  const chineseName = localChineseNames[upperSymbol];
+  
+  if (chineseName) {
     response.writeHead(200, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify({
-      symbol: stock.symbol,
-      company_name: stock.company_name,
-      chinese_name: stock.chinese_name || stock.company_name, // 如果没有中文名称，返回英文名称
-      success: true
+      symbol: upperSymbol,
+      company_name: null,
+      chinese_name: chineseName,
+      success: true,
+      source: 'local'
     }));
-    
-  } catch (error) {
-    console.error('Database error:', error);
-    
-    // 如果数据库连接失败，返回降级响应
-    response.writeHead(500, { 'Content-Type': 'application/json' });
+  } else {
+    response.writeHead(404, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify({ 
-      error: 'Database connection failed',
-      symbol: symbol.toUpperCase(),
+      error: `No Chinese name found for symbol: ${symbol}`,
+      symbol: upperSymbol,
       chinese_name: null,
       company_name: null,
-      fallback: true
+      success: false
     }));
   }
 }
