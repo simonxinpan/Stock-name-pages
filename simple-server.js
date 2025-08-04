@@ -90,6 +90,61 @@ const server = http.createServer((req, res) => {
       }));
     }
     return;
+  } else if (req.url.startsWith('/api/translate')) {
+    // 处理翻译API (本地模拟)
+    console.log(`🔍 [Simple Server] Translation API called: ${req.url}`);
+    
+    if (req.method !== 'POST') {
+      res.writeHead(405, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+      return;
+    }
+    
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    
+    req.on('end', () => {
+      try {
+        const { text, target_lang } = JSON.parse(body);
+        console.log(`📝 [Simple Server] Translating: "${text}" to ${target_lang || 'zh'}`);
+        
+        // 本地翻译字典（模拟火山引擎翻译结果）
+        const translations = {
+          'Apple Inc.': '苹果公司',
+          'Microsoft Corporation': '微软公司',
+          'Alphabet Inc.': '谷歌公司',
+          'Tesla, Inc.': '特斯拉公司',
+          'NVIDIA Corporation': '英伟达公司',
+          'Amazon.com, Inc.': '亚马逊公司',
+          'Berkshire Hathaway Inc.': '伯克希尔哈撒韦公司',
+          'Meta Platforms, Inc.': 'Meta公司',
+          'Netflix, Inc.': '奈飞公司',
+          'Alibaba Group Holding Limited': '阿里巴巴集团',
+          'JPMorgan Chase & Co.': '摩根大通',
+          'Bank of America Corporation': '美国银行',
+          'Wells Fargo & Company': '富国银行',
+          'Citigroup Inc.': '花旗集团',
+          'The Goldman Sachs Group, Inc.': '高盛集团'
+        };
+        
+        const translatedText = translations[text] || `${text}（已翻译）`;
+        
+        console.log(`✅ [Simple Server] Translation result: "${translatedText}"`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          translated_text: translatedText
+        }));
+        
+      } catch (error) {
+        console.error(`❌ [Simple Server] Translation error:`, error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+      }
+    });
+    
+    return;
   } else if (req.url.startsWith('/api/stock/chinese-name')) {
     // 处理旧的中文名称API
     console.log(`🔍 [Simple Server] API called: ${req.url}`);

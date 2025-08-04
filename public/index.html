@@ -1,87 +1,245 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<!-- ... 省略 <head> 和 <body> ... -->
-<script>
-    function liveStockApp() {
-        return {
-            symbol: 'AAPL',
-            chineseName: '', // ** 我们继续使用这个变量来存储翻译结果 **
-            companyProfile: null,
-            // ...
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票详情页 - 实时翻译版</title>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div x-data="liveStockApp()" x-init="init()" class="container mx-auto p-4">
+        <!-- 头部信息 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-3xl font-bold text-gray-800" x-text="getDisplayName()"></h1>
+                <div class="text-right">
+                    <div class="text-2xl font-bold" :class="quote?.c >= quote?.pc ? 'text-green-600' : 'text-red-600'" x-text="formatPrice(quote?.c)"></div>
+                    <div class="text-sm" :class="quote?.c >= quote?.pc ? 'text-green-600' : 'text-red-600'" x-text="formatChange(quote?.d, quote?.dp)"></div>
+                </div>
+            </div>
+            
+            <!-- 翻译状态显示 -->
+            <div x-show="translating" class="text-blue-600 text-sm mb-2">
+                🔄 正在翻译公司名称...
+            </div>
+            
+            <!-- 公司基本信息 -->
+            <div x-show="companyProfile" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">行业:</span>
+                    <span x-text="companyProfile?.finnhubIndustry || 'N/A'"></span>
+                </div>
+                <div>
+                    <span class="text-gray-600">市值:</span>
+                    <span x-text="formatMarketCap(companyProfile?.marketCapitalization)"></span>
+                </div>
+                <div>
+                    <span class="text-gray-600">员工数:</span>
+                    <span x-text="companyProfile?.employeeTotal || 'N/A'"></span>
+                </div>
+                <div>
+                    <span class="text-gray-600">成立:</span>
+                    <span x-text="companyProfile?.ipo || 'N/A'"></span>
+                </div>
+            </div>
+        </div>
 
-            async loadStock() {
-                this.loading = true; this.error = null; this.chineseName = '';
-                this.cleanup();
+        <!-- K线图 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">价格走势</h2>
+            <canvas id="stockChart" width="400" height="200"></canvas>
+        </div>
 
-                try {
-                    // **第一步：只加载 Finnhub 和 Polygon 的核心数据**
-                    // 我们不再需要并行调用 get-chinese-name 了
-                    const [quoteData, profileData, metricsData] = await Promise.all([ /* ... */ ]);
-                    this.quote = quoteData;
-                    this.companyProfile = profileData;
-                    this.metrics = metricsData;
-                    
-                    this.loading = false;
-                    
-                    // **第二步：在核心数据加载后，独立进行翻译**
-                    this.$nextTick(async () => {
-                        this.loadCandles();
-                        this.loadNews();
-                        // *** 核心改动：在这里调用翻译 ***
+        <!-- 加载状态 -->
+        <div x-show="loading" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600">加载中...</p>
+        </div>
+
+        <!-- 错误信息 -->
+        <div x-show="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <span x-text="error"></span>
+        </div>
+    </div>
+
+    <script>
+        function liveStockApp() {
+            return {
+                symbol: 'AAPL',
+                chineseName: '',
+                translating: false,
+                companyProfile: null,
+                quote: null,
+                loading: false,
+                error: null,
+                chart: null,
+
+                init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    this.symbol = urlParams.get('symbol') || 'AAPL';
+                    this.loadStock();
+                },
+
+                async loadStock() {
+                    this.loading = true;
+                    this.error = null;
+                    this.chineseName = '';
+
+                    try {
+                        // 并行加载基础数据
+                        const [quoteData, profileData] = await Promise.all([
+                            this.fetchQuote(),
+                            this.fetchProfile()
+                        ]);
+
+                        this.quote = quoteData;
+                        this.companyProfile = profileData;
+                        this.loading = false;
+
+                        // 异步翻译公司名称
                         if (this.companyProfile && this.companyProfile.name) {
-                            this.chineseName = await this.translateText(this.companyProfile.name);
+                            this.translateCompanyName(this.companyProfile.name);
+                        }
+
+                        // 加载K线图
+                        this.loadCandles();
+
+                    } catch (error) {
+                        this.error = `加载失败: ${error.message}`;
+                        this.loading = false;
+                        console.error('Load stock error:', error);
+                    }
+                },
+
+                async fetchQuote() {
+                    const response = await fetch(`/api/stock/quote?symbol=${this.symbol}`);
+                    if (!response.ok) throw new Error('获取报价失败');
+                    return await response.json();
+                },
+
+                async fetchProfile() {
+                    const response = await fetch(`/api/stock/profile?symbol=${this.symbol}`);
+                    if (!response.ok) throw new Error('获取公司信息失败');
+                    return await response.json();
+                },
+
+                async translateCompanyName(englishName) {
+                    if (!englishName) return;
+                    
+                    this.translating = true;
+                    console.log(`🔄 开始翻译公司名称: "${englishName}"`);
+
+                    try {
+                        const response = await fetch('/api/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: englishName,
+                                target_lang: 'zh'
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.error || `翻译API失败，状态码: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        this.chineseName = data.translated_text;
+                        console.log(`✅ 翻译成功: "${englishName}" -> "${this.chineseName}"`);
+
+                    } catch (error) {
+                        console.error('❌ 翻译失败:', error);
+                        // 翻译失败时保持英文名称
+                        this.chineseName = '';
+                    } finally {
+                        this.translating = false;
+                    }
+                },
+
+                async loadCandles() {
+                    try {
+                        const response = await fetch(`/api/stock/candles?symbol=${this.symbol}&resolution=D&count=30`);
+                        if (!response.ok) throw new Error('获取K线数据失败');
+                        const candleData = await response.json();
+                        this.renderChart(candleData);
+                    } catch (error) {
+                        console.error('Load candles error:', error);
+                    }
+                },
+
+                renderChart(candleData) {
+                    const ctx = document.getElementById('stockChart').getContext('2d');
+                    
+                    if (this.chart) {
+                        this.chart.destroy();
+                    }
+
+                    const labels = candleData.t?.map(timestamp => 
+                        new Date(timestamp * 1000).toLocaleDateString()
+                    ) || [];
+
+                    this.chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: '收盘价',
+                                data: candleData.c || [],
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: false
+                                }
+                            }
                         }
                     });
+                },
 
-                    this.startIntervals();
-                } catch (error) { this.error = `[Core Data Error] ${error.message}`; this.loading = false; }
-            },
-
-            // *** 新增的、专门用于翻译的函数 ***
-            async translateText(textToTranslate) {
-                if (!textToTranslate) return '';
-                try {
-                    console.log(`Requesting translation for: "${textToTranslate}"`);
-                    const response = await fetch('/api/translate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ text: textToTranslate, target_lang: 'zh' })
-                    });
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(errorData.error || `Translation API failed with status ${response.status}`);
+                getDisplayName() {
+                    // 优先显示翻译后的中文名称
+                    if (this.chineseName) {
+                        return `${this.chineseName} (${this.symbol})`;
                     }
-                    
-                    const data = await response.json();
-                    console.log(`Translation successful: "${data.translated_text}"`);
-                    return data.translated_text;
-                } catch (error) {
-                    console.error("Translation failed:", error);
+                    // 其次显示英文名称
+                    if (this.companyProfile?.name) {
+                        return `${this.companyProfile.name} (${this.symbol})`;
+                    }
+                    // 最后显示股票代码
+                    return this.symbol;
+                },
 
-                    return textToTranslate; // 翻译失败则返回原文
+                formatPrice(price) {
+                    return price ? `$${price.toFixed(2)}` : 'N/A';
+                },
+
+                formatChange(change, changePercent) {
+                    if (!change || !changePercent) return 'N/A';
+                    const sign = change >= 0 ? '+' : '';
+                    return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
+                },
+
+                formatMarketCap(marketCap) {
+                    if (!marketCap) return 'N/A';
+                    if (marketCap >= 1000000) {
+                        return `$${(marketCap / 1000000).toFixed(1)}T`;
+                    } else if (marketCap >= 1000) {
+                        return `$${(marketCap / 1000).toFixed(1)}B`;
+                    }
+                    return `$${marketCap.toFixed(1)}M`;
                 }
-            },
-            
-            // *** 修改 getDisplayName 函数以使用翻译结果 ***
-            getDisplayName() {
-                // 如果是中文模式，并且我们成功获取了翻译，就用它
-                if (this.language === 'zh' && this.chineseName) {
-                    return this.chineseName;
-                }
-                // 否则，显示英文原名
-                return this.companyProfile?.name || this.symbol;
-            },
-
-            // *** 修改 YouTube 搜索 ***
-            getSearchTermForYoutube() {
-                const name = this.chineseName || this.companyProfile?.name || this.symbol;
-                return encodeURIComponent(name + ' 股票');
-            },
-
-            // ... 其他所有函数 (loadCandles, news, updateChart, format*, etc.) ...
+            }
         }
-    }
-</script>
+    </script>
 </body>
 </html>
