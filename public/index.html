@@ -379,19 +379,39 @@
                          const encodedSymbol = encodeURIComponent(this.symbol);
                          console.log(`🔍 [Frontend] Loading Chinese name for: ${this.symbol}`);
                          
-                         const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
-                         console.log(`📡 [Frontend] API response status: ${response.status}`);
+                         // 首先尝试新的get-chinese-name API
+                         const response = await fetch(`/api/get-chinese-name?symbol=${encodedSymbol}`);
+                         console.log(`📡 [Frontend] get-chinese-name API response status: ${response.status}`);
                          
-                         const data = await response.json();
-                         console.log(`📋 [Frontend] API response data:`, data);
-                         
-                         if (data.success && data.chinese_name) {
-                             this.chineseName = data.chinese_name;
-                             console.log(`✅ [Frontend] Chinese name loaded: ${this.symbol} -> ${data.chinese_name} (source: ${data.source})`);
-                         } else {
-                             this.chineseName = null;
-                             console.log(`❌ [Frontend] No Chinese name available for: ${this.symbol}`);
+                         if (response.ok) {
+                             const data = await response.json();
+                             console.log(`📋 [Frontend] get-chinese-name API response data:`, data);
+                             
+                             if (data.success && data.chinese_name) {
+                                 this.chineseName = data.chinese_name;
+                                 console.log(`✅ [Frontend] Chinese name loaded from new API: ${this.symbol} -> ${data.chinese_name}`);
+                                 return;
+                             }
                          }
+                         
+                         // 如果新API失败，回退到原有API
+                         console.log(`🔄 [Frontend] Falling back to original chinese-name API`);
+                         const fallbackResponse = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
+                         
+                         if (fallbackResponse.ok) {
+                             const fallbackData = await fallbackResponse.json();
+                             console.log(`📋 [Frontend] Fallback API response data:`, fallbackData);
+                             
+                             if (fallbackData.success && fallbackData.chinese_name) {
+                                 this.chineseName = fallbackData.chinese_name;
+                                 console.log(`✅ [Frontend] Chinese name loaded from fallback API: ${this.symbol} -> ${fallbackData.chinese_name}`);
+                                 return;
+                             }
+                         }
+                         
+                         this.chineseName = null;
+                         console.log(`❌ [Frontend] No Chinese name available for: ${this.symbol}`);
+                         
                      } catch (error) {
                          console.error(`❌ [Frontend] Failed to load Chinese name for ${this.symbol}:`, error);
                          this.chineseName = null;
