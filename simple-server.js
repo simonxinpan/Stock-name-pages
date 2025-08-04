@@ -38,8 +38,60 @@ const server = http.createServer((req, res) => {
   let filePath = '.' + req.url;
   if (filePath === './') {
     filePath = './public/index.html';
+  } else if (req.url.startsWith('/api/get-chinese-name')) {
+    // 处理新的get-chinese-name API
+    console.log(`🔍 [Simple Server] API called: ${req.url}`);
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const symbol = url.searchParams.get('symbol');
+    console.log(`📋 [Simple Server] Symbol parameter: ${symbol}`);
+    
+    // 本地中文名称字典（模拟数据库数据）
+    const localChineseNames = {
+      'AAPL': '苹果公司',
+      'MSFT': '微软公司', 
+      'GOOGL': '谷歌公司',
+      'TSLA': '特斯拉公司',
+      'NVDA': '英伟达公司',
+      'AMZN': '亚马逊公司',
+      'BRK.B': '伯克希尔哈撒韦公司',
+      'META': 'Meta公司',
+      'NFLX': '奈飞公司',
+      'BABA': '阿里巴巴集团',
+      'BAC': '美国银行',
+      'JPM': '摩根大通',
+      'WFC': '富国银行',
+      'C': '花旗集团',
+      'GS': '高盛集团'
+    };
+    
+    if (!symbol) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Stock symbol is required' }));
+      return;
+    }
+    
+    const upperSymbol = symbol.toUpperCase();
+    const chineseName = localChineseNames[upperSymbol];
+    
+    if (chineseName) {
+      console.log(`✅ [Simple Server] Found Chinese name: ${upperSymbol} -> ${chineseName}`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        chinese_name: chineseName,
+        success: true,
+        source: 'local_simulation'
+      }));
+    } else {
+      console.log(`❌ [Simple Server] No Chinese name found for: ${upperSymbol}`);
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        error: 'Chinese name not found for this symbol.',
+        success: false
+      }));
+    }
+    return;
   } else if (req.url.startsWith('/api/stock/chinese-name')) {
-    // 处理中文名称API
+    // 处理旧的中文名称API
     console.log(`🔍 [Simple Server] API called: ${req.url}`);
     const url = new URL(req.url, `http://${req.headers.host}`);
     const symbol = url.searchParams.get('symbol');
