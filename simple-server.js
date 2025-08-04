@@ -40,8 +40,10 @@ const server = http.createServer((req, res) => {
     filePath = './public/index.html';
   } else if (req.url.startsWith('/api/stock/chinese-name')) {
     // 处理中文名称API
+    console.log(`🔍 [Simple Server] API called: ${req.url}`);
     const url = new URL(req.url, `http://${req.headers.host}`);
     const symbol = url.searchParams.get('symbol');
+    console.log(`📋 [Simple Server] Symbol parameter: ${symbol}`);
     
     // 本地中文名称字典
     const localChineseNames = {
@@ -67,6 +69,7 @@ const server = http.createServer((req, res) => {
     const chineseName = localChineseNames[upperSymbol];
     
     if (chineseName) {
+      console.log(`✅ [Simple Server] Found Chinese name: ${upperSymbol} -> ${chineseName}`);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         symbol: upperSymbol,
@@ -76,6 +79,8 @@ const server = http.createServer((req, res) => {
         source: 'local'
       }));
     } else {
+      console.log(`❌ [Simple Server] No Chinese name found for: ${upperSymbol}`);
+      console.log(`📝 [Simple Server] Available symbols:`, Object.keys(localChineseNames));
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ 
         error: `No Chinese name found for symbol: ${symbol}`,
