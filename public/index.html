@@ -377,15 +377,23 @@
                 async loadChineseName() {
                      try {
                          const encodedSymbol = encodeURIComponent(this.symbol);
+                         console.log(`🔍 [Frontend] Loading Chinese name for: ${this.symbol}`);
+                         
                          const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
+                         console.log(`📡 [Frontend] API response status: ${response.status}`);
+                         
                          const data = await response.json();
+                         console.log(`📋 [Frontend] API response data:`, data);
+                         
                          if (data.success && data.chinese_name) {
                              this.chineseName = data.chinese_name;
+                             console.log(`✅ [Frontend] Chinese name loaded: ${this.symbol} -> ${data.chinese_name} (source: ${data.source})`);
                          } else {
                              this.chineseName = null;
+                             console.log(`❌ [Frontend] No Chinese name available for: ${this.symbol}`);
                          }
                      } catch (error) {
-                         console.warn('Failed to load Chinese name:', error);
+                         console.error(`❌ [Frontend] Failed to load Chinese name for ${this.symbol}:`, error);
                          this.chineseName = null;
                      }
                  },
@@ -858,32 +866,39 @@
                 
                 async openYouTubeSearch() {
                     let searchTerm;
+                    console.log(`🎬 [YouTube Search] Starting search for: ${this.symbol}`);
                     
                     // 优先使用已加载的中文名称
                     if (this.chineseName) {
                         searchTerm = `${this.chineseName}股票`;
+                        console.log(`✅ [YouTube Search] Using cached Chinese name: ${this.chineseName}`);
                     } else {
+                        console.log(`🔍 [YouTube Search] No cached Chinese name, fetching from API...`);
                         // 如果没有中文名称，尝试从数据库获取
                         try {
                             const encodedSymbol = encodeURIComponent(this.symbol);
                             const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
                             const data = await response.json();
+                            console.log(`📋 [YouTube Search] API response:`, data);
                             
                             if (data.success && data.chinese_name) {
                                 // 如果获取到中文名称，使用中文名称搜索
                                 searchTerm = `${data.chinese_name}股票`;
                                 // 同时更新本地的中文名称
                                 this.chineseName = data.chinese_name;
+                                console.log(`✅ [YouTube Search] Using fetched Chinese name: ${data.chinese_name}`);
                             } else {
                                 // 降级到使用公司资料中的名称或股票代码
                                 const companyName = this.companyProfile?.name || this.symbol;
                                 searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
+                                console.log(`⚠️ [YouTube Search] Fallback to company name: ${searchTerm}`);
                             }
                         } catch (error) {
-                            console.error('Failed to fetch Chinese name:', error);
+                            console.error(`❌ [YouTube Search] Failed to fetch Chinese name:`, error);
                             // 降级处理：使用公司资料中的名称或股票代码
                             const companyName = this.companyProfile?.name || this.symbol;
                             searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
+                            console.log(`⚠️ [YouTube Search] Error fallback to: ${searchTerm}`);
                         }
                     }
                     
