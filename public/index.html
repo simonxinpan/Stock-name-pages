@@ -379,15 +379,31 @@
                          const encodedSymbol = encodeURIComponent(this.symbol);
                          console.log(`🔍 [Frontend] Loading Chinese name for: ${this.symbol}`);
                          
+                         // 首先尝试从标普500公司列表API获取中文名称
+                         const sp500Response = await fetch(`/api/sp500-companies?symbol=${encodedSymbol}`);
+                         console.log(`📡 [Frontend] S&P 500 API response status: ${sp500Response.status}`);
+                         
+                         if (sp500Response.ok) {
+                             const sp500Data = await sp500Response.json();
+                             console.log(`📋 [Frontend] S&P 500 API response data:`, sp500Data);
+                             
+                             if (sp500Data.success && sp500Data.chinese_name) {
+                                 this.chineseName = sp500Data.chinese_name;
+                                 console.log(`✅ [Frontend] Chinese name loaded from S&P 500: ${this.symbol} -> ${sp500Data.chinese_name}`);
+                                 return;
+                             }
+                         }
+                         
+                         // 如果标普500 API没有找到，回退到原有的中文名称API
                          const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
-                         console.log(`📡 [Frontend] API response status: ${response.status}`);
+                         console.log(`📡 [Frontend] Fallback API response status: ${response.status}`);
                          
                          const data = await response.json();
-                         console.log(`📋 [Frontend] API response data:`, data);
+                         console.log(`📋 [Frontend] Fallback API response data:`, data);
                          
                          if (data.success && data.chinese_name) {
                              this.chineseName = data.chinese_name;
-                             console.log(`✅ [Frontend] Chinese name loaded: ${this.symbol} -> ${data.chinese_name} (source: ${data.source})`);
+                             console.log(`✅ [Frontend] Chinese name loaded from fallback: ${this.symbol} -> ${data.chinese_name} (source: ${data.source})`);
                          } else {
                              this.chineseName = null;
                              console.log(`❌ [Frontend] No Chinese name available for: ${this.symbol}`);
@@ -874,25 +890,40 @@
                         console.log(`✅ [YouTube Search] Using cached Chinese name: ${this.chineseName}`);
                     } else {
                         console.log(`🔍 [YouTube Search] No cached Chinese name, fetching from API...`);
-                        // 如果没有中文名称，尝试从数据库获取
+                        // 如果没有中文名称，尝试从标普500 API获取
                         try {
                             const encodedSymbol = encodeURIComponent(this.symbol);
-                            const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
-                            const data = await response.json();
-                            console.log(`📋 [YouTube Search] API response:`, data);
+                            
+                            // 首先尝试标普500 API
+                            let response = await fetch(`/api/sp500-companies?symbol=${encodedSymbol}`);
+                            let data = await response.json();
+                            console.log(`📋 [YouTube Search] S&P 500 API response:`, data);
                             
                             if (data.success && data.chinese_name) {
                                 // 如果获取到中文名称，使用中文名称搜索
                                 searchTerm = `${data.chinese_name}股票`;
                                 // 同时更新本地的中文名称
                                 this.chineseName = data.chinese_name;
-                                console.log(`✅ [YouTube Search] Using fetched Chinese name: ${data.chinese_name}`);
+                                console.log(`✅ [YouTube Search] Using S&P 500 Chinese name: ${data.chinese_name}`);
                             } else {
-                                // 降级到使用公司资料中的名称或股票代码
-                                const companyName = this.companyProfile?.name || this.symbol;
-                                searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
-                                console.log(`⚠️ [YouTube Search] Fallback to company name: ${searchTerm}`);
-                            }
+                                // 回退到原有API
+                                response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
+                                data = await response.json();
+                                console.log(`📋 [YouTube Search] Fallback API response:`, data);
+                                
+                                if (data.success && data.chinese_name) {
+                                    // 如果获取到中文名称，使用中文名称搜索
+                                    searchTerm = `${data.chinese_name}股票`;
+                                    // 同时更新本地的中文名称
+                                    this.chineseName = data.chinese_name;
+                                    console.log(`✅ [YouTube Search] Using fallback Chinese name: ${data.chinese_name}`);
+                                } else {
+                                     // 降级到使用公司资料中的名称或股票代码
+                                     const companyName = this.companyProfile?.name || this.symbol;
+                                     searchTerm = companyName !== this.symbol ? companyName : `${this.symbol} stock`;
+                                     console.log(`⚠️ [YouTube Search] Fallback to company name: ${searchTerm}`);
+                                 }
+                             }
                         } catch (error) {
                             console.error(`❌ [YouTube Search] Failed to fetch Chinese name:`, error);
                             // 降级处理：使用公司资料中的名称或股票代码
