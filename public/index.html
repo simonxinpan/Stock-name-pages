@@ -71,6 +71,60 @@
     
     <div x-show="loading" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-pulse"><div class="bg-white rounded-lg card-shadow p-6 mb-6"><div class="flex justify-between"><div class="flex items-center space-x-4"><div class="w-16 h-16 bg-gray-200 rounded-lg"></div><div><div class="h-8 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-48"></div></div></div><div class="text-right"><div class="h-12 bg-gray-200 rounded w-32 mb-2"></div><div class="h-6 bg-gray-200 rounded w-24"></div></div></div></div></div>
 
+    <!-- 标普500股票中文名称展示区域 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4" x-show="!loading" x-cloak>
+        <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '标普500股票中文名称' : 'S&P 500 Chinese Names'"></h2>
+                <div class="flex items-center space-x-4">
+                    <button @click="loadAllSP500Names()" class="text-blue-600 hover:text-blue-800 text-sm font-medium" x-text="language === 'zh' ? '刷新列表' : 'Refresh List'"></button>
+                    <button @click="toggleSP500Display()" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200" x-text="showSP500List ? (language === 'zh' ? '收起' : 'Collapse') : (language === 'zh' ? '展开' : 'Expand')"></button>
+                </div>
+            </div>
+            
+            <div x-show="sp500Loading" class="animate-pulse">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <template x-for="i in 12" :key="i">
+                        <div class="h-12 bg-gray-200 rounded"></div>
+                    </template>
+                </div>
+            </div>
+            
+            <div x-show="showSP500List && !sp500Loading && sp500Companies && sp500Companies.length > 0" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <template x-for="company in sp500Companies" :key="company.symbol">
+                        <div class="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors" @click="selectStock(company.symbol)">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-sm font-medium text-gray-900" x-text="company.symbol"></div>
+                                    <div class="text-sm text-blue-600 truncate" x-text="company.chinese_name || company.name"></div>
+                                    <div class="text-xs text-gray-500 truncate" x-text="company.name"></div>
+                                </div>
+                                <div class="ml-2 flex-shrink-0">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div class="text-center text-sm text-gray-500 mt-4">
+                    <span x-text="language === 'zh' ? `共 ${sp500Companies.length} 只股票` : `Total ${sp500Companies.length} stocks`"></span>
+                </div>
+            </div>
+            
+            <div x-show="!showSP500List && !sp500Loading" class="text-center py-4">
+                <p class="text-gray-500 text-sm" x-text="language === 'zh' ? '点击展开查看所有标普500股票中文名称' : 'Click Expand to view all S&P 500 Chinese names'"></p>
+            </div>
+            
+            <div x-show="!sp500Loading && (!sp500Companies || sp500Companies.length === 0)" class="text-center py-8 text-gray-500">
+                <p x-text="language === 'zh' ? '暂无数据' : 'No data available'"></p>
+            </div>
+        </div>
+    </div>
+
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" x-show="!loading && quote" x-cloak>
         <div class="bg-white rounded-lg card-shadow p-6 mb-6">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -313,6 +367,13 @@
                 newsCache: null,
                 newsCacheExpiry: 10 * 60 * 1000, // 10分钟缓存
                 
+                // 标普500相关
+                sp500Companies: [],
+                sp500Loading: false,
+                showSP500List: false,
+                sp500Cache: null,
+                sp500CacheExpiry: 30 * 60 * 1000, // 30分钟缓存
+                
                 async init() {
                     // *** 核心修复：在所有操作之前，先从 URL 读取 symbol ***
                     const urlParams = new URLSearchParams(window.location.search);
@@ -328,6 +389,7 @@
                     if (savedLang) this.language = savedLang;
                     await this.loadStock();
                     await this.loadNews();
+                    await this.loadAllSP500Names();
                     
                     // 定期清理过期缓存
                     setInterval(() => {
@@ -940,6 +1002,97 @@
                 openXueqiuSearch() {
                     const query = encodeURIComponent(this.symbol);
                     window.open(`https://xueqiu.com/S/${query}`, '_blank');
+                },
+                
+                async loadAllSP500Names() {
+                    // 检查缓存
+                    const now = Date.now();
+                    if (this.sp500Cache && (now - this.sp500Cache.timestamp) < this.sp500CacheExpiry) {
+                        console.log('使用缓存的标普500数据');
+                        this.sp500Companies = this.sp500Cache.data;
+                        return;
+                    }
+                    
+                    this.sp500Loading = true;
+                    
+                    try {
+                        console.log('🔍 [SP500] Loading all S&P 500 companies with Chinese names...');
+                        const response = await fetch('/api/sp500-companies');
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log(`📋 [SP500] Loaded ${data.length} companies`);
+                        
+                        // 为每个公司获取中文名称
+                        const companiesWithChinese = [];
+                        
+                        for (const company of data) {
+                            try {
+                                const chineseResponse = await fetch(`/api/sp500-companies?symbol=${encodeURIComponent(company.symbol)}`);
+                                if (chineseResponse.ok) {
+                                    const chineseData = await chineseResponse.json();
+                                    if (chineseData.success && chineseData.chinese_name) {
+                                        companiesWithChinese.push({
+                                            ...company,
+                                            chinese_name: chineseData.chinese_name
+                                        });
+                                    } else {
+                                        companiesWithChinese.push(company);
+                                    }
+                                } else {
+                                    companiesWithChinese.push(company);
+                                }
+                            } catch (error) {
+                                console.warn(`Failed to get Chinese name for ${company.symbol}:`, error);
+                                companiesWithChinese.push(company);
+                            }
+                        }
+                        
+                        this.sp500Companies = companiesWithChinese;
+                        
+                        // 缓存数据
+                        this.sp500Cache = {
+                            data: companiesWithChinese,
+                            timestamp: now
+                        };
+                        
+                        console.log(`✅ [SP500] Successfully loaded ${companiesWithChinese.length} companies with Chinese names`);
+                        
+                    } catch (error) {
+                        console.error('❌ [SP500] Failed to load S&P 500 companies:', error);
+                        this.sp500Companies = [];
+                    } finally {
+                        this.sp500Loading = false;
+                    }
+                },
+                
+                toggleSP500Display() {
+                    this.showSP500List = !this.showSP500List;
+                    console.log(`📋 [SP500] Display toggled: ${this.showSP500List ? 'shown' : 'hidden'}`);
+                },
+                
+                async selectStock(symbol) {
+                    if (symbol === this.symbol) {
+                        console.log(`📋 [SP500] Already viewing ${symbol}`);
+                        return;
+                    }
+                    
+                    console.log(`📋 [SP500] Selecting stock: ${symbol}`);
+                    this.symbol = symbol;
+                    
+                    // 更新URL
+                    const newUrl = `${window.location.pathname}?symbol=${symbol}`;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                    
+                    // 重新加载股票数据
+                    await this.loadStock();
+                    await this.loadNews();
+                    
+                    // 滚动到页面顶部
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
                 
 

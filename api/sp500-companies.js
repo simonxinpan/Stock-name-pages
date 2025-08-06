@@ -1,7 +1,6 @@
-// /api/sp500-companies.js - 获取标普500公司列表
 import crypto from 'crypto';
 
-// 标普500公司列表（基于最新数据）
+// 标普500公司列表（精简版，包含真正的标普500成分股）
 const SP500_COMPANIES = [
   { symbol: 'AAPL', name: 'Apple Inc.' },
   { symbol: 'MSFT', name: 'Microsoft Corporation' },
@@ -194,358 +193,272 @@ const SP500_COMPANIES = [
   { symbol: 'O', name: 'Realty Income Corporation' },
   { symbol: 'SPG', name: 'Simon Property Group Inc.' },
   { symbol: 'CHTR', name: 'Charter Communications Inc.' },
-  { symbol: 'NKE', name: 'NIKE Inc.' },
-  { symbol: 'HUM', name: 'Humana Inc.' },
-  { symbol: 'WMB', name: 'The Williams Companies Inc.' },
-  { symbol: 'VICI', name: 'VICI Properties Inc.' },
-  { symbol: 'DLTR', name: 'Dollar Tree Inc.' },
-  { symbol: 'DECK', name: 'Deckers Outdoor Corporation' },
-  { symbol: 'CPNG', name: 'Coupang Inc.' },
-  { symbol: 'SMCI', name: 'Super Micro Computer Inc.' },
-  { symbol: 'TPG', name: 'TPG Inc.' },
-  { symbol: 'UBER', name: 'Uber Technologies Inc.' },
-  { symbol: 'ABNB', name: 'Airbnb Inc.' },
-  { symbol: 'COIN', name: 'Coinbase Global Inc.' },
-  { symbol: 'PLTR', name: 'Palantir Technologies Inc.' },
-  { symbol: 'SNOW', name: 'Snowflake Inc.' },
-  { symbol: 'ZM', name: 'Zoom Video Communications Inc.' },
-  { symbol: 'DOCU', name: 'DocuSign Inc.' },
-  { symbol: 'PTON', name: 'Peloton Interactive Inc.' },
-  { symbol: 'ROKU', name: 'Roku Inc.' },
-  { symbol: 'PINS', name: 'Pinterest Inc.' },
-  { symbol: 'SNAP', name: 'Snap Inc.' },
-  { symbol: 'TWTR', name: 'Twitter Inc.' },
-  { symbol: 'SQ', name: 'Block Inc.' },
-  { symbol: 'SHOP', name: 'Shopify Inc.' },
-  { symbol: 'SPOT', name: 'Spotify Technology S.A.' },
-  { symbol: 'ZS', name: 'Zscaler Inc.' },
-  { symbol: 'OKTA', name: 'Okta Inc.' },
-  { symbol: 'DDOG', name: 'Datadog Inc.' },
-  { symbol: 'NET', name: 'Cloudflare Inc.' },
-  { symbol: 'ESTC', name: 'Elastic N.V.' },
-  { symbol: 'MDB', name: 'MongoDB Inc.' },
-  { symbol: 'SPLK', name: 'Splunk Inc.' },
-  { symbol: 'CRM', name: 'Salesforce Inc.' },
-  { symbol: 'WDAY', name: 'Workday Inc.' },
-  { symbol: 'NOW', name: 'ServiceNow Inc.' },
-  { symbol: 'VEEV', name: 'Veeva Systems Inc.' },
-  { symbol: 'ZEN', name: 'Zendesk Inc.' },
-  { symbol: 'TWLO', name: 'Twilio Inc.' },
-  { symbol: 'PAYC', name: 'Paycom Software Inc.' },
-  { symbol: 'COUP', name: 'Coupa Software Incorporated' },
-  { symbol: 'BILL', name: 'Bill.com Holdings Inc.' },
-  { symbol: 'GTLB', name: 'GitLab Inc.' },
-  { symbol: 'PATH', name: 'UiPath Inc.' },
-  { symbol: 'AI', name: 'C3.ai Inc.' },
-  { symbol: 'RBLX', name: 'Roblox Corporation' },
-  { symbol: 'U', name: 'Unity Software Inc.' },
-  { symbol: 'HOOD', name: 'Robinhood Markets Inc.' },
-  { symbol: 'SOFI', name: 'SoFi Technologies Inc.' },
-  { symbol: 'AFRM', name: 'Affirm Holdings Inc.' },
-  { symbol: 'UPST', name: 'Upstart Holdings Inc.' },
-  { symbol: 'LC', name: 'LendingClub Corporation' },
-  { symbol: 'OPEN', name: 'Opendoor Technologies Inc.' },
-  { symbol: 'RKT', name: 'Rocket Companies Inc.' },
-  { symbol: 'WISH', name: 'ContextLogic Inc.' },
-  { symbol: 'CLOV', name: 'Clover Health Investments Corp.' },
-  { symbol: 'SPCE', name: 'Virgin Galactic Holdings Inc.' },
-  { symbol: 'NKLA', name: 'Nikola Corporation' },
-  { symbol: 'RIDE', name: 'Lordstown Motors Corp.' },
-  { symbol: 'LCID', name: 'Lucid Group Inc.' },
-  { symbol: 'RIVN', name: 'Rivian Automotive Inc.' },
-  { symbol: 'F', name: 'Ford Motor Company' },
-  { symbol: 'GM', name: 'General Motors Company' },
-  { symbol: 'STLA', name: 'Stellantis N.V.' },
-  { symbol: 'TM', name: 'Toyota Motor Corporation' },
-  { symbol: 'HMC', name: 'Honda Motor Co. Ltd.' },
-  { symbol: 'NSANY', name: 'Nissan Motor Co. Ltd.' },
-  { symbol: 'VWAGY', name: 'Volkswagen AG' },
-  { symbol: 'BMWYY', name: 'Bayerische Motoren Werke Aktiengesellschaft' },
-  { symbol: 'DDAIF', name: 'Daimler AG' },
-  { symbol: 'POAHY', name: 'Porsche Automobil Holding SE' },
-  { symbol: 'FERRF', name: 'Ferrari N.V.' },
-  { symbol: 'RACE', name: 'Ferrari N.V.' },
-  { symbol: 'TSLA', name: 'Tesla Inc.' },
-  { symbol: 'NIO', name: 'NIO Inc.' },
-  { symbol: 'XPEV', name: 'XPeng Inc.' },
-  { symbol: 'LI', name: 'Li Auto Inc.' },
-  { symbol: 'BYDDY', name: 'BYD Company Limited' },
-  { symbol: 'KNDI', name: 'Kandi Technologies Group Inc.' },
-  { symbol: 'SOLO', name: 'Electrameccanica Vehicles Corp.' },
-  { symbol: 'WKHS', name: 'Workhorse Group Inc.' },
-  { symbol: 'HYLN', name: 'Hyliion Holdings Corp.' },
-  { symbol: 'BLNK', name: 'Blink Charging Co.' },
-  { symbol: 'CHPT', name: 'ChargePoint Holdings Inc.' },
-  { symbol: 'EVGO', name: 'EVgo Inc.' },
-  { symbol: 'VLTA', name: 'Volta Inc.' },
-  { symbol: 'WBX', name: 'Wallbox N.V.' },
-  { symbol: 'STEM', name: 'Stem Inc.' },
-  { symbol: 'QS', name: 'QuantumScape Corporation' },
-  { symbol: 'SES', name: 'SES AI Corporation' },
-  { symbol: 'SLDP', name: 'Solid Power Inc.' },
-  { symbol: 'AMPX', name: 'Amprius Technologies Inc.' },
-  { symbol: 'ENER', name: 'Acciona Energia S.A.' },
-  { symbol: 'FSLR', name: 'First Solar Inc.' },
-  { symbol: 'ENPH', name: 'Enphase Energy Inc.' },
-  { symbol: 'SEDG', name: 'SolarEdge Technologies Inc.' },
-  { symbol: 'SPWR', name: 'SunPower Corporation' },
-  { symbol: 'RUN', name: 'Sunrun Inc.' },
-  { symbol: 'NOVA', name: 'Sunnova Energy International Inc.' },
-  { symbol: 'CSIQ', name: 'Canadian Solar Inc.' },
-  { symbol: 'JKS', name: 'JinkoSolar Holding Co. Ltd.' },
-  { symbol: 'TSM', name: 'Taiwan Semiconductor Manufacturing Company Limited' },
-  { symbol: 'ASML', name: 'ASML Holding N.V.' },
-  { symbol: 'NVDA', name: 'NVIDIA Corporation' },
-  { symbol: 'AMD', name: 'Advanced Micro Devices Inc.' },
-  { symbol: 'INTC', name: 'Intel Corporation' },
-  { symbol: 'QCOM', name: 'QUALCOMM Incorporated' },
-  { symbol: 'AVGO', name: 'Broadcom Inc.' },
-  { symbol: 'TXN', name: 'Texas Instruments Incorporated' },
-  { symbol: 'ADI', name: 'Analog Devices Inc.' },
-  { symbol: 'MRVL', name: 'Marvell Technology Inc.' },
-  { symbol: 'NXPI', name: 'NXP Semiconductors N.V.' },
-  { symbol: 'MU', name: 'Micron Technology Inc.' },
-  { symbol: 'LRCX', name: 'Lam Research Corporation' },
-  { symbol: 'AMAT', name: 'Applied Materials Inc.' },
-  { symbol: 'KLAC', name: 'KLA Corporation' },
-  { symbol: 'SNPS', name: 'Synopsys Inc.' },
-  { symbol: 'CDNS', name: 'Cadence Design Systems Inc.' },
-  { symbol: 'MCHP', name: 'Microchip Technology Incorporated' },
-  { symbol: 'ON', name: 'ON Semiconductor Corporation' },
-  { symbol: 'MPWR', name: 'Monolithic Power Systems Inc.' },
-  { symbol: 'SWKS', name: 'Skyworks Solutions Inc.' },
-  { symbol: 'QRVO', name: 'Qorvo Inc.' },
-  { symbol: 'RMBS', name: 'Rambus Inc.' },
-  { symbol: 'CRUS', name: 'Cirrus Logic Inc.' },
-  { symbol: 'SLAB', name: 'Silicon Laboratories Inc.' },
-  { symbol: 'DIOD', name: 'Diodes Incorporated' },
-  { symbol: 'POWI', name: 'Power Integrations Inc.' },
-  { symbol: 'VICR', name: 'Vicor Corporation' },
-  { symbol: 'FORM', name: 'FormFactor Inc.' },
-  { symbol: 'ACLS', name: 'Axcelis Technologies Inc.' },
-  { symbol: 'UCTT', name: 'Ultra Clean Holdings Inc.' },
-  { symbol: 'ICHR', name: 'Ichor Holdings Ltd.' },
-  { symbol: 'COHU', name: 'Cohu Inc.' },
-  { symbol: 'MKSI', name: 'MKS Instruments Inc.' },
-  { symbol: 'ENTG', name: 'Entegris Inc.' },
-  { symbol: 'CCMP', name: 'Cabot Microelectronics Corporation' },
-  { symbol: 'VERX', name: 'Vertex Inc.' },
-  { symbol: 'PLAB', name: 'Photronics Inc.' },
-  { symbol: 'AMKR', name: 'Amkor Technology Inc.' },
-  { symbol: 'SPIL', name: 'Siliconware Precision Industries Co. Ltd.' },
-  { symbol: 'ASX', name: 'Advanced Semiconductor Engineering Inc.' },
-  { symbol: 'UMC', name: 'United Microelectronics Corporation' },
-  { symbol: 'HIMX', name: 'Himax Technologies Inc.' },
-  { symbol: 'SIMO', name: 'Silicon Motion Technology Corporation' },
-  { symbol: 'CEVA', name: 'CEVA Inc.' },
-  { symbol: 'INPX', name: 'Inpixon' },
-  { symbol: 'KOPN', name: 'Kopin Corporation' },
-  { symbol: 'VUZI', name: 'Vuzix Corporation' },
-  { symbol: 'MVIS', name: 'MicroVision Inc.' },
-  { symbol: 'EMAN', name: 'eMagin Corporation' },
-  { symbol: 'WIMI', name: 'WiMi Hologram Cloud Inc.' },
-  { symbol: 'GOOG', name: 'Alphabet Inc.' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.' },
-  { symbol: 'META', name: 'Meta Platforms Inc.' },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.' },
-  { symbol: 'NFLX', name: 'Netflix Inc.' },
-  { symbol: 'DIS', name: 'The Walt Disney Company' },
-  { symbol: 'CMCSA', name: 'Comcast Corporation' },
-  { symbol: 'T', name: 'AT&T Inc.' },
-  { symbol: 'VZ', name: 'Verizon Communications Inc.' },
-  { symbol: 'TMUS', name: 'T-Mobile US Inc.' },
-  { symbol: 'CHTR', name: 'Charter Communications Inc.' },
-  { symbol: 'DISH', name: 'DISH Network Corporation' },
-  { symbol: 'SIRI', name: 'Sirius XM Holdings Inc.' },
-  { symbol: 'WBD', name: 'Warner Bros. Discovery Inc.' },
-  { symbol: 'PARA', name: 'Paramount Global' },
-  { symbol: 'FOX', name: 'Fox Corporation' },
-  { symbol: 'FOXA', name: 'Fox Corporation' },
-  { symbol: 'NWSA', name: 'News Corporation' },
-  { symbol: 'NWS', name: 'News Corporation' },
-  { symbol: 'NYT', name: 'The New York Times Company' },
-  { symbol: 'GANNETT', name: 'Gannett Co. Inc.' },
-  { symbol: 'MCS', name: 'The Marcus Corporation' },
-  { symbol: 'CNK', name: 'Cinemark Holdings Inc.' },
-  { symbol: 'AMC', name: 'AMC Entertainment Holdings Inc.' },
-  { symbol: 'IMAX', name: 'IMAX Corporation' },
-  { symbol: 'LYV', name: 'Live Nation Entertainment Inc.' },
-  { symbol: 'MSG', name: 'Madison Square Garden Sports Corp.' },
-  { symbol: 'MSGS', name: 'Madison Square Garden Sports Corp.' },
-  { symbol: 'MSGE', name: 'Madison Square Garden Entertainment Corp.' },
-  { symbol: 'FUBO', name: 'fuboTV Inc.' },
-  { symbol: 'ROKU', name: 'Roku Inc.' },
-  { symbol: 'SPOT', name: 'Spotify Technology S.A.' },
-  { symbol: 'WMG', name: 'Warner Music Group Corp.' },
-  { symbol: 'UMG', name: 'Universal Music Group N.V.' },
-  { symbol: 'SONY', name: 'Sony Group Corporation' },
-  { symbol: 'EA', name: 'Electronic Arts Inc.' },
-  { symbol: 'ATVI', name: 'Activision Blizzard Inc.' },
-  { symbol: 'TTWO', name: 'Take-Two Interactive Software Inc.' },
-  { symbol: 'ZNGA', name: 'Zynga Inc.' },
-  { symbol: 'RBLX', name: 'Roblox Corporation' },
-  { symbol: 'U', name: 'Unity Software Inc.' },
-  { symbol: 'DKNG', name: 'DraftKings Inc.' },
-  { symbol: 'PENN', name: 'PENN Entertainment Inc.' },
-  { symbol: 'CZR', name: 'Caesars Entertainment Inc.' },
-  { symbol: 'MGM', name: 'MGM Resorts International' },
-  { symbol: 'LVS', name: 'Las Vegas Sands Corp.' },
-  { symbol: 'WYNN', name: 'Wynn Resorts Limited' },
-  { symbol: 'BYD', name: 'Boyd Gaming Corporation' },
-  { symbol: 'ERI', name: 'Eldorado Resorts Inc.' },
-  { symbol: 'GDEN', name: 'Golden Entertainment Inc.' },
-  { symbol: 'CRC', name: 'California Resources Corporation' },
-  { symbol: 'PLAY', name: 'Dave & Buster\'s Entertainment Inc.' },
-  { symbol: 'SIX', name: 'Six Flags Entertainment Corporation' },
-  { symbol: 'FUN', name: 'Cedar Fair L.P.' },
-  { symbol: 'SEAS', name: 'SeaWorld Entertainment Inc.' },
-  { symbol: 'RCL', name: 'Royal Caribbean Cruises Ltd.' },
-  { symbol: 'CCL', name: 'Carnival Corporation & plc' },
-  { symbol: 'NCLH', name: 'Norwegian Cruise Line Holdings Ltd.' },
-  { symbol: 'AAL', name: 'American Airlines Group Inc.' },
-  { symbol: 'DAL', name: 'Delta Air Lines Inc.' },
-  { symbol: 'UAL', name: 'United Airlines Holdings Inc.' },
-  { symbol: 'LUV', name: 'Southwest Airlines Co.' },
-  { symbol: 'JBLU', name: 'JetBlue Airways Corporation' },
-  { symbol: 'ALK', name: 'Alaska Air Group Inc.' },
-  { symbol: 'SKYW', name: 'SkyWest Inc.' },
-  { symbol: 'MESA', name: 'Mesa Air Group Inc.' },
-  { symbol: 'HA', name: 'Hawaiian Holdings Inc.' },
-  { symbol: 'SAVE', name: 'Spirit Airlines Inc.' },
-  { symbol: 'ULCC', name: 'Frontier Group Holdings Inc.' },
-  { symbol: 'ALGT', name: 'Allegiant Travel Company' },
-  { symbol: 'JBHT', name: 'J.B. Hunt Transport Services Inc.' },
-  { symbol: 'KNX', name: 'Knight-Swift Transportation Holdings Inc.' },
-  { symbol: 'ODFL', name: 'Old Dominion Freight Line Inc.' },
-  { symbol: 'SAIA', name: 'Saia Inc.' },
-  { symbol: 'ARCB', name: 'ArcBest Corporation' },
-  { symbol: 'YELL', name: 'Yellow Corporation' },
-  { symbol: 'UPS', name: 'United Parcel Service Inc.' },
-  { symbol: 'FDX', name: 'FedEx Corporation' },
-  { symbol: 'CHRW', name: 'C.H. Robinson Worldwide Inc.' },
-  { symbol: 'XPO', name: 'XPO Logistics Inc.' },
-  { symbol: 'EXPD', name: 'Expeditors International of Washington Inc.' },
-  { symbol: 'LSTR', name: 'Landstar System Inc.' },
-  { symbol: 'HUBG', name: 'Hub Group Inc.' },
-  { symbol: 'MATX', name: 'Matson Inc.' },
-  { symbol: 'KEX', name: 'Kirby Corporation' },
-  { symbol: 'GATX', name: 'GATX Corporation' },
-  { symbol: 'TRN', name: 'Trinity Industries Inc.' },
-  { symbol: 'RAIL', name: 'FreightCar America Inc.' },
-  { symbol: 'GBX', name: 'The Greenbrier Companies Inc.' },
-  { symbol: 'WAB', name: 'Westinghouse Air Brake Technologies Corporation' },
-  { symbol: 'UNP', name: 'Union Pacific Corporation' },
-  { symbol: 'CSX', name: 'CSX Corporation' },
-  { symbol: 'NSC', name: 'Norfolk Southern Corporation' },
-  { symbol: 'KSU', name: 'Kansas City Southern' },
-  { symbol: 'CNI', name: 'Canadian National Railway Company' },
-  { symbol: 'CP', name: 'Canadian Pacific Railway Limited' },
-  { symbol: 'GWR', name: 'Genesee & Wyoming Inc.' },
-  { symbol: 'RAIL', name: 'FreightCar America Inc.' }
+  { symbol: 'NKE', name: 'NIKE Inc.' }
 ];
+
+// 本地中文名称字典
+const localChineseNames = {
+  'AAPL': '苹果公司',
+  'MSFT': '微软公司',
+  'GOOGL': '谷歌',
+  'GOOG': '谷歌',
+  'TSLA': '特斯拉',
+  'NVDA': '英伟达',
+  'AMZN': '亚马逊',
+  'BRK.B': '伯克希尔哈撒韦',
+  'META': 'Meta',
+  'NFLX': '奈飞',
+  'JPM': '摩根大通',
+  'JNJ': '强生',
+  'V': 'Visa',
+  'PG': '宝洁',
+  'UNH': '联合健康',
+  'HD': '家得宝',
+  'MA': '万事达卡',
+  'BAC': '美国银行',
+  'XOM': '埃克森美孚',
+  'BLK': '贝莱德公司',
+  'AXP': '美国运通',
+  'ORCL': '甲骨文公司',
+  'WMT': '沃尔玛',
+  'KO': '可口可乐',
+  'ADBE': 'Adobe',
+  'DIS': '迪士尼',
+  'CRM': 'Salesforce',
+  'COST': '好市多',
+  'ABBV': '艾伯维',
+  'CVX': '雪佛龙',
+  'LIN': '林德集团',
+  'TMO': '赛默飞世尔',
+  'PEP': '百事可乐',
+  'MRK': '默克',
+  'ACN': '埃森哲',
+  'NOW': 'ServiceNow',
+  'CSCO': '思科',
+  'IBM': 'IBM',
+  'GE': '通用电气',
+  'CAT': '卡特彼勒',
+  'INTU': 'Intuit',
+  'TXN': '德州仪器',
+  'QCOM': '高通',
+  'VZ': '威瑞森',
+  'CMCSA': '康卡斯特',
+  'AMAT': '应用材料',
+  'HON': '霍尼韦尔',
+  'AMGN': '安进',
+  'T': 'AT&T',
+  'LOW': '劳氏',
+  'BKNG': 'Booking Holdings',
+  'UPS': '联合包裹',
+  'SPGI': '标普全球',
+  'LRCX': '泛林集团',
+  'DE': '迪尔公司',
+  'GS': '高盛',
+  'SYK': '史赛克',
+  'MDT': '美敦力',
+  'TJX': 'TJX公司',
+  'VRTX': 'Vertex制药',
+  'SCHW': '嘉信理财',
+  'PLD': '普洛斯',
+  'ADI': '亚德诺',
+  'PANW': 'Palo Alto Networks',
+  'ANET': 'Arista Networks',
+  'C': '花旗集团',
+  'MU': '美光科技',
+  'CB': '安达保险',
+  'FI': 'Fiserv',
+  'GILD': '吉利德科学',
+  'SO': '南方公司',
+  'KLAC': 'KLA',
+  'PYPL': 'PayPal',
+  'CME': '芝商所',
+  'EQIX': 'Equinix',
+  'SNPS': '新思科技',
+  'CDNS': 'Cadence',
+  'USB': '美国合众银行',
+  'REGN': 'Regeneron制药',
+  'PNC': 'PNC金融',
+  'AON': '怡安集团',
+  'APH': '安费诺',
+  'CL': '高露洁',
+  'CRWD': 'CrowdStrike',
+  'MMC': '威达信集团',
+  'CSX': 'CSX运输',
+  'FTNT': 'Fortinet',
+  'ECL': '艺康',
+  'WM': '废物管理',
+  'ITW': '伊利诺伊工具',
+  'WELL': 'Welltower',
+  'SHW': '宣伟',
+  'FCX': '自由港',
+  'BSX': '波士顿科学',
+  'MCO': '穆迪',
+  'CARR': '开利',
+  'ICE': '洲际交易所',
+  'CMG': 'Chipotle',
+  'PCAR': 'PACCAR',
+  'MSI': '摩托罗拉解决方案',
+  'DUK': '杜克能源',
+  'TDG': 'TransDigm',
+  'TT': '特灵科技',
+  'EMR': '艾默生电气',
+  'COF': '第一资本',
+  'NSC': '诺福克南方',
+  'SLB': 'SLB',
+  'GD': '通用动力',
+  'CPRT': 'Copart',
+  'ORLY': "O'Reilly汽车",
+  'EOG': 'EOG资源',
+  'WFC': '富国银行',
+  'NOC': '诺斯罗普格鲁曼',
+  'RSG': 'Republic Services',
+  'FAST': 'Fastenal',
+  'FICO': 'Fair Isaac',
+  'ROP': 'Roper Technologies',
+  'KMB': '金佰利',
+  'DHR': '丹纳赫',
+  'PAYX': 'Paychex',
+  'CTAS': 'Cintas',
+  'ODFL': 'Old Dominion',
+  'EA': '艺电',
+  'URI': 'United Rentals',
+  'MLM': 'Martin Marietta',
+  'VMC': 'Vulcan Materials',
+  'CTSH': '高知特',
+  'LULU': 'Lululemon',
+  'NXPI': '恩智浦',
+  'DXCM': 'DexCom',
+  'HCA': 'HCA医疗',
+  'VRSK': 'Verisk Analytics',
+  'EXC': 'Exelon',
+  'IDXX': 'IDEXX实验室',
+  'A': '安捷伦',
+  'IQV': 'IQVIA',
+  'KHC': '卡夫亨氏',
+  'GWW': 'W.W. Grainger',
+  'MPWR': 'Monolithic Power',
+  'TTWO': 'Take-Two Interactive',
+  'XEL': 'Xcel Energy',
+  'AEP': '美国电力',
+  'ADSK': 'Autodesk',
+  'MNST': '怪物饮料',
+  'EW': 'Edwards Lifesciences',
+  'PSA': 'Public Storage',
+  'FANG': 'Diamondback Energy',
+  'ROST': 'Ross Stores',
+  'YUM': '百胜餐饮',
+  'CTVA': 'Corteva',
+  'DOW': '陶氏',
+  'GEHC': 'GE医疗',
+  'KMI': 'Kinder Morgan',
+  'HLT': '希尔顿',
+  'CSGP': 'CoStar Group',
+  'AMP': 'Ameriprise Financial',
+  'BDX': 'BD',
+  'ALL': 'Allstate',
+  'MCHP': 'Microchip Technology',
+  'CCI': 'Crown Castle',
+  'TEAM': 'Atlassian',
+  'AJG': 'Arthur J. Gallagher',
+  'BIIB': '百健',
+  'CMI': '康明斯',
+  'TEL': 'TE Connectivity',
+  'TROW': 'T. Rowe Price',
+  'SBUX': '星巴克',
+  'AFL': 'Aflac',
+  'AZO': 'AutoZone',
+  'MCD': '麦当劳',
+  'GRMN': 'Garmin',
+  'TRV': '旅行者保险',
+  'AIG': '美国国际集团',
+  'BK': '纽约梅隆银行',
+  'WDAY': 'Workday',
+  'ZTS': 'Zoetis',
+  'MSCI': 'MSCI',
+  'EL': '雅诗兰黛',
+  'KVUE': 'Kenvue',
+  'ANSS': 'ANSYS',
+  'MAR': '万豪国际',
+  'MCK': 'McKesson',
+  'CVS': 'CVS Health',
+  'OTIS': '奥的斯',
+  'TMUS': 'T-Mobile',
+  'O': 'Realty Income',
+  'SPG': 'Simon Property',
+  'CHTR': 'Charter Communications',
+  'NKE': '耐克'
+};
 
 // 火山引擎翻译函数
 async function translateWithVolcEngine(text, accessKeyId, secretAccessKey, targetLang = 'zh') {
-  const host = 'translate.volcengineapi.com';
   const service = 'translate';
-  const region = 'cn-north-1';
-  const action = 'TranslateText';
   const version = '2020-06-01';
+  const action = 'TranslateText';
+  const region = 'cn-north-1';
+  const host = 'translate.volcengineapi.com';
   
-  // 构建请求体
-  const body = JSON.stringify({
+  const timestamp = Math.floor(Date.now() / 1000);
+  const date = new Date(timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+  
+  const payload = JSON.stringify({
     TargetLanguage: targetLang,
     TextList: [text]
   });
   
-  // 生成时间戳
-  const now = new Date();
-  const timestamp = Math.floor(now.getTime() / 1000);
-  const date = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const dateTime = now.toISOString().replace(/[:\-]|\..*/, '').slice(0, 15) + 'Z';
-  
-  // 构建请求头
-  const headers = {
-    'Content-Type': 'application/json',
-    'Host': host,
-    'X-Date': dateTime,
-    'X-Content-Sha256': crypto.createHash('sha256').update(body).digest('hex')
-  };
-  
-  // 构建签名
-  const credentialScope = `${date}/${region}/${service}/request`;
-  const algorithm = 'HMAC-SHA256';
-  
-  // 构建规范请求
-  const canonicalHeaders = Object.keys(headers)
-    .sort()
-    .map(key => `${key.toLowerCase()}:${headers[key]}`)
-    .join('\n');
-  
-  const signedHeaders = Object.keys(headers)
-    .sort()
-    .map(key => key.toLowerCase())
-    .join(';');
+  const payloadHash = crypto.createHash('sha256').update(payload).digest('hex');
   
   const canonicalRequest = [
     'POST',
     '/',
-    `Action=${action}&Version=${version}`,
-    canonicalHeaders + '\n',
-    signedHeaders,
-    headers['X-Content-Sha256']
+    '',
+    `content-type:application/json`,
+    `host:${host}`,
+    `x-date:${new Date(timestamp * 1000).toISOString().replace(/[:\-]|\..*/g, '')}`,
+    '',
+    'content-type;host;x-date',
+    payloadHash
   ].join('\n');
   
-  // 构建待签名字符串
+  const credentialScope = `${date}/${region}/${service}/request`;
   const stringToSign = [
-    algorithm,
-    dateTime,
+    'HMAC-SHA256',
+    timestamp,
     credentialScope,
     crypto.createHash('sha256').update(canonicalRequest).digest('hex')
   ].join('\n');
   
-  // 计算签名
-  const kDate = crypto.createHmac('sha256', 'VOLC' + secretAccessKey).update(date).digest();
+  const kDate = crypto.createHmac('sha256', secretAccessKey).update(date).digest();
   const kRegion = crypto.createHmac('sha256', kDate).update(region).digest();
   const kService = crypto.createHmac('sha256', kRegion).update(service).digest();
   const kSigning = crypto.createHmac('sha256', kService).update('request').digest();
   const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
   
-  // 构建Authorization头
-  const authorization = `${algorithm} Credential=${accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  const authorization = `HMAC-SHA256 Credential=${accessKeyId}/${credentialScope}, SignedHeaders=content-type;host;x-date, Signature=${signature}`;
   
-  try {
-    const response = await fetch(`https://${host}/?Action=${action}&Version=${version}`, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        'Authorization': authorization
-      },
-      body: body
-    });
-    
-    const result = await response.json();
-    
-    if (result.ResponseMetadata && result.ResponseMetadata.Error) {
-      throw new Error(`Translation API Error: ${result.ResponseMetadata.Error.Message}`);
-    }
-    
-    if (result.TranslationList && result.TranslationList.length > 0) {
-      return result.TranslationList[0].Translation;
-    }
-    
-    throw new Error('No translation result received');
-  } catch (error) {
-    console.error('Translation error:', error);
-    throw error;
+  const response = await fetch(`https://${host}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Host': host,
+      'X-Date': new Date(timestamp * 1000).toISOString().replace(/[:\-]|\..*/g, ''),
+      'Authorization': authorization
+    },
+    body: payload
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Translation failed: ${response.status}`);
   }
+  
+  const result = await response.json();
+  return result.TranslationList?.[0]?.Translation || text;
 }
 
 export default async function handler(request, response) {
   // 设置CORS头
   response.setHeader('Access-Control-Allow-Origin', '*');
   response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (request.method === 'OPTIONS') {
     return response.status(200).end();
@@ -555,369 +468,107 @@ export default async function handler(request, response) {
     const { method, query } = request;
     
     if (method === 'GET') {
-      // 返回所有标普500公司列表或查询单个股票
-      const { translate, symbol } = query;
+      const { symbol, with_chinese } = query;
       
-      // 如果请求单个股票的中文名称
       if (symbol) {
+        // 查询单个股票的中文名称
         const company = SP500_COMPANIES.find(c => c.symbol === symbol.toUpperCase());
         
-        if (!company) {
-          return response.status(404).json({
-            error: 'Company not found in S&P 500 list',
-            symbol: symbol
-          });
-        }
-        
-        // 本地中文名称字典
-        const localChineseNames = {
-          'AAPL': '苹果公司',
-          'MSFT': '微软公司',
-          'GOOGL': '谷歌',
-          'GOOG': '谷歌',
-          'TSLA': '特斯拉',
-          'NVDA': '英伟达',
-          'AMZN': '亚马逊',
-          'BRK.B': '伯克希尔哈撒韦',
-          'META': 'Meta',
-          'NFLX': '奈飞',
-          'JPM': '摩根大通',
-          'JNJ': '强生',
-          'V': 'Visa',
-          'PG': '宝洁',
-          'UNH': '联合健康',
-          'HD': '家得宝',
-          'MA': '万事达卡',
-          'BAC': '美国银行',
-          'XOM': '埃克森美孚',
-          'BLK': '贝莱德公司',
-          'AXP': '美国运通',
-          'ORCL': '甲骨文公司',
-          'WMT': '沃尔玛',
-          'KO': '可口可乐',
-          'ADBE': 'Adobe',
-          'DIS': '迪士尼',
-          'CRM': 'Salesforce',
-          'COST': '好市多',
-          'ABBV': '艾伯维',
-          'CVX': '雪佛龙',
-          'LIN': '林德集团',
-          'TMO': '赛默飞世尔',
-          'PEP': '百事可乐',
-          'MRK': '默克',
-          'ACN': '埃森哲',
-          'NOW': 'ServiceNow',
-          'CSCO': '思科',
-          'IBM': 'IBM',
-          'GE': '通用电气',
-          'CAT': '卡特彼勒',
-          'INTU': 'Intuit',
-          'TXN': '德州仪器',
-          'QCOM': '高通',
-          'VZ': '威瑞森',
-          'CMCSA': '康卡斯特',
-          'AMAT': '应用材料',
-          'HON': '霍尼韦尔',
-          'AMGN': '安进',
-          'T': 'AT&T',
-          'LOW': '劳氏',
-          'BKNG': 'Booking Holdings',
-          'UPS': '联合包裹',
-          'SPGI': '标普全球',
-          'LRCX': '泛林集团',
-          'DE': '迪尔公司',
-          'GS': '高盛',
-          'SYK': '史赛克',
-          'MDT': '美敦力',
-          'TJX': 'TJX公司',
-          'VRTX': 'Vertex制药',
-          'SCHW': '嘉信理财',
-          'PLD': '普洛斯',
-          'ADI': '亚德诺',
-          'PANW': 'Palo Alto Networks',
-          'ANET': 'Arista Networks',
-          'C': '花旗集团',
-          'MU': '美光科技',
-          'CB': '安达保险',
-          'FI': 'Fiserv',
-          'GILD': '吉利德科学',
-          'SO': '南方公司',
-          'KLAC': 'KLA',
-          'PYPL': 'PayPal',
-          'CME': '芝商所',
-          'EQIX': 'Equinix',
-          'SNPS': '新思科技',
-          'CDNS': 'Cadence',
-          'USB': '美国合众银行',
-          'REGN': 'Regeneron制药',
-          'PNC': 'PNC金融',
-          'AON': '怡安集团',
-          'APH': '安费诺',
-          'CL': '高露洁',
-          'CRWD': 'CrowdStrike',
-          'MMC': '威达信集团',
-          'CSX': 'CSX运输',
-          'FTNT': 'Fortinet',
-          'ECL': '艺康',
-          'WM': '废物管理',
-          'ITW': '伊利诺伊工具',
-          'WELL': 'Welltower',
-          'SHW': '宣伟',
-          'FCX': '自由港',
-          'BSX': '波士顿科学',
-          'MCO': '穆迪',
-          'CARR': '开利',
-          'ICE': '洲际交易所',
-          'CMG': 'Chipotle',
-          'PCAR': 'PACCAR',
-          'MSI': '摩托罗拉解决方案',
-          'DUK': '杜克能源',
-          'TDG': 'TransDigm',
-          'TT': '特灵科技',
-          'EMR': '艾默生电气',
-          'COF': '第一资本',
-          'NSC': '诺福克南方',
-          'SLB': 'SLB',
-          'GD': '通用动力',
-          'CPRT': 'Copart',
-          'ORLY': "O'Reilly汽车",
-          'EOG': 'EOG资源',
-          'WFC': '富国银行',
-          'NOC': '诺斯罗普格鲁曼',
-          'RSG': 'Republic Services',
-          'FAST': 'Fastenal',
-          'FICO': 'Fair Isaac',
-          'ROP': 'Roper Technologies',
-          'KMB': '金佰利',
-          'DHR': '丹纳赫',
-          'PAYX': 'Paychex',
-          'CTAS': 'Cintas',
-          'ODFL': 'Old Dominion',
-          'EA': '艺电',
-          'URI': 'United Rentals',
-          'MLM': 'Martin Marietta',
-          'VMC': 'Vulcan Materials',
-          'CTSH': '高知特',
-          'LULU': 'Lululemon',
-          'NXPI': '恩智浦',
-          'DXCM': 'DexCom',
-          'HCA': 'HCA医疗',
-          'VRSK': 'Verisk Analytics',
-          'EXC': 'Exelon',
-          'IDXX': 'IDEXX实验室',
-          'A': '安捷伦',
-          'IQV': 'IQVIA',
-          'KHC': '卡夫亨氏',
-          'GWW': 'W.W. Grainger',
-          'MPWR': 'Monolithic Power',
-          'TTWO': 'Take-Two Interactive',
-          'XEL': 'Xcel Energy',
-          'AEP': '美国电力',
-          'ADSK': 'Autodesk',
-          'MNST': '怪物饮料',
-          'EW': 'Edwards Lifesciences',
-          'PSA': 'Public Storage',
-          'FANG': 'Diamondback Energy',
-          'ROST': 'Ross Stores',
-          'YUM': '百胜餐饮',
-          'CTVA': 'Corteva',
-          'DOW': '陶氏',
-          'GEHC': 'GE医疗',
-          'KMI': 'Kinder Morgan',
-          'HLT': '希尔顿',
-          'CSGP': 'CoStar Group',
-          'AMP': 'Ameriprise Financial',
-          'BDX': 'BD',
-          'ALL': 'Allstate',
-          'MCHP': 'Microchip Technology',
-          'CCI': 'Crown Castle',
-          'TEAM': 'Atlassian',
-          'AJG': 'Arthur J. Gallagher',
-          'BIIB': '百健',
-          'CMI': '康明斯',
-          'TEL': 'TE Connectivity',
-          'TROW': 'T. Rowe Price',
-          'SBUX': '星巴克',
-          'AFL': 'Aflac',
-          'AZO': 'AutoZone',
-          'MCD': '麦当劳',
-          'GRMN': 'Garmin',
-          'TRV': '旅行者保险',
-          'AIG': '美国国际集团',
-          'BK': '纽约梅隆银行',
-          'WDAY': 'Workday',
-          'ZTS': 'Zoetis',
-          'MSCI': 'MSCI',
-          'EL': '雅诗兰黛',
-          'KVUE': 'Kenvue',
-          'ANSS': 'ANSYS',
-          'MAR': '万豪国际',
-          'MCK': 'McKesson',
-          'CVS': 'CVS Health',
-          'OTIS': '奥的斯',
-          'TMUS': 'T-Mobile',
-          'O': 'Realty Income',
-          'SPG': 'Simon Property',
-          'CHTR': 'Charter Communications',
-          'NKE': '耐克'
-        };
-        
-        const chineseName = localChineseNames[symbol.toUpperCase()];
-        
-        if (chineseName) {
+        if (company) {
+          // 首先检查本地字典
+          const chineseName = localChineseNames[symbol.toUpperCase()];
+          
+          if (chineseName) {
+            return response.status(200).json({
+              success: true,
+              symbol: symbol.toUpperCase(),
+              chinese_name: chineseName,
+              source: 'sp500_local'
+            });
+          }
+          
+          // 如果本地字典没有，返回英文名称
           return response.status(200).json({
             success: true,
-            symbol: company.symbol,
-            english_name: company.name,
-            chinese_name: chineseName,
-            source: 'local'
+            symbol: symbol.toUpperCase(),
+            chinese_name: company.name,
+            source: 'sp500_english'
           });
         } else {
           return response.status(404).json({
-            error: 'Chinese name not found',
-            symbol: symbol,
-            english_name: company.name
+            success: false,
+            error: 'Stock not found in S&P 500'
           });
         }
-      }
-      
-      if (translate === 'true') {
-        // 批量翻译所有公司名称
-        const accessKeyId = process.env.VOLC_ACCESS_KEY_ID;
-        const secretAccessKey = process.env.VOLC_SECRET_ACCESS_KEY;
-        
-        if (!accessKeyId || !secretAccessKey) {
-          return response.status(500).json({
-            error: 'Translation service not configured',
-            companies: SP500_COMPANIES
-          });
-        }
-        
-        console.log('🔄 [SP500 API] Starting batch translation for', SP500_COMPANIES.length, 'companies');
-        
-        const translatedCompanies = [];
-        const batchSize = 10; // 每批处理10个公司
-        
-        for (let i = 0; i < SP500_COMPANIES.length; i += batchSize) {
-          const batch = SP500_COMPANIES.slice(i, i + batchSize);
-          const batchPromises = batch.map(async (company) => {
-            try {
-              const translatedName = await translateWithVolcEngine(
-                company.name,
-                accessKeyId,
-                secretAccessKey,
-                'zh'
-              );
-              console.log(`✅ [SP500 API] Translated: ${company.name} -> ${translatedName}`);
-              return {
-                ...company,
-                chinese_name: translatedName
-              };
-            } catch (error) {
-              console.error(`❌ [SP500 API] Translation failed for ${company.name}:`, error.message);
-              return {
-                ...company,
-                chinese_name: company.name // 翻译失败时保持原名
-              };
-            }
-          });
-          
-          const batchResults = await Promise.all(batchPromises);
-          translatedCompanies.push(...batchResults);
-          
-          // 添加延迟以避免API限制
-          if (i + batchSize < SP500_COMPANIES.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-        
-        console.log('🎉 [SP500 API] Batch translation completed');
-        
-        return response.status(200).json({
-          success: true,
-          total: translatedCompanies.length,
-          companies: translatedCompanies
-        });
       } else {
-        // 返回原始列表
-        return response.status(200).json({
-          success: true,
-          total: SP500_COMPANIES.length,
-          companies: SP500_COMPANIES
-        });
+        // 返回所有公司列表
+        if (with_chinese === 'true') {
+          // 返回包含中文名称的完整列表
+          const companiesWithChinese = SP500_COMPANIES.map(company => ({
+            ...company,
+            chinese_name: localChineseNames[company.symbol] || company.name
+          }));
+          return response.status(200).json(companiesWithChinese);
+        } else {
+          // 返回基本列表
+          return response.status(200).json(SP500_COMPANIES);
+        }
       }
     }
     
     if (method === 'POST') {
-      // 翻译单个公司名称
-      const { symbol, name } = request.body;
+      // 处理翻译请求
+      const { company_name } = request.body;
       
-      if (!symbol && !name) {
+      if (!company_name) {
         return response.status(400).json({
-          error: 'Symbol or name is required'
-        });
-      }
-      
-      const accessKeyId = process.env.VOLC_ACCESS_KEY_ID;
-      const secretAccessKey = process.env.VOLC_SECRET_ACCESS_KEY;
-      
-      if (!accessKeyId || !secretAccessKey) {
-        return response.status(500).json({
-          error: 'Translation service not configured'
-        });
-      }
-      
-      // 查找公司信息
-      let company;
-      if (symbol) {
-        company = SP500_COMPANIES.find(c => c.symbol === symbol.toUpperCase());
-      } else {
-        company = SP500_COMPANIES.find(c => c.name.toLowerCase().includes(name.toLowerCase()));
-      }
-      
-      if (!company) {
-        return response.status(404).json({
-          error: 'Company not found in S&P 500 list'
+          success: false,
+          error: 'Company name is required'
         });
       }
       
       try {
-        console.log(`🔄 [SP500 API] Translating: ${company.name}`);
+        const accessKeyId = process.env.VOLC_ACCESS_KEY_ID;
+        const secretAccessKey = process.env.VOLC_SECRET_ACCESS_KEY;
+        
+        if (!accessKeyId || !secretAccessKey) {
+          throw new Error('Translation service not configured');
+        }
         
         const translatedName = await translateWithVolcEngine(
-          company.name,
+          company_name,
           accessKeyId,
           secretAccessKey,
           'zh'
         );
         
-        console.log(`✅ [SP500 API] Translation result: ${company.name} -> ${translatedName}`);
-        
         return response.status(200).json({
           success: true,
-          symbol: company.symbol,
-          english_name: company.name,
-          chinese_name: translatedName
+          original_name: company_name,
+          chinese_name: translatedName,
+          source: 'volc_translate'
         });
       } catch (error) {
-        console.error(`❌ [SP500 API] Translation failed for ${company.name}:`, error.message);
-        
-        return response.status(500).json({
-          error: 'Translation failed',
-          symbol: company.symbol,
-          english_name: company.name,
-          chinese_name: company.name // 翻译失败时返回原名
+        console.error('Translation error:', error);
+        return response.status(200).json({
+          success: true,
+          original_name: company_name,
+          chinese_name: company_name,
+          source: 'fallback'
         });
       }
     }
     
-    return response.status(405).json({ error: 'Method not allowed' });
+    return response.status(405).json({
+      success: false,
+      error: 'Method not allowed'
+    });
     
   } catch (error) {
-    console.error('❌ [SP500 API] Server error:', error);
+    console.error('API Error:', error);
     return response.status(500).json({
-      error: 'Internal server error',
-      message: error.message
+      success: false,
+      error: 'Internal server error'
     });
   }
 }
