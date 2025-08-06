@@ -148,25 +148,28 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'No content to translate' });
         }
 
-        // 调用火山引擎翻译
-        const translateResponse = await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/translate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                texts: textsToTranslate,
-                source: 'en',
-                target: 'zh'
-            })
-        });
+        // 调用火山引擎翻译 - 逐个翻译以确保关键词替换正确应用
+        const translations = [];
+        
+        for (const text of textsToTranslate) {
+            const translateResponse = await fetch(`${req.headers.origin || 'http://localhost:3000'}/api/translate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    targetLang: 'zh'
+                })
+            });
 
-        if (!translateResponse.ok) {
-            throw new Error(`Translation service error: ${translateResponse.status}`);
+            if (!translateResponse.ok) {
+                throw new Error(`Translation service error: ${translateResponse.status}`);
+            }
+
+            const translateData = await translateResponse.json();
+            translations.push(translateData.translatedText || text);
         }
-
-        const translateData = await translateResponse.json();
-        const translations = translateData.translations || [];
 
         const result = {
             translatedTitle: title && translations[0] ? translations[0] : title,
