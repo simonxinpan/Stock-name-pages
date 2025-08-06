@@ -47,7 +47,7 @@ function getPool() {
 // 本地中文名称字典 (作为数据库的备用方案)
 const localChineseNames = {
   'AAPL': '苹果公司',
-  'MSFT': '微软公司', 
+  'MSFT': '微软公司',
   'GOOGL': '谷歌公司',
   'TSLA': '特斯拉公司',
   'NVDA': '英伟达公司',
@@ -55,7 +55,17 @@ const localChineseNames = {
   'BRK.B': '伯克希尔哈撒韦公司',
   'META': 'Meta公司',
   'NFLX': '奈飞公司',
-  'BABA': '阿里巴巴集团'
+  'BABA': '阿里巴巴集团',
+  'JPM': '摩根大通',
+  'JNJ': '强生公司',
+  'V': 'Visa公司',
+  'PG': '宝洁公司',
+  'UNH': '联合健康集团',
+  'HD': '家得宝',
+  'MA': '万事达卡',
+  'BAC': '美国银行',
+  'PFE': '辉瑞公司',
+  'XOM': '埃克森美孚'
 };
 
 export default async function handler(request, response) {
@@ -91,6 +101,11 @@ export default async function handler(request, response) {
     
     // 尝试多个可能的表名和列名组合
     const queries = [
+      'SELECT ticker, company_name, chinese_name FROM stocks WHERE ticker = $1',
+      'SELECT ticker, company_name, name_zh FROM stocks WHERE ticker = $1',
+      'SELECT ticker, name, chinese_name FROM stocks WHERE ticker = $1',
+      'SELECT ticker, name, name_zh FROM stocks WHERE ticker = $1',
+      // 备用查询，以防列名确实是symbol
       'SELECT symbol, company_name, chinese_name FROM stocks WHERE symbol = $1',
       'SELECT symbol, company_name, name_zh FROM stocks WHERE symbol = $1',
       'SELECT symbol, name, chinese_name FROM stocks WHERE symbol = $1',
@@ -122,7 +137,7 @@ export default async function handler(request, response) {
       
       response.writeHead(200, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({
-        symbol: stock.symbol,
+        symbol: stock.ticker || stock.symbol,
         company_name: stock.company_name || stock.name,
         chinese_name: chineseName,
         success: true,
