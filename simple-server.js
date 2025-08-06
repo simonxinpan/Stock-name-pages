@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
     // 本地中文名称字典
     const localChineseNames = {
       'AAPL': '苹果公司',
-      'MSFT': '微软公司', 
+      'MSFT': '微软公司',
       'GOOGL': '谷歌公司',
       'TSLA': '特斯拉公司',
       'NVDA': '英伟达公司',
@@ -56,7 +56,17 @@ const server = http.createServer((req, res) => {
       'BRK.B': '伯克希尔哈撒韦公司',
       'META': 'Meta公司',
       'NFLX': '奈飞公司',
-      'BABA': '阿里巴巴集团'
+      'BABA': '阿里巴巴集团',
+      'JPM': '摩根大通',
+      'JNJ': '强生公司',
+      'V': 'Visa公司',
+      'PG': '宝洁公司',
+      'UNH': '联合健康集团',
+      'HD': '家得宝',
+      'MA': '万事达卡',
+      'BAC': '美国银行',
+      'PFE': '辉瑞公司',
+      'XOM': '埃克森美孚'
     };
     
     if (!symbol) {
