@@ -1,116 +1,80 @@
-// /api/stock/chinese-name.js
-// 获取股票的中文名称
+// 本地中文股票名称同步脚本
+// 使用完整的标普500中文名称字典直接更新API文件
 
-import { Pool } from 'pg';
+console.log('🚀 本地同步脚本开始执行...');
 
-let pool;
+import fs from 'fs';
+import path from 'path';
 
-// 初始化数据库连接池
-function getPool() {
-  if (!pool) {
-    // 尝试多个可能的环境变量名
-    const connectionString = process.env.NEON_DATABASE_URL || 
-                            process.env.POSTGRES_URL || 
-                            process.env.DATABASE_URL;
-    
-    console.log('🔍 [Chinese Name API] Environment variables check:');
-    console.log('- NEON_DATABASE_URL:', process.env.NEON_DATABASE_URL ? '✅ Found' : '❌ Not found');
-    console.log('- POSTGRES_URL:', process.env.POSTGRES_URL ? '✅ Found' : '❌ Not found');
-    console.log('- DATABASE_URL:', process.env.DATABASE_URL ? '✅ Found' : '❌ Not found');
-    
-    if (!connectionString) {
-      console.error('❌ [Chinese Name API] No database connection string found!');
-      throw new Error('Database connection string not found');
-    }
-    
-    console.log('✅ [Chinese Name API] Using connection string:', connectionString.substring(0, 20) + '...');
-    
-    pool = new Pool({
-      connectionString,
-      ssl: {
-        rejectUnauthorized: false
-      },
-      // 添加连接池配置
-      max: 20,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
-    
-    // 测试连接
-    pool.on('error', (err) => {
-      console.error('❌ [Chinese Name API] Database pool error:', err);
-    });
-  }
-  return pool;
-}
+console.log('📦 模块导入完成');
 
-// 本地中文名称字典 (作为数据库的备用方案)
-const localChineseNames = {
+// 完整的标普500中文名称字典 (400+个股票)
+const SP500_CHINESE_NAMES = {
   'MMM': '3M公司',
   'ABNB': 'Airbnb',
   'ABT': '雅培',
-  'ABBV': 'AbbVie',
+  'ABBV': '艾伯维',
   'ACN': '埃森哲',
   'ADBE': 'Adobe',
   'AMD': 'AMD',
-  'AES': 'AES Corporation',
+  'AES': 'AES公司',
   'AFL': 'Aflac',
-  'A': 'Agilent Technologies',
-  'APD': 'Air Products and Chemicals',
-  'AKAM': 'Akamai Technologies',
-  'ALB': 'Albemarle Corporation',
-  'ARE': 'Alexandria Real Estate Equities',
+  'A': '安捷伦科技',
+  'APD': '空气化工产品',
+  'AKAM': 'Akamai',
+  'ALB': 'Albemarle',
+  'ARE': 'Alexandria房地产',
   'ALGN': 'Align Technology',
   'ALLE': 'Allegion',
-  'LNT': 'Alliant Energy Corporation',
-  'ALL': 'The Allstate Corporation',
+  'LNT': 'Alliant Energy',
+  'ALL': '好事达保险',
   'GOOGL': '谷歌 Class A',
   'GOOG': '谷歌 Class C',
-  'MO': 'Altria Group',
+  'MO': '奥驰亚集团',
   'AMZN': '亚马逊',
   'AMCR': 'Amcor',
-  'AEE': 'Ameren Corporation',
+  'AEE': 'Ameren',
   'AAL': '美国航空',
-  'AEP': 'American Electric Power',
+  'AEP': '美国电力',
   'AXP': '美国运通',
   'AIG': '美国国际集团',
   'AMT': '美国电塔',
-  'AWK': 'American Water Works',
+  'AWK': '美国水务',
   'AMP': 'Ameriprise Financial',
   'ABC': 'AmerisourceBergen',
   'AME': 'AMETEK',
   'AMGN': '安进',
-  'APH': 'Amphenol Corporation',
-  'ADI': 'Analog Devices',
+  'APH': 'Amphenol',
+  'ADI': '亚德诺',
   'ANSS': 'ANSYS',
-  'AON': 'Aon',
-  'AOS': 'A. O. Smith Corporation',
+  'AON': '怡安',
+  'AOS': 'A. O. Smith',
   'APA': 'APA Corporation',
   'AAPL': '苹果公司',
   'AMAT': '应用材料',
   'APTV': 'Aptiv',
   'ACGL': 'Arch Capital Group',
-  'ADM': 'Archer-Daniels-Midland',
+  'ADM': 'ADM',
   'ANET': 'Arista Networks',
-  'AJG': 'Arthur J. Gallagher & Co.',
+  'AJG': 'Arthur J. Gallagher',
   'AIZ': 'Assurant',
   'T': 'AT&T',
-  'ATO': 'Atmos Energy Corporation',
-  'ADSK': 'Autodesk',
-  'ADP': 'Automatic Data Processing',
+  'ATO': 'Atmos Energy',
+  'ADSK': '欧特克',
+  'ADP': 'ADP',
   'AZO': 'AutoZone',
   'AVB': 'AvalonBay Communities',
-  'AVY': 'Avery Dennison Corporation',
+  'AVY': 'Avery Dennison',
   'AXON': 'Axon Enterprise',
   'BKR': 'Baker Hughes',
   'BLL': 'Ball Corporation',
   'BAC': '美国银行',
   'BBWI': 'Bath & Body Works',
   'BAX': '百特',
-  'BDX': 'Becton Dickinson',
-  'BRK.B': '伯克希尔哈撒韦 Class B',
+  'BDX': 'BD',
+  'BRK.B': '伯克希尔哈撒韦 B',
   'BBY': '百思买',
-  'BG': 'Bunge Limited',
+  'BG': 'Bunge',
   'BIO': 'Bio-Rad Laboratories',
   'BIIB': '百健',
   'BLK': '贝莱德',
@@ -119,48 +83,48 @@ const localChineseNames = {
   'BKNG': 'Booking Holdings',
   'BWA': 'BorgWarner',
   'BXP': 'Boston Properties',
-  'BSX': 'Boston Scientific',
+  'BSX': '波士顿科学',
   'BMY': '百时美施贵宝',
   'AVGO': '博通',
-  'BR': 'Broadridge Financial Solutions',
+  'BR': 'Broadridge Financial',
   'BRO': 'Brown & Brown',
-  'BF.B': 'Brown-Forman Corporation',
-  'CHRW': 'C.H. Robinson Worldwide',
-  'CDNS': 'Cadence Design Systems',
+  'BF.B': 'Brown-Forman',
+  'CHRW': 'C.H. Robinson',
+  'CDNS': 'Cadence',
   'CZR': 'Caesars Entertainment',
   'CPT': 'Camden Property Trust',
   'CPB': '金宝汤',
-  'COF': 'Capital One Financial',
+  'COF': '第一资本',
   'CAH': 'Cardinal Health',
   'KMX': 'CarMax',
   'CCL': '嘉年华邮轮',
-  'CARR': 'Carrier Global Corporation',
+  'CARR': '开利',
   'CTLT': 'Catalent',
   'CAT': '卡特彼勒',
   'CBOE': 'Cboe Global Markets',
   'CBRE': 'CBRE Group',
-  'CDW': 'CDW Corporation',
-  'CE': 'Celanese Corporation',
-  'CNC': 'Centene Corporation',
+  'CDW': 'CDW',
+  'CE': 'Celanese',
+  'CNC': 'Centene',
   'CNP': 'CenterPoint Energy',
-  'CDAY': 'Ceridian HCM Holding',
-  'CF': 'CF Industries Holdings',
+  'CDAY': 'Ceridian',
+  'CF': 'CF Industries',
   'CRL': 'Charles River Laboratories',
-  'SCHW': 'Charles Schwab',
-  'CHTR': 'Charter Communications',
+  'SCHW': '嘉信理财',
+  'CHTR': '特许通讯',
   'CVX': '雪佛龙',
-  'CMG': '墨式烧烤',
+  'CMG': 'Chipotle',
   'CB': 'Chubb',
   'CHD': 'Church & Dwight',
   'CI': 'Cigna',
   'CINF': 'Cincinnati Financial',
-  'CTAS': 'Cintas Corporation',
+  'CTAS': 'Cintas',
   'CSCO': '思科',
   'C': '花旗集团',
-  'CFG': 'Citizens Financial Group',
+  'CFG': 'Citizens Financial',
   'CLX': '高乐氏',
-  'CME': 'CME Group',
-  'CMS': 'CMS Energy Corporation',
+  'CME': 'CME集团',
+  'CMS': 'CMS Energy',
   'KO': '可口可乐',
   'CTSH': '高知特',
   'CL': '高露洁',
@@ -170,38 +134,41 @@ const localChineseNames = {
   'COP': '康菲石油',
   'ED': 'Consolidated Edison',
   'STZ': 'Constellation Brands',
-  'CEG': 'Constellation Energy Corporation',
   'COO': 'The Cooper Companies',
   'CPRT': 'Copart',
   'GLW': '康宁',
-  'CTVA': 'Corteva',
   'CSGP': 'CoStar Group',
   'COST': '好市多',
   'CTRA': 'Coterra Energy',
   'CCI': 'Crown Castle',
-  'CSX': 'CSX运输',
+  'CSX': 'CSX',
   'CMI': '康明斯',
   'CVS': 'CVS Health',
   'DHI': 'D.R. Horton',
   'DHR': '丹纳赫',
   'DRI': 'Darden Restaurants',
   'DVA': 'DaVita',
-  'DE': '迪尔公司',
+  'DE': '迪尔',
   'DAL': '达美航空',
   'XRAY': 'DENTSPLY SIRONA',
   'DVN': 'Devon Energy',
   'DXCM': 'DexCom',
   'FANG': 'Diamondback Energy',
-  'DFS': 'Discover Financial Services',
+  'DLR': 'Digital Realty Trust',
+  'DFS': 'Discover Financial',
+  'DISCA': '探索频道 Class A',
+  'DISCK': '探索频道 Class C',
+  'DISH': 'DISH Network',
   'DIS': '迪士尼',
   'DG': 'Dollar General',
   'DLTR': 'Dollar Tree',
   'D': 'Dominion Energy',
-  'DPZ': '达美乐比萨',
-  'DOV': 'Dover Corporation',
+  'DPZ': '达美乐',
+  'DOV': 'Dover',
   'DOW': '陶氏',
   'DTE': 'DTE Energy',
   'DUK': '杜克能源',
+  'DRE': 'Duke Realty',
   'DD': '杜邦',
   'DXC': 'DXC Technology',
   'EMN': 'Eastman Chemical',
@@ -211,51 +178,48 @@ const localChineseNames = {
   'EIX': 'Edison International',
   'EW': 'Edwards Lifesciences',
   'EA': '艺电',
-  'LLY': '礼来',
   'EMR': '艾默生电气',
   'ENPH': 'Enphase Energy',
-  'ETR': 'Entergy Corporation',
-  'EOG': 'EOG资源',
-  'EPAM': 'EPAM Systems',
-  'EQT': 'EQT Corporation',
+  'ETR': 'Entergy',
+  'EOG': 'EOG Resources',
   'EFX': 'Equifax',
   'EQIX': 'Equinix',
   'EQR': 'Equity Residential',
   'ESS': 'Essex Property Trust',
   'EL': '雅诗兰黛',
   'ETSY': 'Etsy',
-  'RE': 'Everest Re Group',
+  'RE': 'Everest Re',
   'EVRG': 'Evergy',
   'ES': 'Eversource Energy',
   'EXC': 'Exelon',
-  'EXPE': 'Expedia Group',
-  'EXPD': 'Expeditors International',
+  'EXPE': 'Expedia',
+  'EXPD': 'Expeditors',
   'EXR': 'Extended Stay America',
   'XOM': '埃克森美孚',
-  'FFIV': 'F5',
-  'META': 'Meta Platforms',
+  'FFIV': 'F5 Networks',
+  'FB': 'Facebook',
   'FAST': 'Fastenal',
-  'FRT': 'Federal Realty Investment Trust',
+  'FRT': 'Federal Realty',
   'FDX': '联邦快递',
-  'FITB': 'Fifth Third Bancorp',
-  'FRC': 'First Republic Bank',
-  'FE': 'FirstEnergy',
   'FIS': 'Fidelity National Information Services',
+  'FITB': 'Fifth Third Bancorp',
+  'FE': 'FirstEnergy',
+  'FRC': 'First Republic Bank',
   'FISV': 'Fiserv',
-  'FLT': 'FleetCor Technologies',
+  'FLT': 'FleetCor',
   'FMC': 'FMC Corporation',
   'F': '福特汽车',
   'FTNT': 'Fortinet',
-  'FTV': 'Fortive Corporation',
-  'FBHS': 'Fortune Brands Home & Security',
-  'FOXA': '福克斯公司 Class A',
-  'FOX': '福克斯公司 Class B',
+  'FTV': 'Fortive',
+  'FBHS': 'Fortune Brands',
+  'FOXA': '福克斯 Class A',
+  'FOX': '福克斯 Class B',
   'BEN': 'Franklin Resources',
   'FCX': '自由港',
-  'GPS': 'The Gap',
+  'GPS': 'Gap',
   'GRMN': 'Garmin',
   'IT': 'Gartner',
-  'GNRC': 'Generac Holdings',
+  'GNRC': 'Generac',
   'GD': '通用动力',
   'GE': '通用电气',
   'GIS': '通用磨坊',
@@ -265,54 +229,56 @@ const localChineseNames = {
   'GL': 'Globe Life',
   'GPN': 'Global Payments',
   'GS': '高盛',
+  'GWW': 'W.W. Grainger',
   'HAL': '哈里伯顿',
   'HBI': 'Hanesbrands',
-  'HIG': 'The Hartford Financial Services Group',
+  'HIG': 'Hartford Financial',
   'HAS': '孩之宝',
-  'HCA': 'HCA医疗',
+  'HCA': 'HCA Healthcare',
   'PEAK': 'Healthpeak Properties',
   'HSIC': 'Henry Schein',
   'HSY': '好时',
-  'HES': 'Hess Corporation',
+  'HES': '赫斯',
   'HPE': '慧与',
   'HLT': '希尔顿',
   'HOLX': 'Hologic',
   'HD': '家得宝',
   'HON': '霍尼韦尔',
-  'HRL': '荷美尔',
+  'HRL': 'Hormel Foods',
   'HST': 'Host Hotels & Resorts',
   'HWM': 'Howmet Aerospace',
   'HPQ': '惠普',
   'HUM': 'Humana',
   'HBAN': 'Huntington Bancshares',
-  'HII': 'Huntington Ingalls Industries',
-  'IBM': 'IBM',
+  'HII': 'Huntington Ingalls',
   'IEX': 'IDEX Corporation',
-  'IDXX': 'IDEXX实验室',
+  'IDXX': 'IDEXX Laboratories',
   'INFO': 'IHS Markit',
-  'ITW': '伊利诺伊工具',
+  'ITW': 'Illinois Tool Works',
   'ILMN': 'Illumina',
-  'INCY': 'Incyte Corporation',
-  'IR': 'Ingersoll Rand',
+  'INCY': 'Incyte',
+  'IR': '英格索兰',
   'INTC': '英特尔',
   'ICE': '洲际交易所',
+  'IBM': 'IBM',
+  'IP': 'International Paper',
+  'IPG': 'Interpublic Group',
   'IFF': 'International Flavors & Fragrances',
-  'IP': '国际纸业',
-  'IPG': 'The Interpublic Group',
   'INTU': 'Intuit',
-  'ISRG': 'Intuitive Surgical',
+  'ISRG': '直觉外科',
   'IVZ': 'Invesco',
   'IPGP': 'IPG Photonics',
-  'IQV': 'IQVIA Holdings',
+  'IQV': 'IQVIA',
   'IRM': 'Iron Mountain',
-  'JBHT': 'J.B. Hunt Transport Services',
   'JKHY': 'Jack Henry & Associates',
-  'J': 'Jacobs Engineering Group',
-  'SJM': 'The J.M. Smucker Company',
+  'J': 'Jacobs Engineering',
+  'JBHT': 'J.B. Hunt',
+  'SJM': 'J.M. Smucker',
   'JNJ': '强生',
-  'JCI': '江森自控',
+  'JCI': 'Johnson Controls',
   'JPM': '摩根大通',
   'JNPR': 'Juniper Networks',
+  'KSU': 'Kansas City Southern',
   'K': '家乐氏',
   'KEY': 'KeyCorp',
   'KEYS': 'Keysight Technologies',
@@ -322,8 +288,9 @@ const localChineseNames = {
   'KLAC': 'KLA',
   'KHC': '卡夫亨氏',
   'KR': '克罗格',
+  'LB': 'L Brands',
   'LHX': 'L3Harris Technologies',
-  'LH': 'Laboratory Corporation of America Holdings',
+  'LH': 'LabCorp',
   'LRCX': '泛林集团',
   'LDOS': 'Leidos Holdings',
   'LEN': 'Lennar Corporation',
@@ -405,7 +372,7 @@ const localChineseNames = {
   'PYPL': 'PayPal',
   'PENN': 'PENN Entertainment',
   'PNR': 'Pentair',
-  'PBCT': 'People\'s United Financial',
+  'PBCT': "People's United Financial",
   'PEP': '百事可乐',
   'PKI': 'PerkinElmer',
   'PFE': '辉瑞',
@@ -539,17 +506,93 @@ const localChineseNames = {
   'ZBRA': 'Zebra Technologies',
   'ZBH': 'Zimmer Biomet',
   'ZION': 'Zions Bancorporation',
-  'ZTS': 'Zoetis',
-  // ETF
-  'SPY': '标普500ETF',
-  'QQQ': '纳斯达克100ETF',
-  'IWM': '罗素2000ETF',
-  'VTI': '全市场ETF',
-  'VOO': '标普500ETF',
-  // 中概股
-  'BABA': '阿里巴巴集团',
-  'BRK-B': '伯克希尔哈撒韦公司'
+  'ZTS': 'Zoetis'
 };
+
+// 中概股中文名称字典
+const CHINESE_STOCKS_NAMES = {
+  'BABA': '阿里巴巴',
+  'JD': '京东',
+  'PDD': '拼多多',
+  'BIDU': '百度',
+  'NTES': '网易',
+  'TME': '腾讯音乐',
+  'BILI': '哔哩哔哩',
+  'IQ': '爱奇艺',
+  'VIPS': '唯品会',
+  'WB': '微博',
+  'DIDI': '滴滴出行',
+  'TAL': '好未来',
+  'EDU': '新东方',
+  'YMM': '满帮',
+  'DOYU': '斗鱼',
+  'HUYA': '虎牙',
+  'LI': '理想汽车',
+  'NIO': '蔚来',
+  'XPEV': '小鹏汽车',
+  'BEKE': '贝壳找房'
+};
+
+// 生成API文件内容
+function generateAPIContent(chineseNames) {
+  console.log('\n📝 生成新的API文件内容...');
+  
+  const sortedSymbols = Object.keys(chineseNames).sort();
+  
+  let apiContent = `// /api/stock/chinese-name.js
+// 获取股票的中文名称 - 本地完整字典版本
+// 最后更新: ${new Date().toISOString()}
+// 数据来源: 标普500完整字典 + 中概股字典
+
+import { Pool } from 'pg';
+
+let pool;
+
+// 初始化数据库连接池
+function getPool() {
+  if (!pool) {
+    const connectionString = process.env.NEON_DATABASE_URL || 
+                            process.env.POSTGRES_URL || 
+                            process.env.DATABASE_URL;
+    
+    console.log('🔍 [Chinese Name API] Environment variables check:');
+    console.log('- NEON_DATABASE_URL:', process.env.NEON_DATABASE_URL ? '✅ Found' : '❌ Not found');
+    console.log('- POSTGRES_URL:', process.env.POSTGRES_URL ? '✅ Found' : '❌ Not found');
+    console.log('- DATABASE_URL:', process.env.DATABASE_URL ? '✅ Found' : '❌ Not found');
+    
+    if (!connectionString) {
+      console.error('❌ [Chinese Name API] No database connection string found!');
+      throw new Error('Database connection string not found');
+    }
+    
+    console.log('✅ [Chinese Name API] Using connection string:', connectionString.substring(0, 20) + '...');
+    
+    pool = new Pool({
+      connectionString,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+    
+    pool.on('error', (err) => {
+      console.error('❌ [Chinese Name API] Database pool error:', err);
+    });
+  }
+  return pool;
+}
+
+// 完整的中文名称字典 (${Object.keys(chineseNames).length} 个股票)
+const localChineseNames = {\n`;
+
+  // 添加所有中文名称
+  sortedSymbols.forEach(symbol => {
+    apiContent += `  '${symbol}': '${chineseNames[symbol]}',\n`;
+  });
+  
+  apiContent += `};
 
 export default async function handler(request, response) {
   // 设置CORS头
@@ -577,89 +620,147 @@ export default async function handler(request, response) {
   const upperSymbol = symbol.toUpperCase();
   
   try {
-    console.log(`🔍 [Chinese Name API] Querying database for symbol: ${upperSymbol}`);
+    console.log(\`🔍 [Chinese Name API] Querying for symbol: \${upperSymbol}\`);
     
-    // 首先尝试数据库查询
+    // 首先检查本地字典
+    if (localChineseNames[upperSymbol]) {
+      console.log(\`✅ [Chinese Name API] Found in local dictionary: \${localChineseNames[upperSymbol]}\`);
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      return response.end(JSON.stringify({
+        symbol: upperSymbol,
+        chineseName: localChineseNames[upperSymbol],
+        source: 'local_dictionary',
+        lastUpdated: '${new Date().toISOString()}'
+      }));
+    }
+    
+    // 如果本地字典没有，尝试数据库查询
     const dbPool = getPool();
-    
-    // 尝试多个可能的表名和列名组合
     const queries = [
       'SELECT ticker, company_name, chinese_name FROM stocks WHERE ticker = $1',
       'SELECT ticker, company_name, name_zh FROM stocks WHERE ticker = $1',
-      'SELECT ticker, name, chinese_name FROM stocks WHERE ticker = $1',
-      'SELECT ticker, name, name_zh FROM stocks WHERE ticker = $1',
-      // 备用查询，以防列名确实是symbol
       'SELECT symbol, company_name, chinese_name FROM stocks WHERE symbol = $1',
-      'SELECT symbol, company_name, name_zh FROM stocks WHERE symbol = $1',
-      'SELECT symbol, name, chinese_name FROM stocks WHERE symbol = $1',
-      'SELECT symbol, name, name_zh FROM stocks WHERE symbol = $1'
+      'SELECT symbol, company_name, name_zh FROM stocks WHERE symbol = $1'
     ];
     
     let result = null;
-    let usedQuery = '';
-    
     for (const query of queries) {
       try {
-        console.log(`🔍 [Chinese Name API] Trying query: ${query}`);
         result = await dbPool.query(query, [upperSymbol]);
-        usedQuery = query;
-        console.log(`✅ [Chinese Name API] Query successful, found ${result.rows.length} rows`);
-        break;
+        if (result.rows.length > 0) break;
       } catch (queryError) {
-        console.log(`❌ [Chinese Name API] Query failed: ${queryError.message}`);
         continue;
       }
     }
     
     if (result && result.rows.length > 0) {
       const stock = result.rows[0];
-      console.log(`✅ [Chinese Name API] Found stock data:`, stock);
-      
-      // 智能获取中文名称字段
-      const chineseName = stock.chinese_name || stock.name_zh || stock.company_name || stock.name;
+      const chineseName = stock.chinese_name || stock.name_zh || stock.company_name;
       
       response.writeHead(200, { 'Content-Type': 'application/json' });
       response.end(JSON.stringify({
         symbol: stock.ticker || stock.symbol,
-        company_name: stock.company_name || stock.name,
-        chinese_name: chineseName,
-        success: true,
+        chineseName: chineseName,
         source: 'database',
-        query_used: usedQuery
+        lastUpdated: new Date().toISOString()
       }));
-      return;
     } else {
-      console.log(`❌ [Chinese Name API] No data found in database for symbol: ${upperSymbol}`);
+      console.log(\`⚠️ [Chinese Name API] No Chinese name found for: \${upperSymbol}\`);
+      response.writeHead(404, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({
+        symbol: upperSymbol,
+        error: 'Chinese name not found',
+        source: 'not_found'
+      }));
     }
+    
   } catch (error) {
-    console.error(`❌ [Chinese Name API] Database error for ${upperSymbol}:`, error.message);
-    console.error('Full error:', error);
-  }
-  
-  // 数据库查询失败或无结果时，使用本地字典
-  console.log(`🔄 [Chinese Name API] Falling back to local dictionary for: ${upperSymbol}`);
-  const chineseName = localChineseNames[upperSymbol];
-  
-  if (chineseName) {
-    console.log(`✅ [Chinese Name API] Found in local dictionary: ${upperSymbol} -> ${chineseName}`);
-    response.writeHead(200, { 'Content-Type': 'application/json' });
+    console.error(\`❌ [Chinese Name API] Error for \${upperSymbol}:\`, error);
+    response.writeHead(500, { 'Content-Type': 'application/json' });
     response.end(JSON.stringify({
       symbol: upperSymbol,
-      company_name: null,
-      chinese_name: chineseName,
-      success: true,
-      source: 'local'
-    }));
-  } else {
-    console.log(`❌ [Chinese Name API] Not found in local dictionary: ${upperSymbol}`);
-    console.log(`📝 [Chinese Name API] Available symbols in local dictionary:`, Object.keys(localChineseNames));
-    response.writeHead(404, { 'Content-Type': 'application/json' });
-    response.end(JSON.stringify({ 
-      error: `No Chinese name found for symbol: ${symbol}`,
-      symbol: upperSymbol,
-      chinese_name: null,
-      company_name: null,
-      success: false
+      error: 'Internal server error',
+      details: error.message
     }));
   }
+}`;
+
+  return apiContent;
 }
+
+// 合并所有中文名称
+function mergeAllChineseNames() {
+  console.log('\n🔄 合并所有中文名称字典...');
+  
+  const mergedNames = {
+    ...SP500_CHINESE_NAMES,
+    ...CHINESE_STOCKS_NAMES
+  };
+  
+  console.log(`📊 合并结果统计:`);
+  console.log(`- 标普500股票: ${Object.keys(SP500_CHINESE_NAMES).length} 个`);
+  console.log(`- 中概股: ${Object.keys(CHINESE_STOCKS_NAMES).length} 个`);
+  console.log(`- 总计: ${Object.keys(mergedNames).length} 个`);
+  
+  return mergedNames;
+}
+
+// 保存同步结果
+async function saveSyncResults(chineseNames) {
+  console.log('\n💾 保存同步结果...');
+  
+  const syncData = {
+    syncTime: new Date().toISOString(),
+    totalCount: Object.keys(chineseNames).length,
+    source: 'local_complete_dictionary',
+    sp500Count: Object.keys(SP500_CHINESE_NAMES).length,
+    chineseStocksCount: Object.keys(CHINESE_STOCKS_NAMES).length,
+    data: chineseNames
+  };
+  
+  try {
+    const syncFilePath = path.join(process.cwd(), 'chinese-names-sync-complete.json');
+    await fs.promises.writeFile(syncFilePath, JSON.stringify(syncData, null, 2), 'utf8');
+    console.log(`✅ 同步结果已保存到: ${syncFilePath}`);
+  } catch (error) {
+    console.error('❌ 保存同步结果失败:', error.message);
+  }
+}
+
+// 主函数
+async function main() {
+  try {
+    console.log('\n🎯 开始本地中文名称同步...');
+    
+    // 合并所有中文名称
+    const allChineseNames = mergeAllChineseNames();
+    
+    // 生成新的API文件内容
+    const apiContent = generateAPIContent(allChineseNames);
+    
+    // 写入API文件
+    const apiFilePath = path.join(process.cwd(), 'api', 'stock', 'chinese-name.js');
+    await fs.promises.writeFile(apiFilePath, apiContent, 'utf8');
+    console.log(`✅ API文件已更新: ${apiFilePath}`);
+    
+    // 保存同步结果
+    await saveSyncResults(allChineseNames);
+    
+    console.log('\n🎉 本地同步完成!');
+    console.log(`📈 总共同步了 ${Object.keys(allChineseNames).length} 个股票的中文名称`);
+    console.log('📋 详细统计:');
+    console.log(`   - 标普500: ${Object.keys(SP500_CHINESE_NAMES).length} 个`);
+    console.log(`   - 中概股: ${Object.keys(CHINESE_STOCKS_NAMES).length} 个`);
+    
+  } catch (error) {
+    console.error('❌ 同步过程中发生错误:', error.message);
+    process.exit(1);
+  }
+}
+
+// 如果直接运行此脚本
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}
+
+export { main, SP500_CHINESE_NAMES, CHINESE_STOCKS_NAMES };
