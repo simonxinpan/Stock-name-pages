@@ -1,0 +1,1758 @@
+{
+  "summary": {
+    "total": 83,
+    "accessible": 0,
+    "failed": 83
+  },
+  "failedStocks": [
+    {
+      "symbol": "BABA",
+      "errors": [
+        "/api/stock/quote?symbol=BABA: request to http://localhost:3000/api/stock/quote?symbol=BABA failed, reason: ",
+        "/api/stock/profile?symbol=BABA: request to http://localhost:3000/api/stock/profile?symbol=BABA failed, reason: ",
+        "/api/stock/metrics?symbol=BABA: request to http://localhost:3000/api/stock/metrics?symbol=BABA failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "BEKE",
+      "errors": [
+        "/api/stock/quote?symbol=BEKE: request to http://localhost:3000/api/stock/quote?symbol=BEKE failed, reason: ",
+        "/api/stock/profile?symbol=BEKE: request to http://localhost:3000/api/stock/profile?symbol=BEKE failed, reason: ",
+        "/api/stock/metrics?symbol=BEKE: request to http://localhost:3000/api/stock/metrics?symbol=BEKE failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "BZ",
+      "errors": [
+        "/api/stock/quote?symbol=BZ: request to http://localhost:3000/api/stock/quote?symbol=BZ failed, reason: ",
+        "/api/stock/profile?symbol=BZ: request to http://localhost:3000/api/stock/profile?symbol=BZ failed, reason: ",
+        "/api/stock/metrics?symbol=BZ: request to http://localhost:3000/api/stock/metrics?symbol=BZ failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "CAN",
+      "errors": [
+        "/api/stock/quote?symbol=CAN: request to http://localhost:3000/api/stock/quote?symbol=CAN failed, reason: ",
+        "/api/stock/profile?symbol=CAN: request to http://localhost:3000/api/stock/profile?symbol=CAN failed, reason: ",
+        "/api/stock/metrics?symbol=CAN: request to http://localhost:3000/api/stock/metrics?symbol=CAN failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "CHNR",
+      "errors": [
+        "/api/stock/quote?symbol=CHNR: request to http://localhost:3000/api/stock/quote?symbol=CHNR failed, reason: ",
+        "/api/stock/profile?symbol=CHNR: request to http://localhost:3000/api/stock/profile?symbol=CHNR failed, reason: ",
+        "/api/stock/metrics?symbol=CHNR: request to http://localhost:3000/api/stock/metrics?symbol=CHNR failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "DADA",
+      "errors": [
+        "/api/stock/quote?symbol=DADA: request to http://localhost:3000/api/stock/quote?symbol=DADA failed, reason: ",
+        "/api/stock/profile?symbol=DADA: request to http://localhost:3000/api/stock/profile?symbol=DADA failed, reason: ",
+        "/api/stock/metrics?symbol=DADA: request to http://localhost:3000/api/stock/metrics?symbol=DADA failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "DDI",
+      "errors": [
+        "/api/stock/quote?symbol=DDI: request to http://localhost:3000/api/stock/quote?symbol=DDI failed, reason: ",
+        "/api/stock/profile?symbol=DDI: request to http://localhost:3000/api/stock/profile?symbol=DDI failed, reason: ",
+        "/api/stock/metrics?symbol=DDI: request to http://localhost:3000/api/stock/metrics?symbol=DDI failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "DL",
+      "errors": [
+        "/api/stock/quote?symbol=DL: request to http://localhost:3000/api/stock/quote?symbol=DL failed, reason: ",
+        "/api/stock/profile?symbol=DL: request to http://localhost:3000/api/stock/profile?symbol=DL failed, reason: ",
+        "/api/stock/metrics?symbol=DL: request to http://localhost:3000/api/stock/metrics?symbol=DL failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "DNK",
+      "errors": [
+        "/api/stock/quote?symbol=DNK: request to http://localhost:3000/api/stock/quote?symbol=DNK failed, reason: ",
+        "/api/stock/profile?symbol=DNK: request to http://localhost:3000/api/stock/profile?symbol=DNK failed, reason: ",
+        "/api/stock/metrics?symbol=DNK: request to http://localhost:3000/api/stock/metrics?symbol=DNK failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "HUYA",
+      "errors": [
+        "/api/stock/quote?symbol=HUYA: request to http://localhost:3000/api/stock/quote?symbol=HUYA failed, reason: ",
+        "/api/stock/profile?symbol=HUYA: request to http://localhost:3000/api/stock/profile?symbol=HUYA failed, reason: ",
+        "/api/stock/metrics?symbol=HUYA: request to http://localhost:3000/api/stock/metrics?symbol=HUYA failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "IQ",
+      "errors": [
+        "/api/stock/quote?symbol=IQ: request to http://localhost:3000/api/stock/quote?symbol=IQ failed, reason: ",
+        "/api/stock/profile?symbol=IQ: request to http://localhost:3000/api/stock/profile?symbol=IQ failed, reason: ",
+        "/api/stock/metrics?symbol=IQ: request to http://localhost:3000/api/stock/metrics?symbol=IQ failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "JKS",
+      "errors": [
+        "/api/stock/quote?symbol=JKS: request to http://localhost:3000/api/stock/quote?symbol=JKS failed, reason: ",
+        "/api/stock/profile?symbol=JKS: request to http://localhost:3000/api/stock/profile?symbol=JKS failed, reason: ",
+        "/api/stock/metrics?symbol=JKS: request to http://localhost:3000/api/stock/metrics?symbol=JKS failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "LFC",
+      "errors": [
+        "/api/stock/quote?symbol=LFC: request to http://localhost:3000/api/stock/quote?symbol=LFC failed, reason: ",
+        "/api/stock/profile?symbol=LFC: request to http://localhost:3000/api/stock/profile?symbol=LFC failed, reason: ",
+        "/api/stock/metrics?symbol=LFC: request to http://localhost:3000/api/stock/metrics?symbol=LFC failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "MOGU",
+      "errors": [
+        "/api/stock/quote?symbol=MOGU: request to http://localhost:3000/api/stock/quote?symbol=MOGU failed, reason: ",
+        "/api/stock/profile?symbol=MOGU: request to http://localhost:3000/api/stock/profile?symbol=MOGU failed, reason: ",
+        "/api/stock/metrics?symbol=MOGU: request to http://localhost:3000/api/stock/metrics?symbol=MOGU failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "NIO",
+      "errors": [
+        "/api/stock/quote?symbol=NIO: request to http://localhost:3000/api/stock/quote?symbol=NIO failed, reason: ",
+        "/api/stock/profile?symbol=NIO: request to http://localhost:3000/api/stock/profile?symbol=NIO failed, reason: ",
+        "/api/stock/metrics?symbol=NIO: request to http://localhost:3000/api/stock/metrics?symbol=NIO failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "QD",
+      "errors": [
+        "/api/stock/quote?symbol=QD: request to http://localhost:3000/api/stock/quote?symbol=QD failed, reason: ",
+        "/api/stock/profile?symbol=QD: request to http://localhost:3000/api/stock/profile?symbol=QD failed, reason: ",
+        "/api/stock/metrics?symbol=QD: request to http://localhost:3000/api/stock/metrics?symbol=QD failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "RLX",
+      "errors": [
+        "/api/stock/quote?symbol=RLX: request to http://localhost:3000/api/stock/quote?symbol=RLX failed, reason: ",
+        "/api/stock/profile?symbol=RLX: request to http://localhost:3000/api/stock/profile?symbol=RLX failed, reason: ",
+        "/api/stock/metrics?symbol=RLX: request to http://localhost:3000/api/stock/metrics?symbol=RLX failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "SNP",
+      "errors": [
+        "/api/stock/quote?symbol=SNP: request to http://localhost:3000/api/stock/quote?symbol=SNP failed, reason: ",
+        "/api/stock/profile?symbol=SNP: request to http://localhost:3000/api/stock/profile?symbol=SNP failed, reason: ",
+        "/api/stock/metrics?symbol=SNP: request to http://localhost:3000/api/stock/metrics?symbol=SNP failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "STG",
+      "errors": [
+        "/api/stock/quote?symbol=STG: request to http://localhost:3000/api/stock/quote?symbol=STG failed, reason: ",
+        "/api/stock/profile?symbol=STG: request to http://localhost:3000/api/stock/profile?symbol=STG failed, reason: ",
+        "/api/stock/metrics?symbol=STG: request to http://localhost:3000/api/stock/metrics?symbol=STG failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "VIPS",
+      "errors": [
+        "/api/stock/quote?symbol=VIPS: request to http://localhost:3000/api/stock/quote?symbol=VIPS failed, reason: ",
+        "/api/stock/profile?symbol=VIPS: request to http://localhost:3000/api/stock/profile?symbol=VIPS failed, reason: ",
+        "/api/stock/metrics?symbol=VIPS: request to http://localhost:3000/api/stock/metrics?symbol=VIPS failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "XIN",
+      "errors": [
+        "/api/stock/quote?symbol=XIN: request to http://localhost:3000/api/stock/quote?symbol=XIN failed, reason: ",
+        "/api/stock/profile?symbol=XIN: request to http://localhost:3000/api/stock/profile?symbol=XIN failed, reason: ",
+        "/api/stock/metrics?symbol=XIN: request to http://localhost:3000/api/stock/metrics?symbol=XIN failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "XPEV",
+      "errors": [
+        "/api/stock/quote?symbol=XPEV: request to http://localhost:3000/api/stock/quote?symbol=XPEV failed, reason: ",
+        "/api/stock/profile?symbol=XPEV: request to http://localhost:3000/api/stock/profile?symbol=XPEV failed, reason: ",
+        "/api/stock/metrics?symbol=XPEV: request to http://localhost:3000/api/stock/metrics?symbol=XPEV failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "YALA",
+      "errors": [
+        "/api/stock/quote?symbol=YALA: request to http://localhost:3000/api/stock/quote?symbol=YALA failed, reason: ",
+        "/api/stock/profile?symbol=YALA: request to http://localhost:3000/api/stock/profile?symbol=YALA failed, reason: ",
+        "/api/stock/metrics?symbol=YALA: request to http://localhost:3000/api/stock/metrics?symbol=YALA failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "ZTO",
+      "errors": [
+        "/api/stock/quote?symbol=ZTO: request to http://localhost:3000/api/stock/quote?symbol=ZTO failed, reason: ",
+        "/api/stock/profile?symbol=ZTO: request to http://localhost:3000/api/stock/profile?symbol=ZTO failed, reason: ",
+        "/api/stock/metrics?symbol=ZTO: request to http://localhost:3000/api/stock/metrics?symbol=ZTO failed, reason: "
+      ],
+      "exchange": "NYSE"
+    },
+    {
+      "symbol": "APM",
+      "errors": [
+        "/api/stock/quote?symbol=APM: request to http://localhost:3000/api/stock/quote?symbol=APM failed, reason: ",
+        "/api/stock/profile?symbol=APM: request to http://localhost:3000/api/stock/profile?symbol=APM failed, reason: ",
+        "/api/stock/metrics?symbol=APM: request to http://localhost:3000/api/stock/metrics?symbol=APM failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "BIDU",
+      "errors": [
+        "/api/stock/quote?symbol=BIDU: request to http://localhost:3000/api/stock/quote?symbol=BIDU failed, reason: ",
+        "/api/stock/profile?symbol=BIDU: request to http://localhost:3000/api/stock/profile?symbol=BIDU failed, reason: ",
+        "/api/stock/metrics?symbol=BIDU: request to http://localhost:3000/api/stock/metrics?symbol=BIDU failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "BILI",
+      "errors": [
+        "/api/stock/quote?symbol=BILI: request to http://localhost:3000/api/stock/quote?symbol=BILI failed, reason: ",
+        "/api/stock/profile?symbol=BILI: request to http://localhost:3000/api/stock/profile?symbol=BILI failed, reason: ",
+        "/api/stock/metrics?symbol=BILI: request to http://localhost:3000/api/stock/metrics?symbol=BILI failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "BZUN",
+      "errors": [
+        "/api/stock/quote?symbol=BZUN: request to http://localhost:3000/api/stock/quote?symbol=BZUN failed, reason: ",
+        "/api/stock/profile?symbol=BZUN: request to http://localhost:3000/api/stock/profile?symbol=BZUN failed, reason: ",
+        "/api/stock/metrics?symbol=BZUN: request to http://localhost:3000/api/stock/metrics?symbol=BZUN failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CCNC",
+      "errors": [
+        "/api/stock/quote?symbol=CCNC: request to http://localhost:3000/api/stock/quote?symbol=CCNC failed, reason: ",
+        "/api/stock/profile?symbol=CCNC: request to http://localhost:3000/api/stock/profile?symbol=CCNC failed, reason: ",
+        "/api/stock/metrics?symbol=CCNC: request to http://localhost:3000/api/stock/metrics?symbol=CCNC failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CD",
+      "errors": [
+        "/api/stock/quote?symbol=CD: request to http://localhost:3000/api/stock/quote?symbol=CD failed, reason: ",
+        "/api/stock/profile?symbol=CD: request to http://localhost:3000/api/stock/profile?symbol=CD failed, reason: ",
+        "/api/stock/metrics?symbol=CD: request to http://localhost:3000/api/stock/metrics?symbol=CD failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CMCM",
+      "errors": [
+        "/api/stock/quote?symbol=CMCM: request to http://localhost:3000/api/stock/quote?symbol=CMCM failed, reason: ",
+        "/api/stock/profile?symbol=CMCM: request to http://localhost:3000/api/stock/profile?symbol=CMCM failed, reason: ",
+        "/api/stock/metrics?symbol=CMCM: request to http://localhost:3000/api/stock/metrics?symbol=CMCM failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CNEY",
+      "errors": [
+        "/api/stock/quote?symbol=CNEY: request to http://localhost:3000/api/stock/quote?symbol=CNEY failed, reason: ",
+        "/api/stock/profile?symbol=CNEY: request to http://localhost:3000/api/stock/profile?symbol=CNEY failed, reason: ",
+        "/api/stock/metrics?symbol=CNEY: request to http://localhost:3000/api/stock/metrics?symbol=CNEY failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CREG",
+      "errors": [
+        "/api/stock/quote?symbol=CREG: request to http://localhost:3000/api/stock/quote?symbol=CREG failed, reason: ",
+        "/api/stock/profile?symbol=CREG: request to http://localhost:3000/api/stock/profile?symbol=CREG failed, reason: ",
+        "/api/stock/metrics?symbol=CREG: request to http://localhost:3000/api/stock/metrics?symbol=CREG failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CTK",
+      "errors": [
+        "/api/stock/quote?symbol=CTK: request to http://localhost:3000/api/stock/quote?symbol=CTK failed, reason: ",
+        "/api/stock/profile?symbol=CTK: request to http://localhost:3000/api/stock/profile?symbol=CTK failed, reason: ",
+        "/api/stock/metrics?symbol=CTK: request to http://localhost:3000/api/stock/metrics?symbol=CTK failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "CXDC",
+      "errors": [
+        "/api/stock/quote?symbol=CXDC: request to http://localhost:3000/api/stock/quote?symbol=CXDC failed, reason: ",
+        "/api/stock/profile?symbol=CXDC: request to http://localhost:3000/api/stock/profile?symbol=CXDC failed, reason: ",
+        "/api/stock/metrics?symbol=CXDC: request to http://localhost:3000/api/stock/metrics?symbol=CXDC failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "DUO",
+      "errors": [
+        "/api/stock/quote?symbol=DUO: request to http://localhost:3000/api/stock/quote?symbol=DUO failed, reason: ",
+        "/api/stock/profile?symbol=DUO: request to http://localhost:3000/api/stock/profile?symbol=DUO failed, reason: ",
+        "/api/stock/metrics?symbol=DUO: request to http://localhost:3000/api/stock/metrics?symbol=DUO failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "EH",
+      "errors": [
+        "/api/stock/quote?symbol=EH: request to http://localhost:3000/api/stock/quote?symbol=EH failed, reason: ",
+        "/api/stock/profile?symbol=EH: request to http://localhost:3000/api/stock/profile?symbol=EH failed, reason: ",
+        "/api/stock/metrics?symbol=EH: request to http://localhost:3000/api/stock/metrics?symbol=EH failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "ETAO",
+      "errors": [
+        "/api/stock/quote?symbol=ETAO: request to http://localhost:3000/api/stock/quote?symbol=ETAO failed, reason: ",
+        "/api/stock/profile?symbol=ETAO: request to http://localhost:3000/api/stock/profile?symbol=ETAO failed, reason: ",
+        "/api/stock/metrics?symbol=ETAO: request to http://localhost:3000/api/stock/metrics?symbol=ETAO failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "FAMI",
+      "errors": [
+        "/api/stock/quote?symbol=FAMI: request to http://localhost:3000/api/stock/quote?symbol=FAMI failed, reason: ",
+        "/api/stock/profile?symbol=FAMI: request to http://localhost:3000/api/stock/profile?symbol=FAMI failed, reason: ",
+        "/api/stock/metrics?symbol=FAMI: request to http://localhost:3000/api/stock/metrics?symbol=FAMI failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "FFIE",
+      "errors": [
+        "/api/stock/quote?symbol=FFIE: request to http://localhost:3000/api/stock/quote?symbol=FFIE failed, reason: ",
+        "/api/stock/profile?symbol=FFIE: request to http://localhost:3000/api/stock/profile?symbol=FFIE failed, reason: ",
+        "/api/stock/metrics?symbol=FFIE: request to http://localhost:3000/api/stock/metrics?symbol=FFIE failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "FINV",
+      "errors": [
+        "/api/stock/quote?symbol=FINV: request to http://localhost:3000/api/stock/quote?symbol=FINV failed, reason: ",
+        "/api/stock/profile?symbol=FINV: request to http://localhost:3000/api/stock/profile?symbol=FINV failed, reason: ",
+        "/api/stock/metrics?symbol=FINV: request to http://localhost:3000/api/stock/metrics?symbol=FINV failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "FUTU",
+      "errors": [
+        "/api/stock/quote?symbol=FUTU: request to http://localhost:3000/api/stock/quote?symbol=FUTU failed, reason: ",
+        "/api/stock/profile?symbol=FUTU: request to http://localhost:3000/api/stock/profile?symbol=FUTU failed, reason: ",
+        "/api/stock/metrics?symbol=FUTU: request to http://localhost:3000/api/stock/metrics?symbol=FUTU failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "GDS",
+      "errors": [
+        "/api/stock/quote?symbol=GDS: request to http://localhost:3000/api/stock/quote?symbol=GDS failed, reason: ",
+        "/api/stock/profile?symbol=GDS: request to http://localhost:3000/api/stock/profile?symbol=GDS failed, reason: ",
+        "/api/stock/metrics?symbol=GDS: request to http://localhost:3000/api/stock/metrics?symbol=GDS failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "GGE",
+      "errors": [
+        "/api/stock/quote?symbol=GGE: request to http://localhost:3000/api/stock/quote?symbol=GGE failed, reason: ",
+        "/api/stock/profile?symbol=GGE: request to http://localhost:3000/api/stock/profile?symbol=GGE failed, reason: ",
+        "/api/stock/metrics?symbol=GGE: request to http://localhost:3000/api/stock/metrics?symbol=GGE failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "GLG",
+      "errors": [
+        "/api/stock/quote?symbol=GLG: request to http://localhost:3000/api/stock/quote?symbol=GLG failed, reason: ",
+        "/api/stock/profile?symbol=GLG: request to http://localhost:3000/api/stock/profile?symbol=GLG failed, reason: ",
+        "/api/stock/metrics?symbol=GLG: request to http://localhost:3000/api/stock/metrics?symbol=GLG failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "GOTU",
+      "errors": [
+        "/api/stock/quote?symbol=GOTU: request to http://localhost:3000/api/stock/quote?symbol=GOTU failed, reason: ",
+        "/api/stock/profile?symbol=GOTU: request to http://localhost:3000/api/stock/profile?symbol=GOTU failed, reason: ",
+        "/api/stock/metrics?symbol=GOTU: request to http://localhost:3000/api/stock/metrics?symbol=GOTU failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "HOLO",
+      "errors": [
+        "/api/stock/quote?symbol=HOLO: request to http://localhost:3000/api/stock/quote?symbol=HOLO failed, reason: ",
+        "/api/stock/profile?symbol=HOLO: request to http://localhost:3000/api/stock/profile?symbol=HOLO failed, reason: ",
+        "/api/stock/metrics?symbol=HOLO: request to http://localhost:3000/api/stock/metrics?symbol=HOLO failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "HUDI",
+      "errors": [
+        "/api/stock/quote?symbol=HUDI: request to http://localhost:3000/api/stock/quote?symbol=HUDI failed, reason: ",
+        "/api/stock/profile?symbol=HUDI: request to http://localhost:3000/api/stock/profile?symbol=HUDI failed, reason: ",
+        "/api/stock/metrics?symbol=HUDI: request to http://localhost:3000/api/stock/metrics?symbol=HUDI failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "IMAB",
+      "errors": [
+        "/api/stock/quote?symbol=IMAB: request to http://localhost:3000/api/stock/quote?symbol=IMAB failed, reason: ",
+        "/api/stock/profile?symbol=IMAB: request to http://localhost:3000/api/stock/profile?symbol=IMAB failed, reason: ",
+        "/api/stock/metrics?symbol=IMAB: request to http://localhost:3000/api/stock/metrics?symbol=IMAB failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "JFIN",
+      "errors": [
+        "/api/stock/quote?symbol=JFIN: request to http://localhost:3000/api/stock/quote?symbol=JFIN failed, reason: ",
+        "/api/stock/profile?symbol=JFIN: request to http://localhost:3000/api/stock/profile?symbol=JFIN failed, reason: ",
+        "/api/stock/metrics?symbol=JFIN: request to http://localhost:3000/api/stock/metrics?symbol=JFIN failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "JG",
+      "errors": [
+        "/api/stock/quote?symbol=JG: request to http://localhost:3000/api/stock/quote?symbol=JG failed, reason: ",
+        "/api/stock/profile?symbol=JG: request to http://localhost:3000/api/stock/profile?symbol=JG failed, reason: ",
+        "/api/stock/metrics?symbol=JG: request to http://localhost:3000/api/stock/metrics?symbol=JG failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "KNDI",
+      "errors": [
+        "/api/stock/quote?symbol=KNDI: request to http://localhost:3000/api/stock/quote?symbol=KNDI failed, reason: ",
+        "/api/stock/profile?symbol=KNDI: request to http://localhost:3000/api/stock/profile?symbol=KNDI failed, reason: ",
+        "/api/stock/metrics?symbol=KNDI: request to http://localhost:3000/api/stock/metrics?symbol=KNDI failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "LI",
+      "errors": [
+        "/api/stock/quote?symbol=LI: request to http://localhost:3000/api/stock/quote?symbol=LI failed, reason: ",
+        "/api/stock/profile?symbol=LI: request to http://localhost:3000/api/stock/profile?symbol=LI failed, reason: ",
+        "/api/stock/metrics?symbol=LI: request to http://localhost:3000/api/stock/metrics?symbol=LI failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "LIZI",
+      "errors": [
+        "/api/stock/quote?symbol=LIZI: request to http://localhost:3000/api/stock/quote?symbol=LIZI failed, reason: ",
+        "/api/stock/profile?symbol=LIZI: request to http://localhost:3000/api/stock/profile?symbol=LIZI failed, reason: ",
+        "/api/stock/metrics?symbol=LIZI: request to http://localhost:3000/api/stock/metrics?symbol=LIZI failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "LX",
+      "errors": [
+        "/api/stock/quote?symbol=LX: request to http://localhost:3000/api/stock/quote?symbol=LX failed, reason: ",
+        "/api/stock/profile?symbol=LX: request to http://localhost:3000/api/stock/profile?symbol=LX failed, reason: ",
+        "/api/stock/metrics?symbol=LX: request to http://localhost:3000/api/stock/metrics?symbol=LX failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "LXEH",
+      "errors": [
+        "/api/stock/quote?symbol=LXEH: request to http://localhost:3000/api/stock/quote?symbol=LXEH failed, reason: ",
+        "/api/stock/profile?symbol=LXEH: request to http://localhost:3000/api/stock/profile?symbol=LXEH failed, reason: ",
+        "/api/stock/metrics?symbol=LXEH: request to http://localhost:3000/api/stock/metrics?symbol=LXEH failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "MNSO",
+      "errors": [
+        "/api/stock/quote?symbol=MNSO: request to http://localhost:3000/api/stock/quote?symbol=MNSO failed, reason: ",
+        "/api/stock/profile?symbol=MNSO: request to http://localhost:3000/api/stock/profile?symbol=MNSO failed, reason: ",
+        "/api/stock/metrics?symbol=MNSO: request to http://localhost:3000/api/stock/metrics?symbol=MNSO failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "NAAS",
+      "errors": [
+        "/api/stock/quote?symbol=NAAS: request to http://localhost:3000/api/stock/quote?symbol=NAAS failed, reason: ",
+        "/api/stock/profile?symbol=NAAS: request to http://localhost:3000/api/stock/profile?symbol=NAAS failed, reason: ",
+        "/api/stock/metrics?symbol=NAAS: request to http://localhost:3000/api/stock/metrics?symbol=NAAS failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "NIU",
+      "errors": [
+        "/api/stock/quote?symbol=NIU: request to http://localhost:3000/api/stock/quote?symbol=NIU failed, reason: ",
+        "/api/stock/profile?symbol=NIU: request to http://localhost:3000/api/stock/profile?symbol=NIU failed, reason: ",
+        "/api/stock/metrics?symbol=NIU: request to http://localhost:3000/api/stock/metrics?symbol=NIU failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "NTES",
+      "errors": [
+        "/api/stock/quote?symbol=NTES: request to http://localhost:3000/api/stock/quote?symbol=NTES failed, reason: ",
+        "/api/stock/profile?symbol=NTES: request to http://localhost:3000/api/stock/profile?symbol=NTES failed, reason: ",
+        "/api/stock/metrics?symbol=NTES: request to http://localhost:3000/api/stock/metrics?symbol=NTES failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "PDD",
+      "errors": [
+        "/api/stock/quote?symbol=PDD: request to http://localhost:3000/api/stock/quote?symbol=PDD failed, reason: ",
+        "/api/stock/profile?symbol=PDD: request to http://localhost:3000/api/stock/profile?symbol=PDD failed, reason: ",
+        "/api/stock/metrics?symbol=PDD: request to http://localhost:3000/api/stock/metrics?symbol=PDD failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "PT",
+      "errors": [
+        "/api/stock/quote?symbol=PT: request to http://localhost:3000/api/stock/quote?symbol=PT failed, reason: ",
+        "/api/stock/profile?symbol=PT: request to http://localhost:3000/api/stock/profile?symbol=PT failed, reason: ",
+        "/api/stock/metrics?symbol=PT: request to http://localhost:3000/api/stock/metrics?symbol=PT failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "QTT",
+      "errors": [
+        "/api/stock/quote?symbol=QTT: request to http://localhost:3000/api/stock/quote?symbol=QTT failed, reason: ",
+        "/api/stock/profile?symbol=QTT: request to http://localhost:3000/api/stock/profile?symbol=QTT failed, reason: ",
+        "/api/stock/metrics?symbol=QTT: request to http://localhost:3000/api/stock/metrics?symbol=QTT failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "SOHU",
+      "errors": [
+        "/api/stock/quote?symbol=SOHU: request to http://localhost:3000/api/stock/quote?symbol=SOHU failed, reason: ",
+        "/api/stock/profile?symbol=SOHU: request to http://localhost:3000/api/stock/profile?symbol=SOHU failed, reason: ",
+        "/api/stock/metrics?symbol=SOHU: request to http://localhost:3000/api/stock/metrics?symbol=SOHU failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "TCOM",
+      "errors": [
+        "/api/stock/quote?symbol=TCOM: request to http://localhost:3000/api/stock/quote?symbol=TCOM failed, reason: ",
+        "/api/stock/profile?symbol=TCOM: request to http://localhost:3000/api/stock/profile?symbol=TCOM failed, reason: ",
+        "/api/stock/metrics?symbol=TCOM: request to http://localhost:3000/api/stock/metrics?symbol=TCOM failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "TIGR",
+      "errors": [
+        "/api/stock/quote?symbol=TIGR: request to http://localhost:3000/api/stock/quote?symbol=TIGR failed, reason: ",
+        "/api/stock/profile?symbol=TIGR: request to http://localhost:3000/api/stock/profile?symbol=TIGR failed, reason: ",
+        "/api/stock/metrics?symbol=TIGR: request to http://localhost:3000/api/stock/metrics?symbol=TIGR failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "TME",
+      "errors": [
+        "/api/stock/quote?symbol=TME: request to http://localhost:3000/api/stock/quote?symbol=TME failed, reason: ",
+        "/api/stock/profile?symbol=TME: request to http://localhost:3000/api/stock/profile?symbol=TME failed, reason: ",
+        "/api/stock/metrics?symbol=TME: request to http://localhost:3000/api/stock/metrics?symbol=TME failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "TOUR",
+      "errors": [
+        "/api/stock/quote?symbol=TOUR: request to http://localhost:3000/api/stock/quote?symbol=TOUR failed, reason: ",
+        "/api/stock/profile?symbol=TOUR: request to http://localhost:3000/api/stock/profile?symbol=TOUR failed, reason: ",
+        "/api/stock/metrics?symbol=TOUR: request to http://localhost:3000/api/stock/metrics?symbol=TOUR failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "TSM",
+      "errors": [
+        "/api/stock/quote?symbol=TSM: request to http://localhost:3000/api/stock/quote?symbol=TSM failed, reason: ",
+        "/api/stock/profile?symbol=TSM: request to http://localhost:3000/api/stock/profile?symbol=TSM failed, reason: ",
+        "/api/stock/metrics?symbol=TSM: request to http://localhost:3000/api/stock/metrics?symbol=TSM failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "UXIN",
+      "errors": [
+        "/api/stock/quote?symbol=UXIN: request to http://localhost:3000/api/stock/quote?symbol=UXIN failed, reason: ",
+        "/api/stock/profile?symbol=UXIN: request to http://localhost:3000/api/stock/profile?symbol=UXIN failed, reason: ",
+        "/api/stock/metrics?symbol=UXIN: request to http://localhost:3000/api/stock/metrics?symbol=UXIN failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "VNET",
+      "errors": [
+        "/api/stock/quote?symbol=VNET: request to http://localhost:3000/api/stock/quote?symbol=VNET failed, reason: ",
+        "/api/stock/profile?symbol=VNET: request to http://localhost:3000/api/stock/profile?symbol=VNET failed, reason: ",
+        "/api/stock/metrics?symbol=VNET: request to http://localhost:3000/api/stock/metrics?symbol=VNET failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "WB",
+      "errors": [
+        "/api/stock/quote?symbol=WB: request to http://localhost:3000/api/stock/quote?symbol=WB failed, reason: ",
+        "/api/stock/profile?symbol=WB: request to http://localhost:3000/api/stock/profile?symbol=WB failed, reason: ",
+        "/api/stock/metrics?symbol=WB: request to http://localhost:3000/api/stock/metrics?symbol=WB failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "WISH",
+      "errors": [
+        "/api/stock/quote?symbol=WISH: request to http://localhost:3000/api/stock/quote?symbol=WISH failed, reason: ",
+        "/api/stock/profile?symbol=WISH: request to http://localhost:3000/api/stock/profile?symbol=WISH failed, reason: ",
+        "/api/stock/metrics?symbol=WISH: request to http://localhost:3000/api/stock/metrics?symbol=WISH failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "XNET",
+      "errors": [
+        "/api/stock/quote?symbol=XNET: request to http://localhost:3000/api/stock/quote?symbol=XNET failed, reason: ",
+        "/api/stock/profile?symbol=XNET: request to http://localhost:3000/api/stock/profile?symbol=XNET failed, reason: ",
+        "/api/stock/metrics?symbol=XNET: request to http://localhost:3000/api/stock/metrics?symbol=XNET failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "YSG",
+      "errors": [
+        "/api/stock/quote?symbol=YSG: request to http://localhost:3000/api/stock/quote?symbol=YSG failed, reason: ",
+        "/api/stock/profile?symbol=YSG: request to http://localhost:3000/api/stock/profile?symbol=YSG failed, reason: ",
+        "/api/stock/metrics?symbol=YSG: request to http://localhost:3000/api/stock/metrics?symbol=YSG failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "ZEPP",
+      "errors": [
+        "/api/stock/quote?symbol=ZEPP: request to http://localhost:3000/api/stock/quote?symbol=ZEPP failed, reason: ",
+        "/api/stock/profile?symbol=ZEPP: request to http://localhost:3000/api/stock/profile?symbol=ZEPP failed, reason: ",
+        "/api/stock/metrics?symbol=ZEPP: request to http://localhost:3000/api/stock/metrics?symbol=ZEPP failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "ZJYL",
+      "errors": [
+        "/api/stock/quote?symbol=ZJYL: request to http://localhost:3000/api/stock/quote?symbol=ZJYL failed, reason: ",
+        "/api/stock/profile?symbol=ZJYL: request to http://localhost:3000/api/stock/profile?symbol=ZJYL failed, reason: ",
+        "/api/stock/metrics?symbol=ZJYL: request to http://localhost:3000/api/stock/metrics?symbol=ZJYL failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "ZKIN",
+      "errors": [
+        "/api/stock/quote?symbol=ZKIN: request to http://localhost:3000/api/stock/quote?symbol=ZKIN failed, reason: ",
+        "/api/stock/profile?symbol=ZKIN: request to http://localhost:3000/api/stock/profile?symbol=ZKIN failed, reason: ",
+        "/api/stock/metrics?symbol=ZKIN: request to http://localhost:3000/api/stock/metrics?symbol=ZKIN failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "ZLAB",
+      "errors": [
+        "/api/stock/quote?symbol=ZLAB: request to http://localhost:3000/api/stock/quote?symbol=ZLAB failed, reason: ",
+        "/api/stock/profile?symbol=ZLAB: request to http://localhost:3000/api/stock/profile?symbol=ZLAB failed, reason: ",
+        "/api/stock/metrics?symbol=ZLAB: request to http://localhost:3000/api/stock/metrics?symbol=ZLAB failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "ZNH",
+      "errors": [
+        "/api/stock/quote?symbol=ZNH: request to http://localhost:3000/api/stock/quote?symbol=ZNH failed, reason: ",
+        "/api/stock/profile?symbol=ZNH: request to http://localhost:3000/api/stock/profile?symbol=ZNH failed, reason: ",
+        "/api/stock/metrics?symbol=ZNH: request to http://localhost:3000/api/stock/metrics?symbol=ZNH failed, reason: "
+      ],
+      "exchange": "NASDAQ"
+    },
+    {
+      "symbol": "JD",
+      "errors": [
+        "/api/stock/quote?symbol=JD: request to http://localhost:3000/api/stock/quote?symbol=JD failed, reason: ",
+        "/api/stock/profile?symbol=JD: request to http://localhost:3000/api/stock/profile?symbol=JD failed, reason: ",
+        "/api/stock/metrics?symbol=JD: request to http://localhost:3000/api/stock/metrics?symbol=JD failed, reason: "
+      ],
+      "exchange": "额外"
+    },
+    {
+      "symbol": "TAL",
+      "errors": [
+        "/api/stock/quote?symbol=TAL: request to http://localhost:3000/api/stock/quote?symbol=TAL failed, reason: ",
+        "/api/stock/profile?symbol=TAL: request to http://localhost:3000/api/stock/profile?symbol=TAL failed, reason: ",
+        "/api/stock/metrics?symbol=TAL: request to http://localhost:3000/api/stock/metrics?symbol=TAL failed, reason: "
+      ],
+      "exchange": "额外"
+    },
+    {
+      "symbol": "EDU",
+      "errors": [
+        "/api/stock/quote?symbol=EDU: request to http://localhost:3000/api/stock/quote?symbol=EDU failed, reason: ",
+        "/api/stock/profile?symbol=EDU: request to http://localhost:3000/api/stock/profile?symbol=EDU failed, reason: ",
+        "/api/stock/metrics?symbol=EDU: request to http://localhost:3000/api/stock/metrics?symbol=EDU failed, reason: "
+      ],
+      "exchange": "额外"
+    }
+  ],
+  "nyseResults": [
+    {
+      "symbol": "BABA",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=BABA: request to http://localhost:3000/api/stock/quote?symbol=BABA failed, reason: ",
+        "/api/stock/profile?symbol=BABA: request to http://localhost:3000/api/stock/profile?symbol=BABA failed, reason: ",
+        "/api/stock/metrics?symbol=BABA: request to http://localhost:3000/api/stock/metrics?symbol=BABA failed, reason: "
+      ]
+    },
+    {
+      "symbol": "BEKE",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=BEKE: request to http://localhost:3000/api/stock/quote?symbol=BEKE failed, reason: ",
+        "/api/stock/profile?symbol=BEKE: request to http://localhost:3000/api/stock/profile?symbol=BEKE failed, reason: ",
+        "/api/stock/metrics?symbol=BEKE: request to http://localhost:3000/api/stock/metrics?symbol=BEKE failed, reason: "
+      ]
+    },
+    {
+      "symbol": "BZ",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=BZ: request to http://localhost:3000/api/stock/quote?symbol=BZ failed, reason: ",
+        "/api/stock/profile?symbol=BZ: request to http://localhost:3000/api/stock/profile?symbol=BZ failed, reason: ",
+        "/api/stock/metrics?symbol=BZ: request to http://localhost:3000/api/stock/metrics?symbol=BZ failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CAN",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CAN: request to http://localhost:3000/api/stock/quote?symbol=CAN failed, reason: ",
+        "/api/stock/profile?symbol=CAN: request to http://localhost:3000/api/stock/profile?symbol=CAN failed, reason: ",
+        "/api/stock/metrics?symbol=CAN: request to http://localhost:3000/api/stock/metrics?symbol=CAN failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CHNR",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CHNR: request to http://localhost:3000/api/stock/quote?symbol=CHNR failed, reason: ",
+        "/api/stock/profile?symbol=CHNR: request to http://localhost:3000/api/stock/profile?symbol=CHNR failed, reason: ",
+        "/api/stock/metrics?symbol=CHNR: request to http://localhost:3000/api/stock/metrics?symbol=CHNR failed, reason: "
+      ]
+    },
+    {
+      "symbol": "DADA",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=DADA: request to http://localhost:3000/api/stock/quote?symbol=DADA failed, reason: ",
+        "/api/stock/profile?symbol=DADA: request to http://localhost:3000/api/stock/profile?symbol=DADA failed, reason: ",
+        "/api/stock/metrics?symbol=DADA: request to http://localhost:3000/api/stock/metrics?symbol=DADA failed, reason: "
+      ]
+    },
+    {
+      "symbol": "DDI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=DDI: request to http://localhost:3000/api/stock/quote?symbol=DDI failed, reason: ",
+        "/api/stock/profile?symbol=DDI: request to http://localhost:3000/api/stock/profile?symbol=DDI failed, reason: ",
+        "/api/stock/metrics?symbol=DDI: request to http://localhost:3000/api/stock/metrics?symbol=DDI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "DL",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=DL: request to http://localhost:3000/api/stock/quote?symbol=DL failed, reason: ",
+        "/api/stock/profile?symbol=DL: request to http://localhost:3000/api/stock/profile?symbol=DL failed, reason: ",
+        "/api/stock/metrics?symbol=DL: request to http://localhost:3000/api/stock/metrics?symbol=DL failed, reason: "
+      ]
+    },
+    {
+      "symbol": "DNK",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=DNK: request to http://localhost:3000/api/stock/quote?symbol=DNK failed, reason: ",
+        "/api/stock/profile?symbol=DNK: request to http://localhost:3000/api/stock/profile?symbol=DNK failed, reason: ",
+        "/api/stock/metrics?symbol=DNK: request to http://localhost:3000/api/stock/metrics?symbol=DNK failed, reason: "
+      ]
+    },
+    {
+      "symbol": "HUYA",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=HUYA: request to http://localhost:3000/api/stock/quote?symbol=HUYA failed, reason: ",
+        "/api/stock/profile?symbol=HUYA: request to http://localhost:3000/api/stock/profile?symbol=HUYA failed, reason: ",
+        "/api/stock/metrics?symbol=HUYA: request to http://localhost:3000/api/stock/metrics?symbol=HUYA failed, reason: "
+      ]
+    },
+    {
+      "symbol": "IQ",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=IQ: request to http://localhost:3000/api/stock/quote?symbol=IQ failed, reason: ",
+        "/api/stock/profile?symbol=IQ: request to http://localhost:3000/api/stock/profile?symbol=IQ failed, reason: ",
+        "/api/stock/metrics?symbol=IQ: request to http://localhost:3000/api/stock/metrics?symbol=IQ failed, reason: "
+      ]
+    },
+    {
+      "symbol": "JKS",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=JKS: request to http://localhost:3000/api/stock/quote?symbol=JKS failed, reason: ",
+        "/api/stock/profile?symbol=JKS: request to http://localhost:3000/api/stock/profile?symbol=JKS failed, reason: ",
+        "/api/stock/metrics?symbol=JKS: request to http://localhost:3000/api/stock/metrics?symbol=JKS failed, reason: "
+      ]
+    },
+    {
+      "symbol": "LFC",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=LFC: request to http://localhost:3000/api/stock/quote?symbol=LFC failed, reason: ",
+        "/api/stock/profile?symbol=LFC: request to http://localhost:3000/api/stock/profile?symbol=LFC failed, reason: ",
+        "/api/stock/metrics?symbol=LFC: request to http://localhost:3000/api/stock/metrics?symbol=LFC failed, reason: "
+      ]
+    },
+    {
+      "symbol": "MOGU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=MOGU: request to http://localhost:3000/api/stock/quote?symbol=MOGU failed, reason: ",
+        "/api/stock/profile?symbol=MOGU: request to http://localhost:3000/api/stock/profile?symbol=MOGU failed, reason: ",
+        "/api/stock/metrics?symbol=MOGU: request to http://localhost:3000/api/stock/metrics?symbol=MOGU failed, reason: "
+      ]
+    },
+    {
+      "symbol": "NIO",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=NIO: request to http://localhost:3000/api/stock/quote?symbol=NIO failed, reason: ",
+        "/api/stock/profile?symbol=NIO: request to http://localhost:3000/api/stock/profile?symbol=NIO failed, reason: ",
+        "/api/stock/metrics?symbol=NIO: request to http://localhost:3000/api/stock/metrics?symbol=NIO failed, reason: "
+      ]
+    },
+    {
+      "symbol": "QD",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=QD: request to http://localhost:3000/api/stock/quote?symbol=QD failed, reason: ",
+        "/api/stock/profile?symbol=QD: request to http://localhost:3000/api/stock/profile?symbol=QD failed, reason: ",
+        "/api/stock/metrics?symbol=QD: request to http://localhost:3000/api/stock/metrics?symbol=QD failed, reason: "
+      ]
+    },
+    {
+      "symbol": "RLX",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=RLX: request to http://localhost:3000/api/stock/quote?symbol=RLX failed, reason: ",
+        "/api/stock/profile?symbol=RLX: request to http://localhost:3000/api/stock/profile?symbol=RLX failed, reason: ",
+        "/api/stock/metrics?symbol=RLX: request to http://localhost:3000/api/stock/metrics?symbol=RLX failed, reason: "
+      ]
+    },
+    {
+      "symbol": "SNP",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=SNP: request to http://localhost:3000/api/stock/quote?symbol=SNP failed, reason: ",
+        "/api/stock/profile?symbol=SNP: request to http://localhost:3000/api/stock/profile?symbol=SNP failed, reason: ",
+        "/api/stock/metrics?symbol=SNP: request to http://localhost:3000/api/stock/metrics?symbol=SNP failed, reason: "
+      ]
+    },
+    {
+      "symbol": "STG",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=STG: request to http://localhost:3000/api/stock/quote?symbol=STG failed, reason: ",
+        "/api/stock/profile?symbol=STG: request to http://localhost:3000/api/stock/profile?symbol=STG failed, reason: ",
+        "/api/stock/metrics?symbol=STG: request to http://localhost:3000/api/stock/metrics?symbol=STG failed, reason: "
+      ]
+    },
+    {
+      "symbol": "VIPS",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=VIPS: request to http://localhost:3000/api/stock/quote?symbol=VIPS failed, reason: ",
+        "/api/stock/profile?symbol=VIPS: request to http://localhost:3000/api/stock/profile?symbol=VIPS failed, reason: ",
+        "/api/stock/metrics?symbol=VIPS: request to http://localhost:3000/api/stock/metrics?symbol=VIPS failed, reason: "
+      ]
+    },
+    {
+      "symbol": "XIN",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=XIN: request to http://localhost:3000/api/stock/quote?symbol=XIN failed, reason: ",
+        "/api/stock/profile?symbol=XIN: request to http://localhost:3000/api/stock/profile?symbol=XIN failed, reason: ",
+        "/api/stock/metrics?symbol=XIN: request to http://localhost:3000/api/stock/metrics?symbol=XIN failed, reason: "
+      ]
+    },
+    {
+      "symbol": "XPEV",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=XPEV: request to http://localhost:3000/api/stock/quote?symbol=XPEV failed, reason: ",
+        "/api/stock/profile?symbol=XPEV: request to http://localhost:3000/api/stock/profile?symbol=XPEV failed, reason: ",
+        "/api/stock/metrics?symbol=XPEV: request to http://localhost:3000/api/stock/metrics?symbol=XPEV failed, reason: "
+      ]
+    },
+    {
+      "symbol": "YALA",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=YALA: request to http://localhost:3000/api/stock/quote?symbol=YALA failed, reason: ",
+        "/api/stock/profile?symbol=YALA: request to http://localhost:3000/api/stock/profile?symbol=YALA failed, reason: ",
+        "/api/stock/metrics?symbol=YALA: request to http://localhost:3000/api/stock/metrics?symbol=YALA failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ZTO",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ZTO: request to http://localhost:3000/api/stock/quote?symbol=ZTO failed, reason: ",
+        "/api/stock/profile?symbol=ZTO: request to http://localhost:3000/api/stock/profile?symbol=ZTO failed, reason: ",
+        "/api/stock/metrics?symbol=ZTO: request to http://localhost:3000/api/stock/metrics?symbol=ZTO failed, reason: "
+      ]
+    }
+  ],
+  "nasdaqResults": [
+    {
+      "symbol": "APM",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=APM: request to http://localhost:3000/api/stock/quote?symbol=APM failed, reason: ",
+        "/api/stock/profile?symbol=APM: request to http://localhost:3000/api/stock/profile?symbol=APM failed, reason: ",
+        "/api/stock/metrics?symbol=APM: request to http://localhost:3000/api/stock/metrics?symbol=APM failed, reason: "
+      ]
+    },
+    {
+      "symbol": "BIDU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=BIDU: request to http://localhost:3000/api/stock/quote?symbol=BIDU failed, reason: ",
+        "/api/stock/profile?symbol=BIDU: request to http://localhost:3000/api/stock/profile?symbol=BIDU failed, reason: ",
+        "/api/stock/metrics?symbol=BIDU: request to http://localhost:3000/api/stock/metrics?symbol=BIDU failed, reason: "
+      ]
+    },
+    {
+      "symbol": "BILI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=BILI: request to http://localhost:3000/api/stock/quote?symbol=BILI failed, reason: ",
+        "/api/stock/profile?symbol=BILI: request to http://localhost:3000/api/stock/profile?symbol=BILI failed, reason: ",
+        "/api/stock/metrics?symbol=BILI: request to http://localhost:3000/api/stock/metrics?symbol=BILI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "BZUN",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=BZUN: request to http://localhost:3000/api/stock/quote?symbol=BZUN failed, reason: ",
+        "/api/stock/profile?symbol=BZUN: request to http://localhost:3000/api/stock/profile?symbol=BZUN failed, reason: ",
+        "/api/stock/metrics?symbol=BZUN: request to http://localhost:3000/api/stock/metrics?symbol=BZUN failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CCNC",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CCNC: request to http://localhost:3000/api/stock/quote?symbol=CCNC failed, reason: ",
+        "/api/stock/profile?symbol=CCNC: request to http://localhost:3000/api/stock/profile?symbol=CCNC failed, reason: ",
+        "/api/stock/metrics?symbol=CCNC: request to http://localhost:3000/api/stock/metrics?symbol=CCNC failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CD",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CD: request to http://localhost:3000/api/stock/quote?symbol=CD failed, reason: ",
+        "/api/stock/profile?symbol=CD: request to http://localhost:3000/api/stock/profile?symbol=CD failed, reason: ",
+        "/api/stock/metrics?symbol=CD: request to http://localhost:3000/api/stock/metrics?symbol=CD failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CMCM",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CMCM: request to http://localhost:3000/api/stock/quote?symbol=CMCM failed, reason: ",
+        "/api/stock/profile?symbol=CMCM: request to http://localhost:3000/api/stock/profile?symbol=CMCM failed, reason: ",
+        "/api/stock/metrics?symbol=CMCM: request to http://localhost:3000/api/stock/metrics?symbol=CMCM failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CNEY",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CNEY: request to http://localhost:3000/api/stock/quote?symbol=CNEY failed, reason: ",
+        "/api/stock/profile?symbol=CNEY: request to http://localhost:3000/api/stock/profile?symbol=CNEY failed, reason: ",
+        "/api/stock/metrics?symbol=CNEY: request to http://localhost:3000/api/stock/metrics?symbol=CNEY failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CREG",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CREG: request to http://localhost:3000/api/stock/quote?symbol=CREG failed, reason: ",
+        "/api/stock/profile?symbol=CREG: request to http://localhost:3000/api/stock/profile?symbol=CREG failed, reason: ",
+        "/api/stock/metrics?symbol=CREG: request to http://localhost:3000/api/stock/metrics?symbol=CREG failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CTK",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CTK: request to http://localhost:3000/api/stock/quote?symbol=CTK failed, reason: ",
+        "/api/stock/profile?symbol=CTK: request to http://localhost:3000/api/stock/profile?symbol=CTK failed, reason: ",
+        "/api/stock/metrics?symbol=CTK: request to http://localhost:3000/api/stock/metrics?symbol=CTK failed, reason: "
+      ]
+    },
+    {
+      "symbol": "CXDC",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=CXDC: request to http://localhost:3000/api/stock/quote?symbol=CXDC failed, reason: ",
+        "/api/stock/profile?symbol=CXDC: request to http://localhost:3000/api/stock/profile?symbol=CXDC failed, reason: ",
+        "/api/stock/metrics?symbol=CXDC: request to http://localhost:3000/api/stock/metrics?symbol=CXDC failed, reason: "
+      ]
+    },
+    {
+      "symbol": "DUO",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=DUO: request to http://localhost:3000/api/stock/quote?symbol=DUO failed, reason: ",
+        "/api/stock/profile?symbol=DUO: request to http://localhost:3000/api/stock/profile?symbol=DUO failed, reason: ",
+        "/api/stock/metrics?symbol=DUO: request to http://localhost:3000/api/stock/metrics?symbol=DUO failed, reason: "
+      ]
+    },
+    {
+      "symbol": "EH",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=EH: request to http://localhost:3000/api/stock/quote?symbol=EH failed, reason: ",
+        "/api/stock/profile?symbol=EH: request to http://localhost:3000/api/stock/profile?symbol=EH failed, reason: ",
+        "/api/stock/metrics?symbol=EH: request to http://localhost:3000/api/stock/metrics?symbol=EH failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ETAO",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ETAO: request to http://localhost:3000/api/stock/quote?symbol=ETAO failed, reason: ",
+        "/api/stock/profile?symbol=ETAO: request to http://localhost:3000/api/stock/profile?symbol=ETAO failed, reason: ",
+        "/api/stock/metrics?symbol=ETAO: request to http://localhost:3000/api/stock/metrics?symbol=ETAO failed, reason: "
+      ]
+    },
+    {
+      "symbol": "FAMI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=FAMI: request to http://localhost:3000/api/stock/quote?symbol=FAMI failed, reason: ",
+        "/api/stock/profile?symbol=FAMI: request to http://localhost:3000/api/stock/profile?symbol=FAMI failed, reason: ",
+        "/api/stock/metrics?symbol=FAMI: request to http://localhost:3000/api/stock/metrics?symbol=FAMI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "FFIE",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=FFIE: request to http://localhost:3000/api/stock/quote?symbol=FFIE failed, reason: ",
+        "/api/stock/profile?symbol=FFIE: request to http://localhost:3000/api/stock/profile?symbol=FFIE failed, reason: ",
+        "/api/stock/metrics?symbol=FFIE: request to http://localhost:3000/api/stock/metrics?symbol=FFIE failed, reason: "
+      ]
+    },
+    {
+      "symbol": "FINV",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=FINV: request to http://localhost:3000/api/stock/quote?symbol=FINV failed, reason: ",
+        "/api/stock/profile?symbol=FINV: request to http://localhost:3000/api/stock/profile?symbol=FINV failed, reason: ",
+        "/api/stock/metrics?symbol=FINV: request to http://localhost:3000/api/stock/metrics?symbol=FINV failed, reason: "
+      ]
+    },
+    {
+      "symbol": "FUTU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=FUTU: request to http://localhost:3000/api/stock/quote?symbol=FUTU failed, reason: ",
+        "/api/stock/profile?symbol=FUTU: request to http://localhost:3000/api/stock/profile?symbol=FUTU failed, reason: ",
+        "/api/stock/metrics?symbol=FUTU: request to http://localhost:3000/api/stock/metrics?symbol=FUTU failed, reason: "
+      ]
+    },
+    {
+      "symbol": "GDS",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=GDS: request to http://localhost:3000/api/stock/quote?symbol=GDS failed, reason: ",
+        "/api/stock/profile?symbol=GDS: request to http://localhost:3000/api/stock/profile?symbol=GDS failed, reason: ",
+        "/api/stock/metrics?symbol=GDS: request to http://localhost:3000/api/stock/metrics?symbol=GDS failed, reason: "
+      ]
+    },
+    {
+      "symbol": "GGE",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=GGE: request to http://localhost:3000/api/stock/quote?symbol=GGE failed, reason: ",
+        "/api/stock/profile?symbol=GGE: request to http://localhost:3000/api/stock/profile?symbol=GGE failed, reason: ",
+        "/api/stock/metrics?symbol=GGE: request to http://localhost:3000/api/stock/metrics?symbol=GGE failed, reason: "
+      ]
+    },
+    {
+      "symbol": "GLG",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=GLG: request to http://localhost:3000/api/stock/quote?symbol=GLG failed, reason: ",
+        "/api/stock/profile?symbol=GLG: request to http://localhost:3000/api/stock/profile?symbol=GLG failed, reason: ",
+        "/api/stock/metrics?symbol=GLG: request to http://localhost:3000/api/stock/metrics?symbol=GLG failed, reason: "
+      ]
+    },
+    {
+      "symbol": "GOTU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=GOTU: request to http://localhost:3000/api/stock/quote?symbol=GOTU failed, reason: ",
+        "/api/stock/profile?symbol=GOTU: request to http://localhost:3000/api/stock/profile?symbol=GOTU failed, reason: ",
+        "/api/stock/metrics?symbol=GOTU: request to http://localhost:3000/api/stock/metrics?symbol=GOTU failed, reason: "
+      ]
+    },
+    {
+      "symbol": "HOLO",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=HOLO: request to http://localhost:3000/api/stock/quote?symbol=HOLO failed, reason: ",
+        "/api/stock/profile?symbol=HOLO: request to http://localhost:3000/api/stock/profile?symbol=HOLO failed, reason: ",
+        "/api/stock/metrics?symbol=HOLO: request to http://localhost:3000/api/stock/metrics?symbol=HOLO failed, reason: "
+      ]
+    },
+    {
+      "symbol": "HUDI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=HUDI: request to http://localhost:3000/api/stock/quote?symbol=HUDI failed, reason: ",
+        "/api/stock/profile?symbol=HUDI: request to http://localhost:3000/api/stock/profile?symbol=HUDI failed, reason: ",
+        "/api/stock/metrics?symbol=HUDI: request to http://localhost:3000/api/stock/metrics?symbol=HUDI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "IMAB",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=IMAB: request to http://localhost:3000/api/stock/quote?symbol=IMAB failed, reason: ",
+        "/api/stock/profile?symbol=IMAB: request to http://localhost:3000/api/stock/profile?symbol=IMAB failed, reason: ",
+        "/api/stock/metrics?symbol=IMAB: request to http://localhost:3000/api/stock/metrics?symbol=IMAB failed, reason: "
+      ]
+    },
+    {
+      "symbol": "JFIN",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=JFIN: request to http://localhost:3000/api/stock/quote?symbol=JFIN failed, reason: ",
+        "/api/stock/profile?symbol=JFIN: request to http://localhost:3000/api/stock/profile?symbol=JFIN failed, reason: ",
+        "/api/stock/metrics?symbol=JFIN: request to http://localhost:3000/api/stock/metrics?symbol=JFIN failed, reason: "
+      ]
+    },
+    {
+      "symbol": "JG",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=JG: request to http://localhost:3000/api/stock/quote?symbol=JG failed, reason: ",
+        "/api/stock/profile?symbol=JG: request to http://localhost:3000/api/stock/profile?symbol=JG failed, reason: ",
+        "/api/stock/metrics?symbol=JG: request to http://localhost:3000/api/stock/metrics?symbol=JG failed, reason: "
+      ]
+    },
+    {
+      "symbol": "KNDI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=KNDI: request to http://localhost:3000/api/stock/quote?symbol=KNDI failed, reason: ",
+        "/api/stock/profile?symbol=KNDI: request to http://localhost:3000/api/stock/profile?symbol=KNDI failed, reason: ",
+        "/api/stock/metrics?symbol=KNDI: request to http://localhost:3000/api/stock/metrics?symbol=KNDI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "LI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=LI: request to http://localhost:3000/api/stock/quote?symbol=LI failed, reason: ",
+        "/api/stock/profile?symbol=LI: request to http://localhost:3000/api/stock/profile?symbol=LI failed, reason: ",
+        "/api/stock/metrics?symbol=LI: request to http://localhost:3000/api/stock/metrics?symbol=LI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "LIZI",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=LIZI: request to http://localhost:3000/api/stock/quote?symbol=LIZI failed, reason: ",
+        "/api/stock/profile?symbol=LIZI: request to http://localhost:3000/api/stock/profile?symbol=LIZI failed, reason: ",
+        "/api/stock/metrics?symbol=LIZI: request to http://localhost:3000/api/stock/metrics?symbol=LIZI failed, reason: "
+      ]
+    },
+    {
+      "symbol": "LX",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=LX: request to http://localhost:3000/api/stock/quote?symbol=LX failed, reason: ",
+        "/api/stock/profile?symbol=LX: request to http://localhost:3000/api/stock/profile?symbol=LX failed, reason: ",
+        "/api/stock/metrics?symbol=LX: request to http://localhost:3000/api/stock/metrics?symbol=LX failed, reason: "
+      ]
+    },
+    {
+      "symbol": "LXEH",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=LXEH: request to http://localhost:3000/api/stock/quote?symbol=LXEH failed, reason: ",
+        "/api/stock/profile?symbol=LXEH: request to http://localhost:3000/api/stock/profile?symbol=LXEH failed, reason: ",
+        "/api/stock/metrics?symbol=LXEH: request to http://localhost:3000/api/stock/metrics?symbol=LXEH failed, reason: "
+      ]
+    },
+    {
+      "symbol": "MNSO",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=MNSO: request to http://localhost:3000/api/stock/quote?symbol=MNSO failed, reason: ",
+        "/api/stock/profile?symbol=MNSO: request to http://localhost:3000/api/stock/profile?symbol=MNSO failed, reason: ",
+        "/api/stock/metrics?symbol=MNSO: request to http://localhost:3000/api/stock/metrics?symbol=MNSO failed, reason: "
+      ]
+    },
+    {
+      "symbol": "NAAS",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=NAAS: request to http://localhost:3000/api/stock/quote?symbol=NAAS failed, reason: ",
+        "/api/stock/profile?symbol=NAAS: request to http://localhost:3000/api/stock/profile?symbol=NAAS failed, reason: ",
+        "/api/stock/metrics?symbol=NAAS: request to http://localhost:3000/api/stock/metrics?symbol=NAAS failed, reason: "
+      ]
+    },
+    {
+      "symbol": "NIU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=NIU: request to http://localhost:3000/api/stock/quote?symbol=NIU failed, reason: ",
+        "/api/stock/profile?symbol=NIU: request to http://localhost:3000/api/stock/profile?symbol=NIU failed, reason: ",
+        "/api/stock/metrics?symbol=NIU: request to http://localhost:3000/api/stock/metrics?symbol=NIU failed, reason: "
+      ]
+    },
+    {
+      "symbol": "NTES",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=NTES: request to http://localhost:3000/api/stock/quote?symbol=NTES failed, reason: ",
+        "/api/stock/profile?symbol=NTES: request to http://localhost:3000/api/stock/profile?symbol=NTES failed, reason: ",
+        "/api/stock/metrics?symbol=NTES: request to http://localhost:3000/api/stock/metrics?symbol=NTES failed, reason: "
+      ]
+    },
+    {
+      "symbol": "PDD",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=PDD: request to http://localhost:3000/api/stock/quote?symbol=PDD failed, reason: ",
+        "/api/stock/profile?symbol=PDD: request to http://localhost:3000/api/stock/profile?symbol=PDD failed, reason: ",
+        "/api/stock/metrics?symbol=PDD: request to http://localhost:3000/api/stock/metrics?symbol=PDD failed, reason: "
+      ]
+    },
+    {
+      "symbol": "PT",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=PT: request to http://localhost:3000/api/stock/quote?symbol=PT failed, reason: ",
+        "/api/stock/profile?symbol=PT: request to http://localhost:3000/api/stock/profile?symbol=PT failed, reason: ",
+        "/api/stock/metrics?symbol=PT: request to http://localhost:3000/api/stock/metrics?symbol=PT failed, reason: "
+      ]
+    },
+    {
+      "symbol": "QTT",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=QTT: request to http://localhost:3000/api/stock/quote?symbol=QTT failed, reason: ",
+        "/api/stock/profile?symbol=QTT: request to http://localhost:3000/api/stock/profile?symbol=QTT failed, reason: ",
+        "/api/stock/metrics?symbol=QTT: request to http://localhost:3000/api/stock/metrics?symbol=QTT failed, reason: "
+      ]
+    },
+    {
+      "symbol": "SOHU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=SOHU: request to http://localhost:3000/api/stock/quote?symbol=SOHU failed, reason: ",
+        "/api/stock/profile?symbol=SOHU: request to http://localhost:3000/api/stock/profile?symbol=SOHU failed, reason: ",
+        "/api/stock/metrics?symbol=SOHU: request to http://localhost:3000/api/stock/metrics?symbol=SOHU failed, reason: "
+      ]
+    },
+    {
+      "symbol": "TCOM",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=TCOM: request to http://localhost:3000/api/stock/quote?symbol=TCOM failed, reason: ",
+        "/api/stock/profile?symbol=TCOM: request to http://localhost:3000/api/stock/profile?symbol=TCOM failed, reason: ",
+        "/api/stock/metrics?symbol=TCOM: request to http://localhost:3000/api/stock/metrics?symbol=TCOM failed, reason: "
+      ]
+    },
+    {
+      "symbol": "TIGR",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=TIGR: request to http://localhost:3000/api/stock/quote?symbol=TIGR failed, reason: ",
+        "/api/stock/profile?symbol=TIGR: request to http://localhost:3000/api/stock/profile?symbol=TIGR failed, reason: ",
+        "/api/stock/metrics?symbol=TIGR: request to http://localhost:3000/api/stock/metrics?symbol=TIGR failed, reason: "
+      ]
+    },
+    {
+      "symbol": "TME",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=TME: request to http://localhost:3000/api/stock/quote?symbol=TME failed, reason: ",
+        "/api/stock/profile?symbol=TME: request to http://localhost:3000/api/stock/profile?symbol=TME failed, reason: ",
+        "/api/stock/metrics?symbol=TME: request to http://localhost:3000/api/stock/metrics?symbol=TME failed, reason: "
+      ]
+    },
+    {
+      "symbol": "TOUR",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=TOUR: request to http://localhost:3000/api/stock/quote?symbol=TOUR failed, reason: ",
+        "/api/stock/profile?symbol=TOUR: request to http://localhost:3000/api/stock/profile?symbol=TOUR failed, reason: ",
+        "/api/stock/metrics?symbol=TOUR: request to http://localhost:3000/api/stock/metrics?symbol=TOUR failed, reason: "
+      ]
+    },
+    {
+      "symbol": "TSM",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=TSM: request to http://localhost:3000/api/stock/quote?symbol=TSM failed, reason: ",
+        "/api/stock/profile?symbol=TSM: request to http://localhost:3000/api/stock/profile?symbol=TSM failed, reason: ",
+        "/api/stock/metrics?symbol=TSM: request to http://localhost:3000/api/stock/metrics?symbol=TSM failed, reason: "
+      ]
+    },
+    {
+      "symbol": "UXIN",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=UXIN: request to http://localhost:3000/api/stock/quote?symbol=UXIN failed, reason: ",
+        "/api/stock/profile?symbol=UXIN: request to http://localhost:3000/api/stock/profile?symbol=UXIN failed, reason: ",
+        "/api/stock/metrics?symbol=UXIN: request to http://localhost:3000/api/stock/metrics?symbol=UXIN failed, reason: "
+      ]
+    },
+    {
+      "symbol": "VNET",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=VNET: request to http://localhost:3000/api/stock/quote?symbol=VNET failed, reason: ",
+        "/api/stock/profile?symbol=VNET: request to http://localhost:3000/api/stock/profile?symbol=VNET failed, reason: ",
+        "/api/stock/metrics?symbol=VNET: request to http://localhost:3000/api/stock/metrics?symbol=VNET failed, reason: "
+      ]
+    },
+    {
+      "symbol": "WB",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=WB: request to http://localhost:3000/api/stock/quote?symbol=WB failed, reason: ",
+        "/api/stock/profile?symbol=WB: request to http://localhost:3000/api/stock/profile?symbol=WB failed, reason: ",
+        "/api/stock/metrics?symbol=WB: request to http://localhost:3000/api/stock/metrics?symbol=WB failed, reason: "
+      ]
+    },
+    {
+      "symbol": "WISH",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=WISH: request to http://localhost:3000/api/stock/quote?symbol=WISH failed, reason: ",
+        "/api/stock/profile?symbol=WISH: request to http://localhost:3000/api/stock/profile?symbol=WISH failed, reason: ",
+        "/api/stock/metrics?symbol=WISH: request to http://localhost:3000/api/stock/metrics?symbol=WISH failed, reason: "
+      ]
+    },
+    {
+      "symbol": "XNET",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=XNET: request to http://localhost:3000/api/stock/quote?symbol=XNET failed, reason: ",
+        "/api/stock/profile?symbol=XNET: request to http://localhost:3000/api/stock/profile?symbol=XNET failed, reason: ",
+        "/api/stock/metrics?symbol=XNET: request to http://localhost:3000/api/stock/metrics?symbol=XNET failed, reason: "
+      ]
+    },
+    {
+      "symbol": "YSG",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=YSG: request to http://localhost:3000/api/stock/quote?symbol=YSG failed, reason: ",
+        "/api/stock/profile?symbol=YSG: request to http://localhost:3000/api/stock/profile?symbol=YSG failed, reason: ",
+        "/api/stock/metrics?symbol=YSG: request to http://localhost:3000/api/stock/metrics?symbol=YSG failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ZEPP",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ZEPP: request to http://localhost:3000/api/stock/quote?symbol=ZEPP failed, reason: ",
+        "/api/stock/profile?symbol=ZEPP: request to http://localhost:3000/api/stock/profile?symbol=ZEPP failed, reason: ",
+        "/api/stock/metrics?symbol=ZEPP: request to http://localhost:3000/api/stock/metrics?symbol=ZEPP failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ZJYL",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ZJYL: request to http://localhost:3000/api/stock/quote?symbol=ZJYL failed, reason: ",
+        "/api/stock/profile?symbol=ZJYL: request to http://localhost:3000/api/stock/profile?symbol=ZJYL failed, reason: ",
+        "/api/stock/metrics?symbol=ZJYL: request to http://localhost:3000/api/stock/metrics?symbol=ZJYL failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ZKIN",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ZKIN: request to http://localhost:3000/api/stock/quote?symbol=ZKIN failed, reason: ",
+        "/api/stock/profile?symbol=ZKIN: request to http://localhost:3000/api/stock/profile?symbol=ZKIN failed, reason: ",
+        "/api/stock/metrics?symbol=ZKIN: request to http://localhost:3000/api/stock/metrics?symbol=ZKIN failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ZLAB",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ZLAB: request to http://localhost:3000/api/stock/quote?symbol=ZLAB failed, reason: ",
+        "/api/stock/profile?symbol=ZLAB: request to http://localhost:3000/api/stock/profile?symbol=ZLAB failed, reason: ",
+        "/api/stock/metrics?symbol=ZLAB: request to http://localhost:3000/api/stock/metrics?symbol=ZLAB failed, reason: "
+      ]
+    },
+    {
+      "symbol": "ZNH",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=ZNH: request to http://localhost:3000/api/stock/quote?symbol=ZNH failed, reason: ",
+        "/api/stock/profile?symbol=ZNH: request to http://localhost:3000/api/stock/profile?symbol=ZNH failed, reason: ",
+        "/api/stock/metrics?symbol=ZNH: request to http://localhost:3000/api/stock/metrics?symbol=ZNH failed, reason: "
+      ]
+    }
+  ],
+  "additionalResults": [
+    {
+      "symbol": "JD",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=JD: request to http://localhost:3000/api/stock/quote?symbol=JD failed, reason: ",
+        "/api/stock/profile?symbol=JD: request to http://localhost:3000/api/stock/profile?symbol=JD failed, reason: ",
+        "/api/stock/metrics?symbol=JD: request to http://localhost:3000/api/stock/metrics?symbol=JD failed, reason: "
+      ]
+    },
+    {
+      "symbol": "TAL",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=TAL: request to http://localhost:3000/api/stock/quote?symbol=TAL failed, reason: ",
+        "/api/stock/profile?symbol=TAL: request to http://localhost:3000/api/stock/profile?symbol=TAL failed, reason: ",
+        "/api/stock/metrics?symbol=TAL: request to http://localhost:3000/api/stock/metrics?symbol=TAL failed, reason: "
+      ]
+    },
+    {
+      "symbol": "EDU",
+      "quote": false,
+      "profile": false,
+      "metrics": false,
+      "accessible": false,
+      "errors": [
+        "/api/stock/quote?symbol=EDU: request to http://localhost:3000/api/stock/quote?symbol=EDU failed, reason: ",
+        "/api/stock/profile?symbol=EDU: request to http://localhost:3000/api/stock/profile?symbol=EDU failed, reason: ",
+        "/api/stock/metrics?symbol=EDU: request to http://localhost:3000/api/stock/metrics?symbol=EDU failed, reason: "
+      ]
+    }
+  ]
+}
