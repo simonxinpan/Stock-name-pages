@@ -22,13 +22,16 @@ export default async function handler(request, response) {
     
     // 如果返回的是空对象，说明没找到该公司
     if (Object.keys(data).length === 0) {
-      return response.status(404).json({ error: `No profile found for symbol: ${symbol}` });
+      response.writeHead(404, { 'Content-Type': 'application/json' });
+      return response.end(JSON.stringify({ error: `No profile found for symbol: ${symbol}` }));
     }
 
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.status(200).json(data);
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify(data));
   } catch (error) {
     console.error('API /stock/profile Error:', error);
-    response.status(500).json({ error: 'Failed to fetch company profile.' });
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ error: 'Failed to fetch company profile.' }));
   }
 }

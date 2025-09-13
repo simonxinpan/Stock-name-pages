@@ -10,13 +10,15 @@ export default async function handler(request, response) {
   const { symbol, resolution, from, to } = request.query;
 
   if (!symbol || !resolution || !from || !to) {
-    return response.status(400).json({ error: 'Parameters symbol, resolution, from, and to are required.' });
+    response.writeHead(400, { 'Content-Type': 'application/json' });
+    return response.end(JSON.stringify({ error: 'Parameters symbol, resolution, from, and to are required.' }));
   }
 
   const API_KEY = process.env.POLYGON_API_KEY;
   if (!API_KEY) {
     console.error("Vercel Env Error: POLYGON_API_KEY is not set.");
-    return response.status(500).json({ error: 'Polygon API key is not configured.' });
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    return response.end(JSON.stringify({ error: 'Polygon API key is not configured.' }));
   }
 
   let multiplier = 1;
@@ -37,12 +39,14 @@ export default async function handler(request, response) {
       const errorMessage = data.error || data.message || `Polygon API returned status ${apiResponse.status}`;
       console.error(`Polygon API Error for ${symbol}: ${errorMessage}`);
       // 将 Polygon 的错误状态码透传给前端
-      return response.status(apiResponse.status).json({ error: errorMessage });
+      response.writeHead(apiResponse.status, { 'Content-Type': 'application/json' });
+      return response.end(JSON.stringify({ error: errorMessage }));
     }
     
     if (!data.results || data.results.length === 0) {
       console.log(`No data returned from Polygon for ${symbol}.`);
-      return response.status(200).json({ s: 'no_data', t: [], c: [], o: [], h: [], l: [], v: [] });
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      return response.end(JSON.stringify({ s: 'no_data', t: [], c: [], o: [], h: [], l: [], v: [] }));
     }
 
     const chartData = {
@@ -56,10 +60,12 @@ export default async function handler(request, response) {
     };
 
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.status(200).json(chartData);
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify(chartData));
     
   } catch (error) {
     console.error(`Unhandled error in /api/stock/candles.js for ${symbol}:`, error);
-    response.status(500).json({ error: 'An unexpected error occurred.' });
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ error: 'An unexpected error occurred.' }));
   }
 }

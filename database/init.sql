@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS stocks (
     id SERIAL PRIMARY KEY,
     symbol VARCHAR(10) NOT NULL UNIQUE,
     company_name VARCHAR(255) NOT NULL,
+    chinese_name VARCHAR(255),
     current_price DECIMAL(12, 4) DEFAULT 0,
     change DECIMAL(12, 4) DEFAULT 0,
     change_percent DECIMAL(8, 4) DEFAULT 0,
@@ -134,15 +135,17 @@ CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(is_active);
 
 -- 插入示例数据
 INSERT INTO stocks (
-    symbol, company_name, current_price, change, change_percent, volume, market_cap,
+    symbol, company_name, chinese_name, current_price, change, change_percent, volume, market_cap,
     pe_ratio, eps, dividend_yield, beta, week_52_high, week_52_low,
     industry, country, exchange
 ) VALUES 
-('AAPL', 'Apple Inc.', 175.43, 2.15, 1.24, 45678900, 2800000000000, 28.5, 6.16, 0.52, 1.2, 198.23, 124.17, 'Technology', 'US', 'NASDAQ'),
-('MSFT', 'Microsoft Corporation', 378.85, -1.23, -0.32, 23456789, 2820000000000, 32.1, 11.79, 0.68, 0.9, 384.52, 213.43, 'Technology', 'US', 'NASDAQ'),
-('GOOGL', 'Alphabet Inc.', 138.21, 0.87, 0.63, 34567890, 1750000000000, 25.4, 5.44, 0.0, 1.1, 151.55, 83.34, 'Technology', 'US', 'NASDAQ'),
-('TSLA', 'Tesla, Inc.', 248.42, 12.34, 5.23, 67890123, 790000000000, 65.2, 3.81, 0.0, 2.1, 414.50, 101.81, 'Automotive', 'US', 'NASDAQ'),
-('NVDA', 'NVIDIA Corporation', 875.28, 15.67, 1.82, 45123678, 2150000000000, 71.3, 12.28, 0.09, 1.7, 974.27, 180.96, 'Technology', 'US', 'NASDAQ')
+('AAPL', 'Apple Inc.', '苹果公司', 175.43, 2.15, 1.24, 45678900, 2800000000000, 28.5, 6.16, 0.52, 1.2, 198.23, 124.17, 'Technology', 'US', 'NASDAQ'),
+('MSFT', 'Microsoft Corporation', '微软公司', 378.85, -1.23, -0.32, 23456789, 2820000000000, 32.1, 11.79, 0.68, 0.9, 384.52, 213.43, 'Technology', 'US', 'NASDAQ'),
+('GOOGL', 'Alphabet Inc.', '谷歌公司', 138.21, 0.87, 0.63, 34567890, 1750000000000, 25.4, 5.44, 0.0, 1.1, 151.55, 83.34, 'Technology', 'US', 'NASDAQ'),
+('TSLA', 'Tesla, Inc.', '特斯拉公司', 248.42, 12.34, 5.23, 67890123, 790000000000, 65.2, 3.81, 0.0, 2.1, 414.50, 101.81, 'Automotive', 'US', 'NASDAQ'),
+('NVDA', 'NVIDIA Corporation', '英伟达公司', 875.28, 15.67, 1.82, 45123678, 2150000000000, 71.3, 12.28, 0.09, 1.7, 974.27, 180.96, 'Technology', 'US', 'NASDAQ'),
+('AMZN', 'Amazon.com, Inc.', '亚马逊公司', 155.89, 1.45, 0.94, 34567890, 1620000000000, 45.2, 3.45, 0.0, 1.3, 188.11, 81.43, 'Technology', 'US', 'NASDAQ'),
+('BRK.B', 'Berkshire Hathaway Inc.', '伯克希尔哈撒韦公司', 445.67, 2.34, 0.53, 12345678, 980000000000, 8.9, 50.12, 0.0, 0.8, 467.89, 365.12, 'Financial Services', 'US', 'NYSE')
 ON CONFLICT (symbol) DO NOTHING;
 
 -- 插入示例财务数据
