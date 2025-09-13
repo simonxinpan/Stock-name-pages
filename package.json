@@ -2,6 +2,7 @@
   "name": "smart-stock-detail",
   "version": "1.0.0",
   "description": "智能个股详情页 - 专业的股票信息展示平台",
+  "type": "module",
   "main": "index.html",
   "scripts": {
     "dev": "python -m http.server 7000",
