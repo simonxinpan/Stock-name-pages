@@ -116,10 +116,16 @@ async function translateNewsContent(news) {
 // --- API 主处理函数 ---
 export default async function handler(request, response) {
   const { symbol, lang } = request.query;
-  if (!symbol) return response.status(400).json({ error: 'Stock symbol is required' });
+  if (!symbol) {
+    response.writeHead(400, { 'Content-Type': 'application/json' });
+    return response.end(JSON.stringify({ error: 'Stock symbol is required' }));
+  }
 
   const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-  if (!FINNHUB_API_KEY) return response.status(500).json({ error: 'Finnhub API key is not configured' });
+  if (!FINNHUB_API_KEY) {
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    return response.end(JSON.stringify({ error: 'Finnhub API key is not configured' }));
+  }
   
   // 扩大时间范围到60天，获取更多新闻用于筛选
   const today = new Date(), priorDate = new Date(new Date().setDate(today.getDate() - 60));
@@ -144,9 +150,11 @@ export default async function handler(request, response) {
 
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate'); // 减少缓存时间到30分钟
-    response.status(200).json(newsData);
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify(newsData));
   } catch (error) {
     console.error('API /stock/news Error:', error.message);
-    response.status(500).json({ error: 'Failed to fetch or process company news.' });
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ error: 'Failed to fetch or process company news.' }));
   }
 }
