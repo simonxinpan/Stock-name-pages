@@ -623,8 +623,13 @@
                 formatMarketCap(capInMillions) {
                     if (!capInMillions) return 'N/A';
                     if (this.language === 'zh') {
+                        // capInMillions是以百万美元为单位的市值
+                        // 1万亿 = 1,000,000百万 = 1,000,000 * 1,000,000美元
                         if (capInMillions >= 1000000) return (capInMillions / 1000000).toFixed(2) + '万亿';
-                        return (capInMillions / 100).toFixed(2) + '亿';
+                        // 1亿 = 100百万 = 100 * 1,000,000美元  
+                        if (capInMillions >= 100) return (capInMillions / 100).toFixed(2) + '亿';
+                        // 1万 = 10百万 = 10 * 1,000,000美元
+                        return (capInMillions / 10).toFixed(2) + '万';
                     } else {
                         if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
                         return '$' + (capInMillions / 1000).toFixed(2) + 'B';
