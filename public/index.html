@@ -93,7 +93,7 @@
             <div class="mt-6 pt-6 border-t border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键财务指标' : 'Key Financial Metrics'"></h3>
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><p class="text-lg font-bold" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
+                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><div x-html="displayMarketCap(companyProfile)"></div></div>
                     <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市盈率 (TTM)' : 'P/E Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.peTTM)"></p></div>
                     <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市销率 (TTM)' : 'P/S Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.psTTM)"></p></div>
                     <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市净率 (MRQ)' : 'P/B Ratio (MRQ)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.pbAnnual)"></p></div>
@@ -620,6 +620,59 @@
                 formatPercent(p) { return p != null ? `(${(p >= 0 ? '+' : '')}${p.toFixed(2)}%)` : ''; },
                 formatRatio(v) { return v ? v.toFixed(2) : 'N/A'; },
                 formatYield(v) { return v ? v.toFixed(2) + '%' : 'N/A'; },
+                // 智能双币种市值显示函数
+                displayMarketCap(stockData) {
+                    if (!stockData) return '<p class="text-lg font-bold">N/A</p>';
+                    
+                    const usdMarketCap = stockData.market_cap_usd || stockData.marketCapitalization;
+                    const originalMarketCap = stockData.market_cap_original || stockData.marketCapitalization;
+                    const currency = stockData.market_cap_currency || 'USD';
+                    
+                    if (!usdMarketCap) return '<p class="text-lg font-bold">N/A</p>';
+                    
+                    // 创建并显示美元市值 (这是主要市值)
+                    let html = `<p class="text-lg font-bold">${this.formatToBillion(usdMarketCap, 'USD')}</p>`;
+                    
+                    // 如果原始货币不是美元，则额外显示当地货币市值
+                    if (currency !== 'USD' && originalMarketCap && originalMarketCap !== usdMarketCap) {
+                        html += `<p class="text-sm text-gray-500 mt-1">(${this.formatToBillion(originalMarketCap, currency)})</p>`;
+                    }
+                    
+                    return html;
+                },
+                
+                // 辅助的格式化函数
+                formatToBillion(value, currency) {
+                    if (!value || value === 0) return 'N/A';
+                    
+                    const billion = 1000; // 因为API返回的是百万为单位，所以1000百万=10亿
+                    const trillion = 1000000; // 1000000百万=1万亿
+                    
+                    if (this.language === 'zh') {
+                        if (value >= trillion) {
+                            const formatted = (value / trillion).toFixed(2);
+                            const currencyUnit = currency === 'HKD' ? '万亿港元' : (currency === 'TWD' ? '万亿新台币' : '万亿美元');
+                            return `${formatted}${currencyUnit}`;
+                        } else if (value >= billion) {
+                            const formatted = (value / billion).toFixed(2);
+                            const currencyUnit = currency === 'HKD' ? '亿港元' : (currency === 'TWD' ? '亿新台币' : '亿美元');
+                            return `${formatted}${currencyUnit}`;
+                        } else {
+                            const currencyUnit = currency === 'HKD' ? '百万港元' : (currency === 'TWD' ? '百万新台币' : '百万美元');
+                            return `${value.toFixed(2)}${currencyUnit}`;
+                        }
+                    } else {
+                        const currencySymbol = currency === 'USD' ? '$' : '';
+                        if (value >= trillion) {
+                            return `${currencySymbol}${(value / trillion).toFixed(2)}T`;
+                        } else if (value >= billion) {
+                            return `${currencySymbol}${(value / billion).toFixed(2)}B`;
+                        } else {
+                            return `${currencySymbol}${value.toFixed(2)}M`;
+                        }
+                    }
+                },
+                
                 formatMarketCap(capInMillions) {
                     if (!capInMillions) return 'N/A';
                     if (this.language === 'zh') {
