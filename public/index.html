@@ -645,8 +645,8 @@
                 formatToBillion(value, currency) {
                     if (!value || value === 0) return 'N/A';
                     
-                    const billion = 1000; // 因为API返回的是百万为单位，所以1000百万=10亿
-                    const trillion = 1000000; // 1000000百万=1万亿
+                    const billion = 100000000; // 1亿 = 100,000,000
+                    const trillion = 1000000000000; // 1万亿 = 1,000,000,000,000
                     
                     if (this.language === 'zh') {
                         if (value >= trillion) {
