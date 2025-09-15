@@ -259,17 +259,17 @@
             <div x-show="!newsLoading && news && news.length > 0" class="space-y-0">
                 <template x-for="article in news.slice(0, 3)" :key="article.id">
                     <div class="news-item">
-                        <h3 class="font-medium text-sm mb-2 line-clamp-2">
-                            <a :href="article.url" target="_blank" class="text-gray-900 hover:text-blue-600">
-                                <span x-text="article.headline"></span>
-                            </a>
-                        </h3>
-                        <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="article.summary"></p>
-                        <div class="flex items-center justify-between text-xs text-gray-500">
-                            <span x-text="article.source"></span>
-                            <span x-text="formatNewsDate(article.datetime)"></span>
-                        </div>
-                    </div>
+                                <h3 class="font-medium text-sm mb-2 line-clamp-2">
+                                    <a :href="article.url" target="_blank" class="text-gray-900 hover:text-blue-600">
+                                        <span x-text="language === 'zh' ? (article.translatedHeadline || article.headline) : article.headline"></span>
+                                    </a>
+                                </h3>
+                                <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="language === 'zh' ? (article.translatedSummary || article.summary) : article.summary"></p>
+                                <div class="flex items-center justify-between text-xs text-gray-500">
+                                    <span x-text="article.source"></span>
+                                    <span x-text="formatNewsDate(article.datetime)"></span>
+                                </div>
+                            </div>
                 </template>
             </div>
             
@@ -433,11 +433,51 @@
                         const response = await fetch(`/api/stock/news?symbol=${encodedSymbol}`);
                         const data = await this.handleResponse(response);
                         this.news = data || [];
+                        
+                        // 如果是中文模式，翻译新闻标题和摘要
+                        if (this.language === 'zh' && this.news.length > 0) {
+                            await this.translateNews();
+                        }
                     } catch (error) {
                         console.error('Failed to load news:', error);
                         this.news = [];
                     } finally {
                         this.newsLoading = false;
+                    }
+                },
+
+                async translateNews() {
+                    try {
+                        for (let i = 0; i < Math.min(this.news.length, 3); i++) {
+                            const article = this.news[i];
+                            if (!article.translatedHeadline && article.headline) {
+                                // 翻译标题
+                                const titleResponse = await fetch('/api/translate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: article.headline, target: 'zh' })
+                                });
+                                const titleData = await titleResponse.json();
+                                if (titleData.success) {
+                                    article.translatedHeadline = titleData.translatedText;
+                                }
+                            }
+                            
+                            if (!article.translatedSummary && article.summary) {
+                                // 翻译摘要
+                                const summaryResponse = await fetch('/api/translate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: article.summary, target: 'zh' })
+                                });
+                                const summaryData = await summaryResponse.json();
+                                if (summaryData.success) {
+                                    article.translatedSummary = summaryData.translatedText;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Translation failed:', error);
                     }
                 },
 
@@ -448,56 +488,68 @@
                 },
 
                 updateChart() {
-                    if (!this.candles || !this.candles.c || this.candles.c.length === 0) return;
-                    
-                    const ctx = document.getElementById('mobileStockChart');
-                    if (!ctx) return;
-                    
-                    if (this.chart) {
-                        this.chart.destroy();
+                    if (!this.candles || !this.candles.c || this.candles.c.length === 0) {
+                        console.log('No candle data available for chart');
+                        return;
                     }
                     
-                    const labels = this.candles.t.map(timestamp => {
-                        const date = new Date(timestamp * 1000);
-                        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-                    });
+                    const ctx = document.getElementById('mobileStockChart');
+                    if (!ctx) {
+                        console.log('Chart canvas not found');
+                        return;
+                    }
                     
-                    this.chart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: this.symbol,
-                                data: this.candles.c,
-                                borderColor: this.getChangeClass() === 'change-positive' ? '#ef4444' : '#22c55e',
-                                backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                pointHoverRadius: 4,
-                                tension: 0.1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
+                    // 确保在DOM更新后再创建图表
+                    setTimeout(() => {
+                        if (this.chart) {
+                            this.chart.destroy();
+                            this.chart = null;
+                        }
+                        
+                        const labels = this.candles.t.map(timestamp => {
+                            const date = new Date(timestamp * 1000);
+                            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+                        });
+                        
+                        this.chart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: this.symbol,
+                                    data: this.candles.c,
+                                    borderColor: this.getChangeClass() === 'change-positive' ? '#ef4444' : '#22c55e',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    pointRadius: 0,
+                                    pointHoverRadius: 4,
+                                    tension: 0.1
+                                }]
                             },
-                            scales: {
-                                x: {
-                                    display: true,
-                                    grid: {
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: {
+                                    duration: 0 // 禁用动画提高稳定性
+                                },
+                                plugins: {
+                                    legend: {
                                         display: false
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 6
                                     }
                                 },
-                                y: {
-                                    display: true,
-                                    position: 'right',
+                                scales: {
+                                    x: {
+                                        display: true,
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            maxTicksLimit: 6
+                                        }
+                                    },
+                                    y: {
+                                        display: true,
+                                        position: 'right',
                                     grid: {
                                         color: '#f1f5f9'
                                     }
