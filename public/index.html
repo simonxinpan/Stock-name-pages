@@ -93,7 +93,7 @@
             <div class="mt-6 pt-6 border-t border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关键财务指标' : 'Key Financial Metrics'"></h3>
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><p class="text-lg font-bold" x-text="formatMarketCap(companyProfile?.marketCapitalization)"></p></div>
+                    <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '总市值' : 'Market Cap'"></h4><div x-html="displayMarketCap(companyProfile)"></div></div>
                     <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市盈率 (TTM)' : 'P/E Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.peTTM)"></p></div>
                     <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市销率 (TTM)' : 'P/S Ratio (TTM)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.psTTM)"></p></div>
                     <div><h4 class="text-sm text-gray-600" x-text="language === 'zh' ? '市净率 (MRQ)' : 'P/B Ratio (MRQ)'"></h4><p class="text-lg font-bold" x-text="formatRatio(metrics?.pbAnnual)"></p></div>
@@ -620,15 +620,101 @@
                 formatPercent(p) { return p != null ? `(${(p >= 0 ? '+' : '')}${p.toFixed(2)}%)` : ''; },
                 formatRatio(v) { return v ? v.toFixed(2) : 'N/A'; },
                 formatYield(v) { return v ? v.toFixed(2) + '%' : 'N/A'; },
-                formatMarketCap(capInMillions) {
-                    if (!capInMillions) return 'N/A';
-                    if (this.language === 'zh') {
-                        if (capInMillions >= 1000000) return (capInMillions / 1000000).toFixed(2) + '万亿';
-                        return (capInMillions / 100).toFixed(2) + '亿';
-                    } else {
-                        if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
-                        return '$' + (capInMillions / 1000).toFixed(2) + 'B';
+                // 智能双币种市值显示函数
+                displayMarketCap(stockData) {
+                    if (!stockData) return '<p class="text-lg font-bold">N/A</p>';
+                    
+                    const usdMarketCap = stockData.market_cap_usd || stockData.marketCapitalization;
+                    const originalMarketCap = stockData.market_cap_original || stockData.marketCapitalization;
+                    const currency = stockData.market_cap_currency || 'USD';
+                    
+                    if (!usdMarketCap) return '<p class="text-lg font-bold">N/A</p>';
+                    
+                    // 创建并显示美元市值 (这是主要市值)
+                    let html = `<p class="text-lg font-bold">${this.formatMarketCap(usdMarketCap, 'USD')}</p>`;
+                    
+                    // 如果原始货币不是美元，则额外显示当地货币市值
+                    if (currency !== 'USD' && originalMarketCap && originalMarketCap !== usdMarketCap) {
+                        html += `<p class="text-sm text-gray-500 mt-1">(${this.formatMarketCap(originalMarketCap, currency)})</p>`;
                     }
+                    
+                    return html;
+                },
+                
+                // 辅助的格式化函数
+                formatToBillion(value, currency) {
+                    if (!value || value === 0) return 'N/A';
+                    
+                    const billion = 100000000; // 1亿 = 100,000,000
+                    const trillion = 1000000000000; // 1万亿 = 1,000,000,000,000
+                    
+                    if (this.language === 'zh') {
+                        if (value >= trillion) {
+                            const formatted = (value / trillion).toFixed(2);
+                            const currencyUnit = currency === 'HKD' ? '万亿港元' : (currency === 'TWD' ? '万亿新台币' : '万亿美元');
+                            return `${formatted}${currencyUnit}`;
+                        } else if (value >= billion) {
+                            const formatted = (value / billion).toFixed(2);
+                            const currencyUnit = currency === 'HKD' ? '亿港元' : (currency === 'TWD' ? '亿新台币' : '亿美元');
+                            return `${formatted}${currencyUnit}`;
+                        } else {
+                            const currencyUnit = currency === 'HKD' ? '百万港元' : (currency === 'TWD' ? '百万新台币' : '百万美元');
+                            return `${value.toFixed(2)}${currencyUnit}`;
+                        }
+                    } else {
+                        const currencySymbol = currency === 'USD' ? '$' : '';
+                        if (value >= trillion) {
+                            return `${currencySymbol}${(value / trillion).toFixed(2)}T`;
+                        } else if (value >= billion) {
+                            return `${currencySymbol}${(value / billion).toFixed(2)}B`;
+                        } else {
+                            return `${currencySymbol}${value.toFixed(2)}M`;
+                        }
+                    }
+                },
+                
+                /**
+                 * 【终极统一智能版】市值格式化函数
+                 * @param {number | string | null} capValue - 原始市值数值
+                 * @param {string} currency - 货币单位 (e.g., 'USD', 'HKD', 'TWD')
+                 * @returns {string} - 格式化后的最终显示字符串
+                 */
+                formatMarketCap(capValue, currency = 'USD') {
+                    const numericCap = parseFloat(capValue);
+                
+                    if (isNaN(numericCap) || numericCap === 0) {
+                        return 'N/A';
+                    }
+                
+                    const TRILLION = 1_000_000_000_000;
+                    const BILLION = 100; // 除以100来显示正确的市值单位
+                    
+                    const currencySymbol = currency === 'USD' ? '$' : '';
+                    const currencyUnitMap = {
+                        'USD': '美元',
+                        'HKD': '港元',
+                        'TWD': '新台币'
+                    };
+                    const currencyUnitName = currencyUnitMap[currency] || currency;
+                
+                    let displayValue;
+                    let displayUnit;
+                
+                    // 核心智能判断逻辑：根据数值大小选择"万亿"或"亿"
+                    if (numericCap >= TRILLION) {
+                        displayValue = numericCap / TRILLION;
+                        displayUnit = `万亿${currencyUnitName}`;
+                    } else {
+                        displayValue = numericCap / BILLION;
+                        displayUnit = `亿${currencyUnitName}`;
+                    }
+                
+                    const formattedValue = displayValue.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    });
+                
+                    return `${currencySymbol}${formattedValue}${displayUnit}`;
                 },
                 
                 formatVolume(volume) {
