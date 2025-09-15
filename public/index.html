@@ -631,11 +631,11 @@
                     if (!usdMarketCap) return '<p class="text-lg font-bold">N/A</p>';
                     
                     // 创建并显示美元市值 (这是主要市值)
-                    let html = `<p class="text-lg font-bold">${this.formatToBillion(usdMarketCap, 'USD')}</p>`;
+                    let html = `<p class="text-lg font-bold">${this.formatMarketCap(usdMarketCap, 'USD')}</p>`;
                     
                     // 如果原始货币不是美元，则额外显示当地货币市值
                     if (currency !== 'USD' && originalMarketCap && originalMarketCap !== usdMarketCap) {
-                        html += `<p class="text-sm text-gray-500 mt-1">(${this.formatToBillion(originalMarketCap, currency)})</p>`;
+                        html += `<p class="text-sm text-gray-500 mt-1">(${this.formatMarketCap(originalMarketCap, currency)})</p>`;
                     }
                     
                     return html;
@@ -673,20 +673,48 @@
                     }
                 },
                 
-                formatMarketCap(capInMillions) {
-                    if (!capInMillions) return 'N/A';
-                    if (this.language === 'zh') {
-                        // capInMillions是以百万美元为单位的市值
-                        // 1万亿 = 1,000,000百万 = 1,000,000 * 1,000,000美元
-                        if (capInMillions >= 1000000) return (capInMillions / 1000000).toFixed(2) + '万亿';
-                        // 1亿 = 100百万 = 100 * 1,000,000美元  
-                        if (capInMillions >= 100) return (capInMillions / 100).toFixed(2) + '亿';
-                        // 1万 = 10百万 = 10 * 1,000,000美元
-                        return (capInMillions / 10).toFixed(2) + '万';
-                    } else {
-                        if (capInMillions >= 1000000) return '$' + (capInMillions / 1000000).toFixed(2) + 'T';
-                        return '$' + (capInMillions / 1000).toFixed(2) + 'B';
+                /**
+                 * 【终极统一智能版】市值格式化函数
+                 * @param {number | string | null} capValue - 原始市值数值
+                 * @param {string} currency - 货币单位 (e.g., 'USD', 'HKD', 'TWD')
+                 * @returns {string} - 格式化后的最终显示字符串
+                 */
+                formatMarketCap(capValue, currency = 'USD') {
+                    const numericCap = parseFloat(capValue);
+                
+                    if (isNaN(numericCap) || numericCap === 0) {
+                        return 'N/A';
                     }
+                
+                    const TRILLION = 1_000_000_000_000;
+                    const BILLION = 1_000_000_000;
+                    
+                    const currencySymbol = currency === 'USD' ? '$' : '';
+                    const currencyUnitMap = {
+                        'USD': '美元',
+                        'HKD': '港元',
+                        'TWD': '新台币'
+                    };
+                    const currencyUnitName = currencyUnitMap[currency] || currency;
+                
+                    let displayValue;
+                    let displayUnit;
+                
+                    // 核心智能判断逻辑：根据数值大小选择"万亿"或"亿"
+                    if (numericCap >= TRILLION) {
+                        displayValue = numericCap / TRILLION;
+                        displayUnit = `万亿${currencyUnitName}`;
+                    } else {
+                        displayValue = numericCap / BILLION;
+                        displayUnit = `亿${currencyUnitName}`;
+                    }
+                
+                    const formattedValue = displayValue.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    });
+                
+                    return `${currencySymbol}${formattedValue}${displayUnit}`;
                 },
                 
                 formatVolume(volume) {
