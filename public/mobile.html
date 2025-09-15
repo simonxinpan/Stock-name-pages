@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>个股详情 - 移动版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 移动端优化样式 */
+        .mobile-container {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+        
+        .mobile-card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+        
+        .price-display {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .change-positive {
+            color: #ef4444;
+        }
+        
+        .change-negative {
+            color: #22c55e;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .metric-item {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .chart-container {
+            height: 250px;
+            position: relative;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 8px 12px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .tab-active {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .tab-inactive {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        
+        .news-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 0;
+        }
+        
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 触摸优化 */
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+        
+        /* 隐藏桌面端元素 */
+        @media (max-width: 768px) {
+            .desktop-only {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 mobile-container" x-data="mobileStockApp()" x-init="init()">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button @click="goBack()" class="touch-target flex items-center justify-center">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 class="text-lg font-semibold text-gray-900" x-text="getDisplayName()"></h1>
+                        <p class="text-sm text-gray-500" x-text="symbol"></p>
+                    </div>
+                </div>
+                <button @click="toggleLanguage()" class="touch-target px-3 py-1 bg-gray-100 rounded-full text-sm font-medium">
+                    <span x-text="language === 'zh' ? 'EN' : '中文'"></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="px-4 py-4 space-y-4">
+        <!-- 加载状态 -->
+        <div x-show="loading" class="text-center py-8">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600" x-text="language === 'zh' ? '加载中...' : 'Loading...'"></p>
+        </div>
+
+        <!-- 错误状态 -->
+        <div x-show="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-600" x-text="error"></p>
+        </div>
+
+        <!-- 股价信息卡片 -->
+        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <div class="text-center">
+                <div class="price-display mb-2" :class="getChangeClass()" x-text="formatPrice(quote?.c)"></div>
+                <div class="flex items-center justify-center space-x-4 text-sm">
+                    <span :class="getChangeClass()" x-text="formatChange(quote?.d)"></span>
+                    <span :class="getChangeClass()" x-text="formatChangePercent(quote?.dp)"></span>
+                </div>
+                <div class="mt-3 text-xs text-gray-500">
+                    <span x-text="language === 'zh' ? '更新时间: ' : 'Updated: '"></span>
+                    <span x-text="formatTime(quote?.t)"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 价格走势图 -->
+        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold mb-3" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+                <div class="flex space-x-2 mb-4">
+                    <template x-for="period in timePeriods" :key="period.value">
+                        <button @click="changePeriod(period.value)" 
+                                :class="selectedPeriod === period.value ? 'tab-active' : 'tab-inactive'" 
+                                class="tab-button touch-target" 
+                                x-text="language === 'zh' ? period.zh : period.en">
+                        </button>
+                    </template>
+                </div>
+            </div>
+            <div class="chart-container bg-gray-50 rounded-lg">
+                <canvas id="mobileStockChart"></canvas>
+                <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关键财务指标 -->
+        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h2>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? '市值' : 'Market Cap'"></div>
+                    <div class="font-semibold" x-text="formatMarketCap(metrics?.marketCapitalization)"></div>
+                </div>
+                <div class="metric-item">
+                    <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? 'P/E比率' : 'P/E Ratio'"></div>
+                    <div class="font-semibold" x-text="formatRatio(metrics?.peBasicExclExtraTTM)"></div>
+                </div>
+                <div class="metric-item">
+                    <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? '52周最高' : '52W High'"></div>
+                    <div class="font-semibold" x-text="formatPrice(metrics?.['52WeekHigh'])"></div>
+                </div>
+                <div class="metric-item">
+                    <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? '52周最低' : '52W Low'"></div>
+                    <div class="font-semibold" x-text="formatPrice(metrics?.['52WeekLow'])"></div>
+                </div>
+                <div class="metric-item">
+                    <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? '成交量' : 'Volume'"></div>
+                    <div class="font-semibold" x-text="formatVolume(quote?.v)"></div>
+                </div>
+                <div class="metric-item">
+                    <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? 'ROE' : 'ROE'"></div>
+                    <div class="font-semibold" x-text="formatRatio(metrics?.roeTTM)"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 公司信息 -->
+        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h2>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
+                    <span class="text-sm font-medium" x-text="companyProfile?.finnhubIndustry || 'N/A'"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '国家' : 'Country'"></span>
+                    <span class="text-sm font-medium" x-text="companyProfile?.country || 'N/A'"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '交易所' : 'Exchange'"></span>
+                    <span class="text-sm font-medium" x-text="companyProfile?.exchange || 'N/A'"></span>
+                </div>
+                <div x-show="companyProfile?.weburl" class="pt-2 border-t border-gray-100">
+                    <a :href="companyProfile?.weburl" target="_blank" 
+                       class="flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 py-2 px-4 rounded-lg touch-target">
+                        <span x-text="language === 'zh' ? '访问官网' : 'Visit Website'"></span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 相关新闻 -->
+        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
+                <button @click="loadNews()" class="text-blue-600 text-sm font-medium touch-target">
+                    <span x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
+                </button>
+            </div>
+            
+            <div x-show="newsLoading" class="text-center py-4">
+                <div class="loading-spinner mx-auto mb-2"></div>
+                <p class="text-sm text-gray-600" x-text="language === 'zh' ? '加载新闻中...' : 'Loading news...'"></p>
+            </div>
+            
+            <div x-show="!newsLoading && news && news.length > 0" class="space-y-0">
+                <template x-for="article in news.slice(0, 3)" :key="article.id">
+                    <div class="news-item">
+                        <h3 class="font-medium text-sm mb-2 line-clamp-2">
+                            <a :href="article.url" target="_blank" class="text-gray-900 hover:text-blue-600">
+                                <span x-text="article.headline"></span>
+                            </a>
+                        </h3>
+                        <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="article.summary"></p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span x-text="article.source"></span>
+                            <span x-text="formatNewsDate(article.datetime)"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            
+            <div x-show="!newsLoading && (!news || news.length === 0)" class="text-center py-4 text-gray-500">
+                <p class="text-sm" x-text="language === 'zh' ? '暂无相关新闻' : 'No news available'"></p>
+            </div>
+        </div>
+
+        <!-- 快捷操作 -->
+        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '快捷操作' : 'Quick Actions'"></h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button @click="openYouTubeSearch()" 
+                        class="flex items-center justify-center space-x-2 bg-red-50 text-red-600 py-3 px-4 rounded-lg touch-target">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span class="text-sm font-medium" x-text="language === 'zh' ? '相关视频' : 'Videos'"></span>
+                </button>
+                <button @click="openXueqiuSearch()" 
+                        class="flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 py-3 px-4 rounded-lg touch-target">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span class="text-sm font-medium" x-text="language === 'zh' ? '社区讨论' : 'Community'"></span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function mobileStockApp() {
+            return {
+                language: 'zh',
+                symbol: new URLSearchParams(window.location.search).get('symbol') || 'AAPL',
+                loading: true,
+                chartLoading: false,
+                error: null,
+                quote: null,
+                companyProfile: null,
+                candles: null,
+                metrics: null,
+                chineseName: null,
+                selectedPeriod: 'D',
+                timePeriods: [
+                    { value: 'D', zh: '日线', en: 'Day' },
+                    { value: 'W', zh: '周线', en: 'Week' },
+                    { value: 'M', zh: '月线', en: 'Month' }
+                ],
+                chart: null,
+                news: [],
+                newsLoading: false,
+                lastCandleCall: 0,
+                candleCallInterval: 20000,
+                candleCache: new Map(),
+                cacheExpiry: 300000,
+
+                async init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const symbolFromUrl = urlParams.get('symbol');
+                    
+                    if (symbolFromUrl) {
+                        this.symbol = symbolFromUrl.toUpperCase();
+                    }
+                    
+                    const savedLang = localStorage.getItem('stock-lang');
+                    if (savedLang) this.language = savedLang;
+                    
+                    await this.loadStock();
+                    await this.loadNews();
+                },
+
+                async loadStock() {
+                    this.loading = true;
+                    this.error = null;
+                    
+                    try {
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const [quoteData, profileData, metricsData] = await Promise.all([
+                            fetch(`/api/stock/quote?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/profile?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res))
+                        ]);
+                        
+                        this.quote = quoteData;
+                        this.companyProfile = profileData;
+                        this.metrics = metricsData;
+                        
+                        await this.loadChineseName();
+                        await this.loadCandles();
+                    } catch (error) {
+                        this.error = `数据加载失败: ${error.message}`;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async loadChineseName() {
+                    try {
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
+                        const data = await response.json();
+                        
+                        if (data.success && data.chinese_name) {
+                            this.chineseName = data.chinese_name;
+                        }
+                    } catch (error) {
+                        console.error('Failed to load Chinese name:', error);
+                    }
+                },
+
+                async loadCandles() {
+                    const now = Date.now();
+                    const cacheKey = `${this.symbol}_${this.selectedPeriod}`;
+                    const cachedData = this.candleCache.get(cacheKey);
+                    
+                    if (cachedData && (now - cachedData.timestamp) < this.cacheExpiry) {
+                        this.candles = cachedData.data;
+                        this.updateChart();
+                        return;
+                    }
+                    
+                    const timeSinceLastCall = now - this.lastCandleCall;
+                    if (timeSinceLastCall < this.candleCallInterval) {
+                        const waitTime = this.candleCallInterval - timeSinceLastCall;
+                        setTimeout(() => this.loadCandles(), waitTime);
+                        return;
+                    }
+                    
+                    this.chartLoading = true;
+                    this.lastCandleCall = now;
+                    
+                    try {
+                        const to = Math.floor(Date.now() / 1000);
+                        let from;
+                        switch (this.selectedPeriod) {
+                            case 'W': from = to - (5 * 365 * 24 * 60 * 60); break;
+                            case 'M': from = to - (20 * 365 * 24 * 60 * 60); break;
+                            default: from = to - (365 * 24 * 60 * 60);
+                        }
+                        
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const url = `/api/stock/candles?symbol=${encodedSymbol}&resolution=${this.selectedPeriod}&from=${from}&to=${to}`;
+                        const response = await fetch(url);
+                        const data = await this.handleResponse(response);
+                        
+                        this.candles = data;
+                        this.candleCache.set(cacheKey, { data: data, timestamp: now });
+                        this.updateChart();
+                    } catch (error) {
+                        console.error('Failed to load candles:', error);
+                    } finally {
+                        this.chartLoading = false;
+                    }
+                },
+
+                async loadNews() {
+                    this.newsLoading = true;
+                    try {
+                        const encodedSymbol = encodeURIComponent(this.symbol);
+                        const response = await fetch(`/api/stock/news?symbol=${encodedSymbol}`);
+                        const data = await this.handleResponse(response);
+                        this.news = data || [];
+                    } catch (error) {
+                        console.error('Failed to load news:', error);
+                        this.news = [];
+                    } finally {
+                        this.newsLoading = false;
+                    }
+                },
+
+                async changePeriod(newPeriod) {
+                    if (this.selectedPeriod === newPeriod) return;
+                    this.selectedPeriod = newPeriod;
+                    await this.loadCandles();
+                },
+
+                updateChart() {
+                    if (!this.candles || !this.candles.c || this.candles.c.length === 0) return;
+                    
+                    const ctx = document.getElementById('mobileStockChart');
+                    if (!ctx) return;
+                    
+                    if (this.chart) {
+                        this.chart.destroy();
+                    }
+                    
+                    const labels = this.candles.t.map(timestamp => {
+                        const date = new Date(timestamp * 1000);
+                        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+                    });
+                    
+                    this.chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: this.symbol,
+                                data: this.candles.c,
+                                borderColor: this.getChangeClass() === 'change-positive' ? '#ef4444' : '#22c55e',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 4,
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: true,
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 6
+                                    }
+                                },
+                                y: {
+                                    display: true,
+                                    position: 'right',
+                                    grid: {
+                                        color: '#f1f5f9'
+                                    }
+                                }
+                            },
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            }
+                        }
+                    });
+                },
+
+                async handleResponse(response) {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return await response.json();
+                },
+
+                getDisplayName() {
+                    return this.chineseName || this.companyProfile?.name || this.symbol;
+                },
+
+                getChangeClass() {
+                    if (!this.quote?.d) return '';
+                    return this.quote.d >= 0 ? 'change-positive' : 'change-negative';
+                },
+
+                formatPrice(price) {
+                    if (!price) return 'N/A';
+                    return `$${parseFloat(price).toFixed(2)}`;
+                },
+
+                formatChange(change) {
+                    if (!change) return 'N/A';
+                    const sign = change >= 0 ? '+' : '';
+                    return `${sign}$${parseFloat(change).toFixed(2)}`;
+                },
+
+                formatChangePercent(changePercent) {
+                    if (!changePercent) return 'N/A';
+                    const sign = changePercent >= 0 ? '+' : '';
+                    return `${sign}${parseFloat(changePercent).toFixed(2)}%`;
+                },
+
+                formatMarketCap(marketCap) {
+                    if (!marketCap) return 'N/A';
+                    const TRILLION = 1000000000000;
+                    const BILLION = 100;
+                    
+                    if (marketCap >= TRILLION) {
+                        return `${(marketCap / TRILLION).toFixed(2)}万亿`;
+                    } else {
+                        return `${(marketCap / BILLION).toFixed(0)}亿`;
+                    }
+                },
+
+                formatVolume(volume) {
+                    if (!volume) return 'N/A';
+                    if (volume >= 1000000) {
+                        return `${(volume / 1000000).toFixed(1)}M`;
+                    } else if (volume >= 1000) {
+                        return `${(volume / 1000).toFixed(1)}K`;
+                    }
+                    return volume.toString();
+                },
+
+                formatRatio(ratio) {
+                    if (!ratio) return 'N/A';
+                    return parseFloat(ratio).toFixed(2);
+                },
+
+                formatTime(timestamp) {
+                    if (!timestamp) return 'N/A';
+                    const date = new Date(timestamp * 1000);
+                    return date.toLocaleString('zh-CN');
+                },
+
+                formatNewsDate(timestamp) {
+                    if (!timestamp) return '';
+                    const date = new Date(timestamp * 1000);
+                    const now = new Date();
+                    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+                    
+                    if (diffHours < 1) return '刚刚';
+                    if (diffHours < 24) return `${diffHours}小时前`;
+                    if (diffHours < 48) return '1天前';
+                    return date.toLocaleDateString('zh-CN');
+                },
+
+                toggleLanguage() {
+                    this.language = this.language === 'zh' ? 'en' : 'zh';
+                    localStorage.setItem('stock-lang', this.language);
+                },
+
+                goBack() {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = '/';
+                    }
+                },
+
+                openYouTubeSearch() {
+                    const query = encodeURIComponent(`${this.symbol} ${this.companyProfile?.name || ''} stock analysis`);
+                    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+                },
+
+                openXueqiuSearch() {
+                    const query = encodeURIComponent(this.symbol);
+                    window.open(`https://xueqiu.com/S/${query}`, '_blank');
+                }
+            };
+        }
+    </script>
+</body>
+</html>
