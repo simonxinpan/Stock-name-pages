@@ -222,18 +222,66 @@ const server = http.createServer((req, res) => {
         const data = JSON.parse(body);
         const text = data.text || '';
         
-        // 简单的模拟翻译
+        // 设置正确的响应头确保UTF-8编码
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        
+        // 改进的模拟翻译 - 提供更真实的翻译结果
+        const translations = {
+          'Apple Reports Strong Q4 Earnings': '苹果公司发布强劲第四季度财报',
+          'Apple Inc reported better-than-expected quarterly earnings...': '苹果公司发布了超出预期的季度财报...',
+          'New iPhone Features Announced': '新iPhone功能发布',
+          'Apple unveiled new features for its upcoming iPhone...': '苹果公司为即将推出的iPhone发布了新功能...',
+          'Market Analysis Update': '市场分析更新',
+          'Latest market trends and analysis for technology stocks...': '科技股的最新市场趋势和分析...',
+          'NVIDIA Corporation': 'NVIDIA公司',
+          'Apple Inc.': '苹果公司',
+          'Microsoft Corporation': '微软公司',
+          'Tesla, Inc.': '特斯拉公司',
+          'Amazon.com Inc.': '亚马逊公司',
+          'Alphabet Inc.': '谷歌母公司',
+          'Meta Platforms Inc.': 'Meta平台公司',
+          'stock analysis': '股票分析',
+          'financial report': '财务报告',
+          'quarterly earnings': '季度收益',
+          'market performance': '市场表现',
+          'investment recommendation': '投资建议',
+          'Breaking News': '突发新闻',
+          'Market Update': '市场更新',
+          'Earnings Report': '财报发布',
+          'Stock Price': '股价',
+          'Revenue Growth': '营收增长',
+          'Profit Margin': '利润率'
+        };
+        
+        let translatedText = translations[text] || text;
+        
+        // 如果没有预设翻译，进行简单的关键词替换
+        if (translatedText === text && text.length > 0) {
+          translatedText = text
+            .replace(/Apple/gi, '苹果')
+            .replace(/iPhone/gi, 'iPhone')
+            .replace(/earnings/gi, '财报')
+            .replace(/revenue/gi, '营收')
+            .replace(/stock/gi, '股票')
+            .replace(/market/gi, '市场')
+            .replace(/technology/gi, '科技')
+            .replace(/announced/gi, '宣布')
+            .replace(/reported/gi, '报告')
+            .replace(/strong/gi, '强劲')
+            .replace(/growth/gi, '增长');
+        }
+        
         const mockTranslation = {
-          translatedText: `[翻译] ${text}`,
+          translatedText: translatedText,
           originalText: text,
           targetLanguage: data.targetLanguage || 'zh',
           confidence: 0.95
         };
         
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.writeHead(200);
         res.end(JSON.stringify(mockTranslation));
       } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
       }
     });
