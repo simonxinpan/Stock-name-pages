@@ -350,71 +350,98 @@
                     const savedLang = localStorage.getItem('stock-lang');
                     if (savedLang) this.language = savedLang;
                     
-                    await this.loadStock();
-                    await this.loadNews();
+                    // ================================================================
+                    // == 【最终稳定版】并行数据获取 + 分离渲染逻辑 ==
+                    // ================================================================
+                    await this.initializePageWithStableRendering();
                 },
 
-                async loadStock() {
+                async initializePageWithStableRendering() {
                     this.loading = true;
                     this.error = null;
                     
                     try {
                         const encodedSymbol = encodeURIComponent(this.symbol);
-                        const [quoteData, profileData, metricsData] = await Promise.all([
+                        
+                        // --- 并行获取所有需要的数据 ---
+                        // 将所有数据请求（公开数据和可能需要认证的数据）都放在这里
+                        const dataPromises = [
                             fetch(`/api/stock/quote?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
                             fetch(`/api/stock/profile?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res))
-                        ]);
+                            fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
+                            fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`).then(res => res.json().catch(() => ({}))),
+                            this.loadCandlesData(), // K线数据获取
+                            this.loadNewsData() // 新闻数据获取
+                        ];
                         
+                        // 等待所有数据全部返回
+                        const [quoteData, profileData, metricsData, chineseNameData, candlesData, newsData] = await Promise.all(dataPromises);
+                        
+                        // --- 在所有数据都拿到后，才开始渲染页面 ---
+                        
+                        // 1. 先设置所有基础数据
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
                         
-                        await this.loadChineseName();
-                        await this.loadCandles();
+                        if (chineseNameData.success && chineseNameData.chinese_name) {
+                            this.chineseName = chineseNameData.chinese_name;
+                        }
+                        
+                        this.news = newsData || [];
+                        
+                        // 2. 处理K线数据但不立即渲染图表
+                        if (candlesData && candlesData.c && Array.isArray(candlesData.c) && candlesData.c.length > 0) {
+                            this.candles = candlesData;
+                            
+                            // 3. 将K线图的渲染，放入下一个宏任务 (macro-task) 中
+                            // 这是确保所有当前的DOM更新都已完成的终极技巧
+                            setTimeout(() => {
+                                try {
+                                    console.log('🎯 开始在独立事件循环中初始化图表...');
+                                    this.renderChartInSeparateTask();
+                                    console.log('✅ 图表在独立任务中初始化成功');
+                                } catch (error) {
+                                    console.error('❌ 最终图表初始化尝试失败:', error);
+                                    this.showChartError('图表渲染失败');
+                                }
+                            }, 0); // 延迟0毫秒，但足以将其推入下一个事件循环
+                        } else {
+                            console.warn('暂无有效的K线图数据');
+                            this.showChartError('暂无K线图数据');
+                        }
+                        
                     } catch (error) {
+                        console.error('页面初始化失败:', error);
                         this.error = `数据加载失败: ${error.message}`;
                     } finally {
                         this.loading = false;
                     }
                 },
 
-                async loadChineseName() {
+                // ================================================================
+                // == 新的数据获取方法（用于并行加载）==
+                // ================================================================
+                
+                async loadCandlesData() {
                     try {
-                        const encodedSymbol = encodeURIComponent(this.symbol);
-                        const response = await fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`);
-                        const data = await response.json();
+                        const now = Date.now();
+                        const cacheKey = `${this.symbol}_${this.selectedPeriod}`;
+                        const cachedData = this.candleCache.get(cacheKey);
                         
-                        if (data.success && data.chinese_name) {
-                            this.chineseName = data.chinese_name;
+                        if (cachedData && (now - cachedData.timestamp) < this.cacheExpiry) {
+                            console.log('使用缓存的K线数据');
+                            return cachedData.data;
                         }
-                    } catch (error) {
-                        console.error('Failed to load Chinese name:', error);
-                    }
-                },
-
-                async loadCandles() {
-                    const now = Date.now();
-                    const cacheKey = `${this.symbol}_${this.selectedPeriod}`;
-                    const cachedData = this.candleCache.get(cacheKey);
-                    
-                    if (cachedData && (now - cachedData.timestamp) < this.cacheExpiry) {
-                        this.candles = cachedData.data;
-                        this.updateChart();
-                        return;
-                    }
-                    
-                    const timeSinceLastCall = now - this.lastCandleCall;
-                    if (timeSinceLastCall < this.candleCallInterval) {
-                        const waitTime = this.candleCallInterval - timeSinceLastCall;
-                        setTimeout(() => this.loadCandles(), waitTime);
-                        return;
-                    }
-                    
-                    this.chartLoading = true;
-                    this.lastCandleCall = now;
-                    
-                    try {
+                        
+                        const timeSinceLastCall = now - this.lastCandleCall;
+                        if (timeSinceLastCall < this.candleCallInterval) {
+                            console.log('API调用频率限制，使用缓存数据或跳过');
+                            return cachedData ? cachedData.data : null;
+                        }
+                        
+                        this.lastCandleCall = now;
+                        
                         const to = Math.floor(Date.now() / 1000);
                         let from;
                         switch (this.selectedPeriod) {
@@ -428,43 +455,33 @@
                         const response = await fetch(url);
                         const data = await this.handleResponse(response);
                         
-                        // 验证返回的数据格式
                         if (data && data.c && Array.isArray(data.c) && data.c.length > 0) {
-                            this.candles = data;
                             this.candleCache.set(cacheKey, { data: data, timestamp: now });
-                            this.updateChart();
+                            return data;
                         } else {
                             console.warn('Invalid candle data received:', data);
-                            this.candles = null;
+                            return null;
                         }
                     } catch (error) {
-                        console.error('Failed to load candles:', error);
-                        this.candles = null;
-                    } finally {
-                        this.chartLoading = false;
+                        console.error('Failed to load candles data:', error);
+                        return null;
                     }
                 },
-
-                async loadNews() {
-                    this.newsLoading = true;
+                
+                async loadNewsData() {
                     try {
                         const encodedSymbol = encodeURIComponent(this.symbol);
                         const response = await fetch(`/api/stock/news?symbol=${encodedSymbol}`);
                         const data = await this.handleResponse(response);
-                        
-                        // 翻译新闻摘要
-                        if (data && data.length > 0) {
-                            this.news = await this.translateNewsItems(data);
-                        } else {
-                            this.news = [];
-                        }
+                        return data || [];
                     } catch (error) {
-                        console.error('Failed to load news:', error);
-                        this.news = [];
-                    } finally {
-                        this.newsLoading = false;
+                        console.error('Failed to load news data:', error);
+                        return [];
                     }
                 },
+
+                // 原有的loadCandles和loadNews方法已被loadCandlesData和loadNewsData替代
+                // 这些方法现在在initializePageWithStableRendering中统一调用
 
                 async translateNewsItems(newsItems) {
                     const translatedNews = [];
@@ -634,6 +651,57 @@
                     }
                 },
 
+                // ================================================================
+                // == 新的图表渲染方法（用于独立事件循环）==
+                // ================================================================
+                
+                renderChartInSeparateTask() {
+                    const ctx = document.getElementById('mobileStockChart');
+                    if (!ctx) {
+                        console.error('Canvas element not found');
+                        this.showChartError('图表容器未找到');
+                        return;
+                    }
+                    
+                    // 确保canvas有正确的尺寸
+                    const container = ctx.parentElement;
+                    if (!container) {
+                        console.error('Chart container not found');
+                        this.showChartError('图表容器未找到');
+                        return;
+                    }
+                    
+                    const rect = container.getBoundingClientRect();
+                    if (rect.width <= 0 || rect.height <= 0) {
+                        console.error('Container size not ready:', rect);
+                        this.showChartError('容器尺寸未就绪');
+                        return;
+                    }
+                    
+                    // 销毁现有图表
+                    if (this.chart) {
+                        this.chart.destroy();
+                        this.chart = null;
+                    }
+                    
+                    // 创建新图表
+                    this.createChart(ctx);
+                },
+                
+                showChartError(message) {
+                    const container = document.getElementById('mobileStockChart')?.parentElement;
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="flex items-center justify-center h-full text-gray-500">
+                                <div class="text-center">
+                                    <p class="mb-2">${message}</p>
+                                    <p class="text-sm">${this.language === 'zh' ? '请稍后重试' : 'Please try again later'}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
+
                 async changePeriod(newPeriod) {
                     if (this.selectedPeriod === newPeriod) return;
                     
@@ -644,7 +712,24 @@
                     }
                     
                     this.selectedPeriod = newPeriod;
-                    await this.loadCandles();
+                    
+                    // 使用新的稳定渲染逻辑
+                    try {
+                        const candlesData = await this.loadCandlesData();
+                        if (candlesData && candlesData.c && Array.isArray(candlesData.c) && candlesData.c.length > 0) {
+                            this.candles = candlesData;
+                            
+                            // 同样使用setTimeout确保渲染稳定性
+                            setTimeout(() => {
+                                this.renderChartInSeparateTask();
+                            }, 0);
+                        } else {
+                            this.showChartError('暂无该周期的K线数据');
+                        }
+                    } catch (error) {
+                        console.error('Period change failed:', error);
+                        this.showChartError('切换周期失败');
+                    }
                 },
 
                 updateChart() {
