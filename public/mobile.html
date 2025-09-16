@@ -320,6 +320,7 @@
                     { value: 'M', zh: '月线', en: 'Month' }
                 ],
                 chart: null,
+                chartCreating: false,
                 news: [],
                 newsLoading: false,
                 lastCandleCall: 0,
@@ -520,6 +521,13 @@
 
                 async changePeriod(newPeriod) {
                     if (this.selectedPeriod === newPeriod) return;
+                    
+                    // 防止快速切换周期时的重复调用
+                    if (this.chartLoading || this.chartCreating) {
+                        console.warn('Chart operation in progress, ignoring period change');
+                        return;
+                    }
+                    
                     this.selectedPeriod = newPeriod;
                     await this.loadCandles();
                 },
@@ -535,6 +543,14 @@
                         console.error('Chart canvas element not found');
                         return;
                     }
+                    
+                    // 防止重复创建图表
+                    if (this.chartCreating) {
+                        console.warn('Chart creation already in progress');
+                        return;
+                    }
+                    
+                    this.chartCreating = true;
                     
                     // 确保完全销毁之前的图表实例
                     if (this.chart) {
@@ -555,19 +571,32 @@
                     // 添加延迟确保DOM完全清理
                     setTimeout(() => {
                         this.createChart(ctx);
-                    }, 100);
+                        this.chartCreating = false;
+                    }, 150);
                 },
 
                 createChart(ctx) {
                     if (!this.candles || !this.candles.c || this.candles.c.length === 0) {
                         console.warn('Cannot create chart: invalid candle data');
+                        this.chartCreating = false;
                         return;
                     }
                     
                     // 验证数据完整性
                     if (!this.candles.t || this.candles.t.length !== this.candles.c.length) {
                         console.error('Candle data mismatch: timestamps and prices length differ');
+                        this.chartCreating = false;
                         return;
+                    }
+                    
+                    // 确保没有残留的图表实例
+                    if (this.chart) {
+                        try {
+                            this.chart.destroy();
+                        } catch (e) {
+                            console.warn('Error destroying existing chart:', e);
+                        }
+                        this.chart = null;
                     }
                     
                     try {
@@ -579,6 +608,7 @@
                         // 确保canvas上下文有效
                         if (!ctx || !ctx.getContext) {
                             console.error('Invalid canvas context');
+                            this.chartCreating = false;
                             return;
                         }
                         
@@ -632,6 +662,7 @@
                     } catch (error) {
                         console.error('Error creating chart:', error);
                         this.chart = null;
+                        this.chartCreating = false;
                     }
                 },
 
