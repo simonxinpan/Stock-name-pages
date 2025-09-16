@@ -390,6 +390,15 @@
                         
                         this.news = newsData || [];
                         
+                        // 1.5. 异步翻译新闻（不阻塞页面渲染）
+                        if (this.news.length > 0) {
+                            setTimeout(() => {
+                                this.translateNewsItems(this.news).catch(error => {
+                                    console.error('新闻翻译失败:', error);
+                                });
+                            }, 500); // 延迟500ms开始翻译，确保页面已渲染
+                        }
+                        
                         // 2. 处理K线数据但不立即渲染图表
                         console.log('🔍 检查K线数据:', {
                             hasCandlesData: !!candlesData,
