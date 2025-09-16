@@ -1,9 +1,110 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const querystring = require('querystring');
 
 const port = 8000;
+
+// Finnhub API configuration
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY || 'your_finnhub_api_key_here';
+const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1';
+
+// Helper function to make HTTP requests
+function makeRequest(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (error) {
+          reject(new Error('Invalid JSON response'));
+        }
+      });
+    }).on('error', (error) => {
+      reject(error);
+    });
+  });
+}
+
+// Handle stock API routes
+async function handleStockAPI(req, res, pathname, query) {
+  const params = querystring.parse(query);
+  const symbol = params.symbol;
+  
+  if (!symbol) {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Stock symbol is required' }));
+    return;
+  }
+  
+  try {
+    let apiUrl;
+    let data;
+    
+    if (pathname === '/api/stock/quote') {
+      apiUrl = `${FINNHUB_BASE_URL}/quote?symbol=${symbol.toUpperCase()}&token=${FINNHUB_API_KEY}`;
+      data = await makeRequest(apiUrl);
+      
+      // Check if data is valid
+      if (data.c === 0 && data.d === 0) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `No quote data found for symbol: ${symbol}` }));
+        return;
+      }
+    } else if (pathname === '/api/stock/profile') {
+      apiUrl = `${FINNHUB_BASE_URL}/stock/profile2?symbol=${symbol.toUpperCase()}&token=${FINNHUB_API_KEY}`;
+      data = await makeRequest(apiUrl);
+    } else if (pathname === '/api/stock/metrics') {
+      apiUrl = `${FINNHUB_BASE_URL}/stock/metric?symbol=${symbol.toUpperCase()}&metric=all&token=${FINNHUB_API_KEY}`;
+      data = await makeRequest(apiUrl);
+    } else if (pathname === '/api/stock/candles') {
+      const { resolution = 'D', from, to } = params;
+      apiUrl = `${FINNHUB_BASE_URL}/stock/candle?symbol=${symbol.toUpperCase()}&resolution=${resolution}&from=${from}&to=${to}&token=${FINNHUB_API_KEY}`;
+      data = await makeRequest(apiUrl);
+    } else if (pathname === '/api/stock/news') {
+      const today = new Date();
+      const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const fromDate = lastWeek.toISOString().split('T')[0];
+      const toDate = today.toISOString().split('T')[0];
+      apiUrl = `${FINNHUB_BASE_URL}/company-news?symbol=${symbol.toUpperCase()}&from=${fromDate}&to=${toDate}&token=${FINNHUB_API_KEY}`;
+      data = await makeRequest(apiUrl);
+    } else if (pathname === '/api/stock/chinese-name') {
+      // For Chinese names, return a simple response for now
+      const chineseNames = {
+        'AAPL': '苹果公司',
+        'TSLA': '特斯拉',
+        'MSFT': '微软',
+        'GOOGL': '谷歌',
+        'AMZN': '亚马逊',
+        'META': 'Meta平台',
+        'NVDA': '英伟达',
+        'NFLX': '奈飞'
+      };
+      data = {
+        success: true,
+        chinese_name: chineseNames[symbol.toUpperCase()] || symbol.toUpperCase()
+      };
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'API endpoint not found' }));
+      return;
+    }
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    res.writeHead(500, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Failed to fetch data from API' }));
+  }
+}
 
 // 模拟翻译功能（本地开发用）
 async function simulateTranslation(text, target) {
@@ -69,7 +170,7 @@ const mimeTypes = {
   '.wasm': 'application/wasm'
 };
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -113,10 +214,16 @@ const server = http.createServer((req, res) => {
       return;
     }
     
+    // Proxy API routes to real APIs
+    if (pathname.startsWith('/api/stock/')) {
+      await handleStockAPI(req, res, pathname, parsedUrl.query);
+      return;
+    }
+    
     // For other API routes, serve a simple message
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
-      error: 'API routes not available in local development. Please use Vercel deployment for full functionality.',
+      error: 'API route not implemented in local development.',
       path: pathname 
     }));
     return;
@@ -160,7 +267,8 @@ const server = http.createServer((req, res) => {
 server.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
   console.log(`📁 Serving files from: ${__dirname}`);
-  console.log(`⚠️  Note: API routes will not work in local development. Use Vercel deployment for full functionality.`);
+  console.log(`✅ Real API data enabled - using Finnhub API`);
+  console.log(`📊 Access mobile version: http://localhost:${port}/mobile.html?symbol=AAPL`);
 });
 
 server.on('error', (err) => {

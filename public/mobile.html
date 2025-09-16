@@ -148,6 +148,11 @@
 
         <!-- 股价信息卡片 -->
         <div x-show="!loading && !error" class="bg-white mobile-card p-4">
+            <!-- 基本信息始终显示 -->
+            <div x-show="!quote" class="text-center py-4">
+                <h2 class="text-xl font-bold text-gray-900" x-text="getDisplayName()"></h2>
+                <p class="text-gray-500 mt-2" x-text="language === 'zh' ? '正在加载股价数据...' : 'Loading stock data...'"></p>
+            </div>
             <div class="text-center">
                 <div class="price-display mb-2" :class="getChangeClass()" x-text="formatPrice(quote?.c)"></div>
                 <div class="flex items-center justify-center space-x-4 text-sm">
@@ -328,42 +333,83 @@
                 cacheExpiry: 300000,
 
                 async init() {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const symbolFromUrl = urlParams.get('symbol');
-                    
-                    if (symbolFromUrl) {
-                        this.symbol = symbolFromUrl.toUpperCase();
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const symbolFromUrl = urlParams.get('symbol');
+                        
+                        if (symbolFromUrl) {
+                            this.symbol = symbolFromUrl.toUpperCase();
+                        }
+                        
+                        const savedLang = localStorage.getItem('stock-lang');
+                        if (savedLang) this.language = savedLang;
+                        
+                        // 确保页面至少显示基本信息
+                        this.loading = false;
+                        this.error = null;
+                        
+                        // 异步加载数据，不阻塞页面渲染
+                        setTimeout(() => {
+                            this.loadStockData();
+                        }, 100);
+                    } catch (error) {
+                        console.error('Init error:', error);
+                        this.loading = false;
+                        this.error = null; // 不显示初始化错误，避免空白页面
                     }
-                    
-                    const savedLang = localStorage.getItem('stock-lang');
-                    if (savedLang) this.language = savedLang;
-                    
-                    await this.loadStock();
-                    await this.loadNews();
+                },
+                
+                async loadStockData() {
+                    this.loading = true;
+                    try {
+                        await this.loadStock();
+                        await this.loadNews();
+                    } catch (error) {
+                        console.error('Data loading error:', error);
+                        // 在生产环境下不显示错误，只在控制台记录
+                        if (window.location.hostname === 'localhost') {
+                            this.error = '数据加载失败，请检查网络连接';
+                        }
+                    } finally {
+                        this.loading = false;
+                    }
                 },
 
                 async loadStock() {
-                    this.loading = true;
-                    this.error = null;
-                    
                     try {
                         const encodedSymbol = encodeURIComponent(this.symbol);
+                        
+                        // 分别加载数据，即使部分失败也不影响其他数据
+                        const quotePromise = fetch(`/api/stock/quote?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)).catch(e => {
+                            console.error('Quote loading failed:', e);
+                            return null;
+                        });
+                        
+                        const profilePromise = fetch(`/api/stock/profile?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)).catch(e => {
+                            console.error('Profile loading failed:', e);
+                            return null;
+                        });
+                        
+                        const metricsPromise = fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)).catch(e => {
+                            console.error('Metrics loading failed:', e);
+                            return null;
+                        });
+                        
                         const [quoteData, profileData, metricsData] = await Promise.all([
-                            fetch(`/api/stock/quote?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/profile?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
-                            fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res))
+                            quotePromise, profilePromise, metricsPromise
                         ]);
                         
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
                         
-                        await this.loadChineseName();
-                        await this.loadCandles();
+                        // 异步加载其他数据
+                        this.loadChineseName().catch(e => console.error('Chinese name loading failed:', e));
+                        this.loadCandles().catch(e => console.error('Candles loading failed:', e));
+                        
                     } catch (error) {
+                        console.error('Stock loading error:', error);
                         this.error = `数据加载失败: ${error.message}`;
-                    } finally {
-                        this.loading = false;
                     }
                 },
 
@@ -564,14 +610,32 @@
                 },
 
                 async handleResponse(response) {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    try {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        const data = await response.json();
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        return data;
+                    } catch (error) {
+                        console.error('Response handling error:', error);
+                        // 返回空数据而不是抛出错误，防止页面崩溃
+                        return null;
                     }
-                    return await response.json();
                 },
 
                 getDisplayName() {
-                    return this.chineseName || this.companyProfile?.name || this.symbol;
+                    try {
+                        if (this.language === 'zh' && this.chineseName) {
+                            return this.chineseName;
+                        }
+                        return this.companyProfile?.name || this.symbol || 'Loading...';
+                    } catch (error) {
+                        console.error('Display name error:', error);
+                        return this.symbol || 'Unknown';
+                    }
                 },
 
                 getChangeClass() {
