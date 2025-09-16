@@ -637,70 +637,20 @@
                 },
 
                 updateChart() {
-                    if (!this.candles || !this.candles.c || this.candles.c.length === 0) {
-                        console.warn('No valid candle data available for chart update');
-                        return;
-                    }
-                    
+                    if (this.chart) this.chart.destroy();
                     const ctx = document.getElementById('mobileStockChart');
-                    if (!ctx) {
-                        console.error('Chart canvas element not found');
+                    if (!ctx || !this.candles || !this.candles.c || this.candles.c.length === 0) {
+                        console.warn('Cannot update chart: invalid data or canvas');
                         return;
                     }
                     
-                    // 防止重复创建图表
-                    if (this.chartCreating) {
-                        console.warn('Chart creation already in progress');
-                        return;
-                    }
-                    
-                    this.chartCreating = true;
-                    
-                    // 确保完全销毁之前的图表实例
-                    if (this.chart) {
-                        try {
-                            this.chart.destroy();
-                        } catch (error) {
-                            console.warn('Error destroying previous chart:', error);
-                        }
-                        this.chart = null;
-                    }
-                    
-                    // 清理canvas上下文
-                    const context = ctx.getContext('2d');
-                    if (context) {
-                        context.clearRect(0, 0, ctx.width, ctx.height);
-                    }
-                    
-                    // 添加延迟确保DOM完全清理
-                    setTimeout(() => {
-                        this.createChart(ctx);
-                        this.chartCreating = false;
-                    }, 150);
+                    this.createChart(ctx);
                 },
 
                 createChart(ctx) {
                     if (!this.candles || !this.candles.c || this.candles.c.length === 0) {
                         console.warn('Cannot create chart: invalid candle data');
-                        this.chartCreating = false;
                         return;
-                    }
-                    
-                    // 验证数据完整性
-                    if (!this.candles.t || this.candles.t.length !== this.candles.c.length) {
-                        console.error('Candle data mismatch: timestamps and prices length differ');
-                        this.chartCreating = false;
-                        return;
-                    }
-                    
-                    // 确保没有残留的图表实例
-                    if (this.chart) {
-                        try {
-                            this.chart.destroy();
-                        } catch (e) {
-                            console.warn('Error destroying existing chart:', e);
-                        }
-                        this.chart = null;
                     }
                     
                     try {
@@ -709,64 +659,60 @@
                             return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
                         });
                         
-                        // 确保canvas上下文有效
-                        if (!ctx || !ctx.getContext) {
-                            console.error('Invalid canvas context');
-                            this.chartCreating = false;
-                            return;
-                        }
+                        const isPositive = this.quote && this.quote.d >= 0;
+                        const color = isPositive ? '#22c55e' : '#ef4444';
                         
                         this.chart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: this.symbol,
-                                data: this.candles.c,
-                                borderColor: this.getChangeClass() === 'change-positive' ? '#22c55e' : '#ef4444',
-                                backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                pointHoverRadius: 4,
-                                tension: 0.1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: this.symbol,
+                                    data: this.candles.c,
+                                    borderColor: color,
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    pointRadius: 0,
+                                    pointHoverRadius: 4,
+                                    tension: 0.1
+                                }]
                             },
-                            scales: {
-                                x: {
-                                    display: true,
-                                    grid: {
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
                                         display: false
-                                    },
-                                    ticks: {
-                                        maxTicksLimit: 6
                                     }
                                 },
-                                y: {
-                                    display: true,
-                                    position: 'right',
-                                    grid: {
-                                        color: '#f1f5f9'
+                                scales: {
+                                    x: {
+                                        display: true,
+                                        grid: {
+                                            display: false
+                                        },
+                                        ticks: {
+                                            maxTicksLimit: 6
+                                        }
+                                    },
+                                    y: {
+                                        display: true,
+                                        position: 'right',
+                                        grid: {
+                                            color: '#f1f5f9'
+                                        }
                                     }
+                                },
+                                interaction: {
+                                    intersect: false,
+                                    mode: 'index'
                                 }
-                            },
-                            interaction: {
-                                intersect: false,
-                                mode: 'index'
                             }
-                        }
-                    });
+                        });
+                        
                     } catch (error) {
                         console.error('Error creating chart:', error);
                         this.chart = null;
-                        this.chartCreating = false;
                     }
                 },
 
