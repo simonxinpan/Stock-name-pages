@@ -27,11 +27,11 @@
         }
         
         .change-positive {
-            color: #ef4444;
+            color: #22c55e;
         }
         
         .change-negative {
-            color: #22c55e;
+            color: #ef4444;
         }
         
         .metric-grid {
@@ -432,13 +432,66 @@
                         const encodedSymbol = encodeURIComponent(this.symbol);
                         const response = await fetch(`/api/stock/news?symbol=${encodedSymbol}`);
                         const data = await this.handleResponse(response);
-                        this.news = data || [];
+                        
+                        // 翻译新闻摘要
+                        if (data && data.length > 0) {
+                            this.news = await this.translateNewsItems(data);
+                        } else {
+                            this.news = [];
+                        }
                     } catch (error) {
                         console.error('Failed to load news:', error);
                         this.news = [];
                     } finally {
                         this.newsLoading = false;
                     }
+                },
+
+                async translateNewsItems(newsItems) {
+                    const translatedNews = [];
+                    
+                    for (const item of newsItems.slice(0, 3)) {
+                        try {
+                            // 翻译摘要
+                            const translatedSummary = await this.translateText(item.summary);
+                            translatedNews.push({
+                                ...item,
+                                originalSummary: item.summary,
+                                summary: translatedSummary || item.summary
+                            });
+                        } catch (error) {
+                            console.error('Translation failed for news item:', error);
+                            translatedNews.push(item);
+                        }
+                    }
+                    
+                    return translatedNews;
+                },
+
+                async translateText(text) {
+                    if (!text || text.length < 10) return text;
+                    
+                    try {
+                        const response = await fetch('/api/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: text,
+                                target_language: 'zh'
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            return result.translated_text || text;
+                        }
+                    } catch (error) {
+                        console.error('Translation API error:', error);
+                    }
+                    
+                    return text;
                 },
 
                 async changePeriod(newPeriod) {
@@ -453,14 +506,28 @@
                     const ctx = document.getElementById('mobileStockChart');
                     if (!ctx) return;
                     
+                    // 确保完全销毁之前的图表实例
                     if (this.chart) {
                         this.chart.destroy();
+                        this.chart = null;
                     }
+                    
+                    // 添加短暂延迟确保DOM完全清理
+                    setTimeout(() => {
+                        this.createChart(ctx);
+                    }, 50);
+                },
+
+                createChart(ctx) {
+                    if (!this.candles || !this.candles.c || this.candles.c.length === 0) return;
                     
                     const labels = this.candles.t.map(timestamp => {
                         const date = new Date(timestamp * 1000);
                         return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
                     });
+                    
+                    // 确保canvas上下文有效
+                    if (!ctx.getContext) return;
                     
                     this.chart = new Chart(ctx, {
                         type: 'line',
@@ -469,7 +536,7 @@
                             datasets: [{
                                 label: this.symbol,
                                 data: this.candles.c,
-                                borderColor: this.getChangeClass() === 'change-positive' ? '#ef4444' : '#22c55e',
+                                borderColor: this.getChangeClass() === 'change-positive' ? '#22c55e' : '#ef4444',
                                 backgroundColor: 'transparent',
                                 borderWidth: 2,
                                 pointRadius: 0,
