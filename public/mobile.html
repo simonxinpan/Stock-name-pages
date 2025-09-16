@@ -16,8 +16,9 @@
         
         .mobile-card {
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 12px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
         
         .price-display {
@@ -37,30 +38,43 @@
         .metric-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 8px;
         }
         
         .metric-item {
             background: #f8fafc;
-            padding: 12px;
+            padding: 16px 12px;
             border-radius: 8px;
             text-align: center;
+            border: 1px solid rgba(0,0,0,0.05);
         }
         
         .chart-container {
             width: 100%;
-            height: 250px;
-            min-height: 250px;
+            height: 280px;
+            min-height: 280px;
             position: relative;
             /* 确保容器在初始化时有稳定的尺寸 */
             contain: layout;
+            overflow: hidden;
+            background: #fafafa;
+            border-radius: 8px;
         }
         
         .chart-container canvas {
             width: 100% !important;
-            height: 250px !important;
+            height: 280px !important;
             max-width: 100%;
             display: block;
+            transition: opacity 0.3s ease;
+        }
+        
+        .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
         }
         
         .tab-button {
@@ -111,6 +125,19 @@
         .touch-target {
             min-height: 44px;
             min-width: 44px;
+        }
+        
+        /* 统一间距 */
+        .mobile-card .flex {
+            align-items: center;
+        }
+        
+        .mobile-card .space-y-3 > * + * {
+            margin-top: 12px;
+        }
+        
+        .mobile-card .space-y-2 > * + * {
+            margin-top: 8px;
         }
         
         /* 隐藏桌面端元素 */
@@ -188,7 +215,7 @@
             </div>
             <div class="chart-container bg-gray-50 rounded-lg">
                 <canvas id="mobileStockChart"></canvas>
-                <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                <div class="chart-loading" style="display: none;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
@@ -245,7 +272,7 @@
                     <a :href="companyProfile?.weburl" target="_blank" 
                        class="flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 py-2 px-4 rounded-lg touch-target">
                         <span x-text="language === 'zh' ? '访问官网' : 'Visit Website'"></span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                         </svg>
                     </a>
@@ -518,9 +545,16 @@
                 // 这些方法现在在initializePageWithStableRendering中统一调用
 
                 async translateNewsItems(newsItems) {
-                    const translatedNews = [];
+                    if (!newsItems || newsItems.length === 0) {
+                        console.log('📰 没有新闻需要翻译');
+                        return;
+                    }
                     
-                    for (const item of newsItems.slice(0, 3)) {
+                    console.log(`📰 开始翻译 ${newsItems.length} 条新闻...`);
+                    
+                    // 处理所有新闻，不只是前3条
+                    for (let i = 0; i < newsItems.length; i++) {
+                        const item = newsItems[i];
                         try {
                             // 同时翻译标题和摘要
                             const promises = [];
@@ -564,22 +598,26 @@
                             // 等待所有翻译完成
                             await Promise.all(promises);
                             
-                            translatedNews.push({
-                                ...item,
-                                originalHeadline: item.headline,
-                                originalSummary: item.summary
-                            });
+                            console.log(`✅ 新闻 ${i + 1}/${newsItems.length} 翻译完成`);
+                            
+                            // 直接修改原始数据，不需要返回新数组
+                            item.originalHeadline = item.headline;
+                            item.originalSummary = item.summary;
                         } catch (error) {
-                            console.error('Translation failed for news item:', error);
-                            translatedNews.push({
-                                ...item,
-                                translatedHeadline: item.headline,
-                                translatedSummary: item.summary
-                            });
+                            console.error(`❌ 新闻 ${i + 1} 翻译失败:`, error);
+                            // 翻译失败时保持原文
+                            item.translatedHeadline = item.headline;
+                            item.translatedSummary = item.summary;
+                            item.originalHeadline = item.headline;
+                            item.originalSummary = item.summary;
                         }
                     }
                     
-                    return translatedNews;
+                    console.log('🎉 所有新闻翻译处理完成');
+                    // 触发页面更新以显示翻译结果
+                    this.$nextTick(() => {
+                        console.log('📱 页面数据已更新');
+                    });
                 },
 
                 // 翻译缓存
@@ -793,11 +831,16 @@
                         this.chart = null;
                     }
                     
+                    // 显示加载状态
+                    this.showChartLoading(true);
+                    
                     // 延迟初始化，确保容器尺寸稳定
                     setTimeout(() => {
                         const ctx = document.getElementById('mobileStockChart');
                         if (!ctx || !this.candles || !this.candles.c || this.candles.c.length === 0) {
                             console.warn('Cannot update chart: invalid data or canvas');
+                            this.showChartLoading(false);
+                            this.showChartError('图表数据无效');
                             return;
                         }
                         
@@ -807,12 +850,25 @@
                             const rect = container.getBoundingClientRect();
                             if (rect.width > 0 && rect.height > 0) {
                                 this.createChart(ctx);
+                                this.showChartLoading(false);
                             } else {
                                 console.warn('Container size not ready, retrying...');
                                 setTimeout(() => this.updateChart(), 100);
                             }
                         }
                     }, 100);
+                },
+                
+                showChartLoading(show) {
+                    const loadingEl = document.querySelector('.chart-loading');
+                    if (loadingEl) {
+                        loadingEl.style.display = show ? 'block' : 'none';
+                    }
+                },
+                
+                showChartError(message) {
+                    console.error('Chart Error:', message);
+                    // 可以在这里添加错误提示UI
                 },
 
                 createChart(ctx) {
