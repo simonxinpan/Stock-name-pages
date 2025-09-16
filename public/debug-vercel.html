@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vercel API 调试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Vercel API 调试页面</h1>
+        
+        <div class="info">
+            <strong>环境信息:</strong><br>
+            主机名: <span id="hostname"></span><br>
+            URL: <span id="currentUrl"></span><br>
+            时间: <span id="currentTime"></span>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 股票报价 API 测试</h3>
+            <button onclick="testQuoteAPI()">测试 AAPL 报价</button>
+            <div id="quoteResult" class="loading" style="display:none;">测试中...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🏢 公司信息 API 测试</h3>
+            <button onclick="testProfileAPI()">测试 AAPL 公司信息</button>
+            <div id="profileResult" class="loading" style="display:none;">测试中...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📈 财务指标 API 测试</h3>
+            <button onclick="testMetricsAPI()">测试 AAPL 财务指标</button>
+            <div id="metricsResult" class="loading" style="display:none;">测试中...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📰 新闻 API 测试</h3>
+            <button onclick="testNewsAPI()">测试 AAPL 新闻</button>
+            <div id="newsResult" class="loading" style="display:none;">测试中...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 环境变量检查</h3>
+            <button onclick="testEnvironment()">检查环境配置</button>
+            <div id="envResult" class="loading" style="display:none;">检查中...</div>
+        </div>
+    </div>
+
+    <script>
+        // 更新页面信息
+        document.getElementById('hostname').textContent = window.location.hostname;
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('currentTime').textContent = new Date().toLocaleString();
+
+        async function testAPI(endpoint, resultElementId, description) {
+            const resultElement = document.getElementById(resultElementId);
+            resultElement.style.display = 'block';
+            resultElement.className = 'test-section loading';
+            resultElement.innerHTML = `<strong>${description}</strong><br>测试中...`;
+
+            try {
+                console.log(`Testing ${endpoint}`);
+                const response = await fetch(endpoint);
+                console.log(`Response status: ${response.status}`);
+                
+                const data = await response.json();
+                console.log(`Response data:`, data);
+
+                if (response.ok) {
+                    resultElement.className = 'test-section success';
+                    resultElement.innerHTML = `
+                        <strong>${description} - ✅ 成功</strong><br>
+                        状态码: ${response.status}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultElement.className = 'test-section error';
+                    resultElement.innerHTML = `
+                        <strong>${description} - ❌ 失败</strong><br>
+                        状态码: ${response.status}<br>
+                        错误信息: ${data.error || '未知错误'}<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error(`Error testing ${endpoint}:`, error);
+                resultElement.className = 'test-section error';
+                resultElement.innerHTML = `
+                    <strong>${description} - ❌ 网络错误</strong><br>
+                    错误信息: ${error.message}<br>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        function testQuoteAPI() {
+            testAPI('/api/stock/quote?symbol=AAPL', 'quoteResult', '股票报价 API');
+        }
+
+        function testProfileAPI() {
+            testAPI('/api/stock/profile?symbol=AAPL', 'profileResult', '公司信息 API');
+        }
+
+        function testMetricsAPI() {
+            testAPI('/api/stock/metrics?symbol=AAPL', 'metricsResult', '财务指标 API');
+        }
+
+        function testNewsAPI() {
+            testAPI('/api/stock/news?symbol=AAPL', 'newsResult', '新闻 API');
+        }
+
+        function testEnvironment() {
+            const resultElement = document.getElementById('envResult');
+            resultElement.style.display = 'block';
+            resultElement.className = 'test-section success';
+            
+            const envInfo = {
+                hostname: window.location.hostname,
+                protocol: window.location.protocol,
+                port: window.location.port,
+                pathname: window.location.pathname,
+                search: window.location.search,
+                userAgent: navigator.userAgent,
+                isVercel: window.location.hostname.includes('vercel.app'),
+                isLocalhost: window.location.hostname === 'localhost',
+                timestamp: new Date().toISOString()
+            };
+            
+            resultElement.innerHTML = `
+                <strong>环境配置检查 - ℹ️ 信息</strong><br>
+                <pre>${JSON.stringify(envInfo, null, 2)}</pre>
+            `;
+        }
+
+        // 自动运行环境检查
+        window.onload = function() {
+            testEnvironment();
+        };
+    </script>
+</body>
+</html>

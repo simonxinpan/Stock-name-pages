@@ -334,15 +334,27 @@
 
                 async init() {
                     try {
+                        console.log('Initializing mobile stock app...');
+                        
                         const urlParams = new URLSearchParams(window.location.search);
                         const symbolFromUrl = urlParams.get('symbol');
                         
                         if (symbolFromUrl) {
                             this.symbol = symbolFromUrl.toUpperCase();
+                            console.log('Symbol from URL:', this.symbol);
+                        } else {
+                            console.log('No symbol in URL, using default AAPL');
+                            this.symbol = 'AAPL';
                         }
                         
                         const savedLang = localStorage.getItem('stock-lang');
                         if (savedLang) this.language = savedLang;
+                        
+                        console.log('Environment check:', {
+                            hostname: window.location.hostname,
+                            isVercel: window.location.hostname.includes('vercel.app'),
+                            isLocalhost: window.location.hostname === 'localhost'
+                        });
                         
                         // 确保页面至少显示基本信息
                         this.loading = false;
@@ -355,20 +367,32 @@
                     } catch (error) {
                         console.error('Init error:', error);
                         this.loading = false;
-                        this.error = null; // 不显示初始化错误，避免空白页面
+                        this.error = `初始化失败: ${error.message}`;
                     }
                 },
                 
                 async loadStockData() {
                     this.loading = true;
+                    this.error = null;
+                    
+                    console.log('Starting to load stock data for:', this.symbol);
+                    
                     try {
                         await this.loadStock();
                         await this.loadNews();
+                        console.log('Stock data loaded successfully');
                     } catch (error) {
                         console.error('Data loading error:', error);
-                        // 在生产环境下不显示错误，只在控制台记录
-                        if (window.location.hostname === 'localhost') {
-                            this.error = '数据加载失败，请检查网络连接';
+                        
+                        // 显示详细错误信息以便调试
+                        if (error.message.includes('API密钥')) {
+                            this.error = error.message;
+                        } else if (window.location.hostname.includes('vercel.app')) {
+                            this.error = `Vercel部署数据加载失败: ${error.message}`;
+                        } else if (window.location.hostname === 'localhost') {
+                            this.error = `本地开发数据加载失败: ${error.message}`;
+                        } else {
+                            this.error = `数据加载失败: ${error.message}`;
                         }
                     } finally {
                         this.loading = false;
@@ -611,18 +635,29 @@
 
                 async handleResponse(response) {
                     try {
+                        console.log('API Response status:', response.status, response.statusText);
+                        
                         if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                            console.error('API Error Response:', errorData);
+                            
+                            // 特殊处理API密钥错误
+                            if (response.status === 500 && errorData.error && errorData.error.includes('API key')) {
+                                throw new Error('API密钥未配置或无效，请检查Vercel环境变量设置');
+                            }
+                            
+                            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
                         }
+                        
                         const data = await response.json();
+                        console.log('API Response data:', data);
                         if (data.error) {
                             throw new Error(data.error);
                         }
                         return data;
                     } catch (error) {
                         console.error('Response handling error:', error);
-                        // 返回空数据而不是抛出错误，防止页面崩溃
-                        return null;
+                        throw error;
                     }
                 },
 
