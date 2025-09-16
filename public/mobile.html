@@ -261,10 +261,10 @@
                     <div class="news-item">
                         <h3 class="font-medium text-sm mb-2 line-clamp-2">
                             <a :href="article.url" target="_blank" class="text-gray-900 hover:text-blue-600">
-                                <span x-text="article.headline"></span>
+                                <span x-text="language === 'zh' && article.translatedHeadline ? article.translatedHeadline : article.headline"></span>
                             </a>
                         </h3>
-                        <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="article.summary"></p>
+                        <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="language === 'zh' && article.translatedSummary ? article.translatedSummary : article.summary"></p>
                         <div class="flex items-center justify-between text-xs text-gray-500">
                             <span x-text="article.source"></span>
                             <span x-text="formatNewsDate(article.datetime)"></span>
@@ -460,20 +460,124 @@
                     
                     for (const item of newsItems.slice(0, 3)) {
                         try {
-                            // 翻译摘要
-                            const translatedSummary = await this.translateText(item.summary);
+                            // 同时翻译标题和摘要
+                            const promises = [];
+                            
+                            if (item.headline) {
+                                promises.push(
+                                    this.translateWithVolcEngine(item.headline)
+                                        .then(translated => {
+                                            if (translated && translated !== item.headline) {
+                                                item.translatedHeadline = translated;
+                                                console.log('✅ 新闻标题翻译成功');
+                                            } else {
+                                                item.translatedHeadline = item.headline;
+                                            }
+                                        })
+                                        .catch(e => {
+                                            console.warn('⚠️ 新闻标题翻译失败，使用原文');
+                                            item.translatedHeadline = item.headline;
+                                        })
+                                );
+                            }
+                            
+                            if (item.summary) {
+                                promises.push(
+                                    this.translateWithVolcEngine(item.summary)
+                                        .then(translated => {
+                                            if (translated && translated !== item.summary) {
+                                                item.translatedSummary = translated;
+                                                console.log('✅ 新闻摘要翻译成功');
+                                            } else {
+                                                item.translatedSummary = item.summary;
+                                            }
+                                        })
+                                        .catch(e => {
+                                            console.warn('⚠️ 新闻摘要翻译失败，使用原文');
+                                            item.translatedSummary = item.summary;
+                                        })
+                                );
+                            }
+                            
+                            // 等待所有翻译完成
+                            await Promise.all(promises);
+                            
                             translatedNews.push({
                                 ...item,
-                                originalSummary: item.summary,
-                                summary: translatedSummary || item.summary
+                                originalHeadline: item.headline,
+                                originalSummary: item.summary
                             });
                         } catch (error) {
                             console.error('Translation failed for news item:', error);
-                            translatedNews.push(item);
+                            translatedNews.push({
+                                ...item,
+                                translatedHeadline: item.headline,
+                                translatedSummary: item.summary
+                            });
                         }
                     }
                     
                     return translatedNews;
+                },
+
+                // 翻译缓存
+                translationCache: new Map(),
+                translationInProgress: new Set(),
+                
+                // 火山引擎翻译函数
+                async translateWithVolcEngine(text) {
+                    if (!text || text.trim() === '') {
+                        return text;
+                    }
+                    
+                    // 检查缓存
+                    const cacheKey = `volc_${text}`;
+                    if (this.translationCache.has(cacheKey)) {
+                        return this.translationCache.get(cacheKey);
+                    }
+                    
+                    // 避免重复翻译
+                    if (this.translationInProgress.has(cacheKey)) {
+                        return text;
+                    }
+                    
+                    this.translationInProgress.add(cacheKey);
+                    
+                    try {
+                        console.log('🚀 使用火山引擎翻译...');
+                        
+                        const response = await fetch('/api/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                text: text,
+                                targetLang: 'zh'
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        const translatedText = data.translatedText || data.translation || '';
+                        
+                        if (translatedText && translatedText.trim() !== '' && translatedText !== text) {
+                            this.translationCache.set(cacheKey, translatedText);
+                            this.translationInProgress.delete(cacheKey);
+                            console.log('✅ 火山引擎翻译成功');
+                            return translatedText;
+                        }
+                        
+                        throw new Error('翻译结果为空或无效');
+                        
+                    } catch (error) {
+                        console.warn('❌ 火山引擎翻译失败:', error.message);
+                        this.translationInProgress.delete(cacheKey);
+                        return text; // 返回原文
+                    }
                 },
 
                 async translateText(text) {
@@ -490,7 +594,7 @@
                             },
                             body: JSON.stringify({
                                 text: text,
-                                target_language: 'zh'
+                                targetLang: 'zh'
                             }),
                             signal: controller.signal
                         });
@@ -499,10 +603,10 @@
                         
                         if (response.ok) {
                             const result = await response.json();
-                            if (result && result.translated_text) {
-                                return result.translated_text;
+                            if (result && result.translatedText) {
+                                return result.translatedText;
                             } else {
-                                console.warn('Translation response missing translated_text:', result);
+                                console.warn('Translation response missing translatedText:', result);
                                 return text;
                             }
                         } else {
