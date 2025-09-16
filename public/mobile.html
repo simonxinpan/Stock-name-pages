@@ -676,16 +676,52 @@
                 },
 
                 createChart(ctx) {
-                    if (!this.candles || !this.candles.c || this.candles.c.length === 0) {
-                        console.warn('Cannot create chart: invalid candle data');
+                    // ================================================================
+                    // == 关键的数据清洗和验证步骤 ==
+                    // ================================================================
+                    if (!this.candles || typeof this.candles !== 'object') {
+                        console.warn('Cannot create chart: candles data is null or invalid');
+                        return;
+                    }
+                    
+                    // 验证API返回的数据格式
+                    if (!Array.isArray(this.candles.t) || !Array.isArray(this.candles.c) || 
+                        this.candles.t.length === 0 || this.candles.c.length === 0 ||
+                        this.candles.t.length !== this.candles.c.length) {
+                        console.warn('Cannot create chart: invalid candle data structure', {
+                            hasT: Array.isArray(this.candles.t),
+                            hasC: Array.isArray(this.candles.c),
+                            tLength: this.candles.t?.length,
+                            cLength: this.candles.c?.length
+                        });
                         return;
                     }
                     
                     try {
-                        const labels = this.candles.t.map(timestamp => {
-                            const date = new Date(timestamp * 1000);
-                            return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-                        });
+                        // 数据清洗：过滤掉无效的数据点
+                        const cleanedData = [];
+                        const cleanedLabels = [];
+                        
+                        for (let i = 0; i < this.candles.t.length; i++) {
+                            const timestamp = this.candles.t[i];
+                            const price = this.candles.c[i];
+                            
+                            // 验证每个数据点的有效性
+                            if (typeof timestamp === 'number' && timestamp > 0 &&
+                                typeof price === 'number' && !isNaN(price) && price > 0) {
+                                cleanedData.push(price);
+                                const date = new Date(timestamp * 1000);
+                                cleanedLabels.push(date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }));
+                            }
+                        }
+                        
+                        // 确保清洗后还有有效数据
+                        if (cleanedData.length === 0) {
+                            console.warn('Cannot create chart: no valid data points after cleaning');
+                            return;
+                        }
+                        
+                        console.log(`Chart data cleaned: ${this.candles.c.length} -> ${cleanedData.length} valid points`);
                         
                         const isPositive = this.quote && this.quote.d >= 0;
                         const color = isPositive ? '#22c55e' : '#ef4444';
@@ -693,10 +729,10 @@
                         this.chart = new Chart(ctx, {
                             type: 'line',
                             data: {
-                                labels: labels,
+                                labels: cleanedLabels,
                                 datasets: [{
                                     label: this.symbol,
-                                    data: this.candles.c,
+                                    data: cleanedData,
                                     borderColor: color,
                                     backgroundColor: 'transparent',
                                     borderWidth: 2,
@@ -739,8 +775,37 @@
                         });
                         
                     } catch (error) {
-                        console.error('Error creating chart:', error);
+                        console.error('Chart.js Error Details:', {
+                            message: error.message,
+                            stack: error.stack,
+                            candlesData: {
+                                hasCandles: !!this.candles,
+                                candlesType: typeof this.candles,
+                                tLength: this.candles?.t?.length,
+                                cLength: this.candles?.c?.length,
+                                sampleT: this.candles?.t?.slice(0, 3),
+                                sampleC: this.candles?.c?.slice(0, 3)
+                            },
+                            contextInfo: {
+                                canvasExists: !!ctx,
+                                canvasId: ctx?.id,
+                                containerSize: ctx?.parentElement?.getBoundingClientRect()
+                            }
+                        });
                         this.chart = null;
+                        
+                        // 显示用户友好的错误信息
+                        const container = ctx?.parentElement;
+                        if (container) {
+                            container.innerHTML = `
+                                <div class="flex items-center justify-center h-full text-gray-500">
+                                    <div class="text-center">
+                                        <p class="mb-2">${this.language === 'zh' ? '图表加载失败' : 'Chart loading failed'}</p>
+                                        <p class="text-sm">${this.language === 'zh' ? '请稍后重试' : 'Please try again later'}</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     }
                 },
 
