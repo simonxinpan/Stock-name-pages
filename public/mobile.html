@@ -394,7 +394,7 @@
                                 <span x-text="language === 'zh' && article.translatedHeadline ? article.translatedHeadline : article.headline"></span>
                             </a>
                         </h3>
-                        <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="article.translatedSummaryEn ? article.translatedSummaryEn : article.summary"></p>
+                        <p class="text-xs text-gray-600 mb-2 line-clamp-2" x-text="article.translatedSummary ? article.translatedSummary : article.summary"></p>
                         <div class="flex items-center justify-between text-xs text-gray-500">
                             <span x-text="article.source"></span>
                             <span x-text="formatNewsDate(article.datetime)"></span>
@@ -736,18 +736,18 @@
                             
                             if (item.summary) {
                                 promises.push(
-                                    this.translateSummaryToEnglish(item.summary)
+                                    this.translateWithVolcEngine(item.summary)
                                         .then(translated => {
                                             if (translated && translated !== item.summary) {
-                                                item.translatedSummaryEn = translated;
-                                                console.log('✅ 新闻摘要英文翻译成功');
+                                                item.translatedSummary = translated;
+                                                console.log('✅ 新闻摘要中文翻译成功');
                                             } else {
-                                                item.translatedSummaryEn = item.summary;
+                                                item.translatedSummary = item.summary;
                                             }
                                         })
                                         .catch(e => {
-                                            console.warn('⚠️ 新闻摘要英文翻译失败，使用原文');
-                                            item.translatedSummaryEn = item.summary;
+                                            console.warn('⚠️ 新闻摘要中文翻译失败，使用原文');
+                                            item.translatedSummary = item.summary;
                                         })
                                 );
                             }
@@ -837,83 +837,7 @@
                     }
                 },
 
-                // 专门用于将摘要翻译成英文的函数
-                async translateSummaryToEnglish(text) {
-                    console.log('🔍 translateSummaryToEnglish 输入文本:', text);
-                    console.log('🔍 输入文本类型:', typeof text);
-                    console.log('🔍 输入文本长度:', text ? text.length : 0);
-                    
-                    if (!text || text.trim() === '') {
-                        console.log('⚠️ 输入文本为空，返回原文');
-                        return text;
-                    }
-                    
-                    // 检查缓存
-                    const cacheKey = `volc_en_${text}`;
-                    if (this.translationCache.has(cacheKey)) {
-                        console.log('✅ 从缓存中获取英文翻译');
-                        return this.translationCache.get(cacheKey);
-                    }
-                    
-                    // 避免重复翻译
-                    if (this.translationInProgress.has(cacheKey)) {
-                        console.log('⚠️ 翻译正在进行中，返回原文');
-                        return text;
-                    }
-                    
-                    this.translationInProgress.add(cacheKey);
-                    
-                    try {
-                        console.log('🚀 使用火山引擎翻译摘要为英文...');
-                        console.log('🔍 发送的翻译请求:', { text: text, targetLang: 'en' });
-                        
-                        const response = await fetch('/api/translate', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                text: text,
-                                targetLang: 'en'  // 翻译目标语言改为英文
-                            })
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        
-                        // 调试：打印完整的API返回结果
-                        console.log('🔍 火山引擎摘要翻译的完整返回结果:', data);
-                        
-                        // 检查API是否成功
-                        if (!data.success) {
-                            throw new Error(data.message || data.error || 'API返回失败状态');
-                        }
-                        
-                        // 提取翻译文本
-                        const translatedText = data.translatedText;
-                        
-                        console.log('🔍 提取的翻译文本:', translatedText);
-                        console.log('🔍 翻译文本类型:', typeof translatedText);
-                        console.log('🔍 翻译文本长度:', translatedText ? translatedText.length : 0);
-                        
-                        if (translatedText && translatedText.trim() !== '' && translatedText !== text) {
-                            this.translationCache.set(cacheKey, translatedText);
-                            this.translationInProgress.delete(cacheKey);
-                            console.log('✅ 火山引擎英文翻译成功');
-                            return translatedText;
-                        }
-                        
-                        throw new Error('英文翻译结果为空或无效');
-                        
-                    } catch (error) {
-                        console.warn('❌ 火山引擎英文翻译失败:', error.message);
-                        this.translationInProgress.delete(cacheKey);
-                        return text; // 返回原文
-                    }
-                },
+
 
                 async translateText(text) {
                     if (!text || text.length < 10) return text;
