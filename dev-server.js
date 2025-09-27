@@ -49,6 +49,8 @@ async function handleApiRoute(req, res, pathname, query) {
       apiPath = './api/stock/candles.js';
     } else if (pathname === '/api/stock/chinese-name') {
       apiPath = './api/stock/chinese-name.js';
+    } else if (pathname === '/api/translate') {
+      apiPath = './api/translate.js';
     } else {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'API endpoint not found' }));
@@ -68,13 +70,32 @@ async function handleApiRoute(req, res, pathname, query) {
     // 导入API处理器
     const apiHandler = require(apiPath);
     
+    // 处理POST请求的body数据
+    let body = null;
+    if (req.method === 'POST') {
+      body = await new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => {
+          data += chunk;
+        });
+        req.on('end', () => {
+          try {
+            resolve(data ? JSON.parse(data) : {});
+          } catch (error) {
+            resolve({});
+          }
+        });
+        req.on('error', reject);
+      });
+    }
+    
     // 创建模拟的Vercel请求/响应对象
     const mockReq = {
       method: req.method,
       url: req.url,
       headers: req.headers,
       query: query,
-      body: null
+      body: body
     };
     
     const mockRes = {

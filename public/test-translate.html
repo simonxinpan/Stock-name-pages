@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻译API测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <h1>翻译API测试页面</h1>
+    
+    <div class="test-section">
+        <h2>测试中文翻译为英文</h2>
+        <p>测试文本：苹果公司发布了新的iPhone产品，预计将推动公司股价上涨。</p>
+        <button onclick="testChineseToEnglish()">测试中文→英文翻译</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试英文翻译为中文</h2>
+        <p>测试文本：Apple Inc. announced new iPhone products that are expected to drive the company's stock price higher.</p>
+        <button onclick="testEnglishToChinese()">测试英文→中文翻译</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试新闻摘要翻译</h2>
+        <p>测试文本：Apple reported strong quarterly earnings, beating analyst expectations on both revenue and profit margins.</p>
+        <button onclick="testNewsTranslation()">测试新闻摘要翻译</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <script>
+        async function testTranslation(text, targetLang, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.textContent = '正在翻译...';
+            resultDiv.className = 'result';
+            
+            try {
+                console.log('发送翻译请求:', { text, targetLang });
+                
+                const response = await fetch('/api/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        targetLang: targetLang
+                    })
+                });
+                
+                console.log('翻译响应状态:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('翻译API完整返回结果:', data);
+                
+                if (data.success && data.translatedText) {
+                    resultDiv.textContent = `翻译成功！\n原文: ${data.originalText}\n译文: ${data.translatedText}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `翻译失败: ${data.message || data.error || '未知错误'}`;
+                    resultDiv.className = 'result error';
+                }
+                
+            } catch (error) {
+                console.error('翻译错误:', error);
+                resultDiv.textContent = `翻译失败: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function testChineseToEnglish() {
+            testTranslation('苹果公司发布了新的iPhone产品，预计将推动公司股价上涨。', 'en', 'result1');
+        }
+        
+        function testEnglishToChinese() {
+            testTranslation('Apple Inc. announced new iPhone products that are expected to drive the company\'s stock price higher.', 'zh', 'result2');
+        }
+        
+        function testNewsTranslation() {
+            testTranslation('Apple reported strong quarterly earnings, beating analyst expectations on both revenue and profit margins.', 'en', 'result3');
+        }
+    </script>
+</body>
+</html>
