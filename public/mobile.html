@@ -15,10 +15,48 @@
         }
         
         .mobile-page .mobile-card {
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            margin-bottom: 12px;
-            border: 1px solid rgba(0,0,0,0.05);
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.08);
+            margin-bottom: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mobile-page .mobile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+        
+        .mobile-page .card-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            margin: -1px -1px 0 -1px;
+        }
+        
+        .mobile-page .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-page .card-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #3b82f6;
+            border-radius: 2px;
         }
         
         .mobile-page .price-display {
@@ -42,11 +80,30 @@
         }
         
         .mobile-page .metric-item {
-            background: #f8fafc;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             padding: 16px 12px;
-            border-radius: 8px;
+            border-radius: 12px;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .mobile-page .metric-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .mobile-page .metric-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border-radius: 0 0 2px 2px;
         }
         
         .mobile-page .chart-container {
@@ -98,12 +155,38 @@
         }
         
         .mobile-page .news-item {
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
             padding: 16px 0;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .mobile-page .news-item:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(147, 197, 253, 0.02) 100%);
+            border-radius: 8px;
+            margin: 0 -8px;
+            padding: 16px 8px;
         }
         
         .mobile-page .news-item:last-child {
             border-bottom: none;
+        }
+        
+        .mobile-page .news-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: linear-gradient(180deg, #3b82f6, #60a5fa);
+            border-radius: 2px;
+            transition: height 0.2s ease;
+        }
+        
+        .mobile-page .news-item:hover::before {
+            height: 60%;
         }
         
         .mobile-page .loading-spinner {
@@ -185,24 +268,31 @@
         </div>
 
         <!-- 股价信息卡片 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <div class="text-center">
-                <div class="price-display mb-2" :class="getChangeClass()" x-text="formatPrice(quote?.c)"></div>
-                <div class="flex items-center justify-center space-x-4 text-sm">
-                    <span :class="getChangeClass()" x-text="formatChange(quote?.d)"></span>
-                    <span :class="getChangeClass()" x-text="formatChangePercent(quote?.dp)"></span>
-                </div>
-                <div class="mt-3 text-xs text-gray-500">
-                    <span x-text="language === 'zh' ? '更新时间: ' : 'Updated: '"></span>
-                    <span x-text="formatTime(quote?.t)"></span>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '实时股价' : 'Live Price'"></h2>
+            </div>
+            <div class="p-4">
+                <div class="text-center">
+                    <div class="price-display mb-2" :class="getChangeClass()" x-text="formatPrice(quote?.c)"></div>
+                    <div class="flex items-center justify-center space-x-4 text-sm">
+                        <span :class="getChangeClass()" x-text="formatChange(quote?.d)"></span>
+                        <span :class="getChangeClass()" x-text="formatChangePercent(quote?.dp)"></span>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500">
+                        <span x-text="language === 'zh' ? '更新时间: ' : 'Updated: '"></span>
+                        <span x-text="formatTime(quote?.t)"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 价格走势图 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <div class="mb-4">
-                <h2 class="text-lg font-semibold mb-3" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+            </div>
+            <div class="p-4">
                 <div class="flex space-x-2 mb-4">
                     <template x-for="period in timePeriods" :key="period.value">
                         <button @click="changePeriod(period.value)" 
@@ -212,18 +302,21 @@
                         </button>
                     </template>
                 </div>
-            </div>
             <div class="chart-container bg-gray-50 rounded-lg">
                 <canvas id="mobileStockChart"></canvas>
                 <div class="chart-loading" style="display: none;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
+            </div>
         </div>
 
         <!-- 关键财务指标 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h2>
+            </div>
+            <div class="p-4">
             <div class="metric-grid">
                 <div class="metric-item">
                     <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? '市值' : 'Market Cap'"></div>
@@ -250,11 +343,15 @@
                     <div class="font-semibold" x-text="formatRatio(metrics?.roeTTM)"></div>
                 </div>
             </div>
+            </div>
         </div>
 
         <!-- 公司信息 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h2>
+            </div>
+            <div class="p-4">
             <div class="space-y-3">
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
@@ -268,26 +365,21 @@
                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '交易所' : 'Exchange'"></span>
                     <span class="text-sm font-medium" x-text="companyProfile?.exchange || 'N/A'"></span>
                 </div>
-                <div x-show="companyProfile?.weburl" class="pt-2 border-t border-gray-100">
-                    <a :href="companyProfile?.weburl" target="_blank" 
-                       class="flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 py-2 px-4 rounded-lg touch-target">
-                        <span x-text="language === 'zh' ? '访问官网' : 'Visit Website'"></span>
-                        <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                        </svg>
-                    </a>
-                </div>
+            </div>
             </div>
         </div>
 
         <!-- 相关新闻 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
-                <button @click="loadNews()" class="text-blue-600 text-sm font-medium touch-target">
-                    <span x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
-                </button>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <div class="flex items-center justify-between w-full">
+                    <h2 class="card-title" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
+                    <button @click="loadNews()" class="text-blue-600 text-sm font-medium touch-target px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+                        <span x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
+                    </button>
+                </div>
             </div>
+            <div class="p-4">
             
             <div x-show="newsLoading" class="text-center py-4">
                 <div class="loading-spinner mx-auto mb-2"></div>
@@ -314,11 +406,15 @@
             <div x-show="!newsLoading && (!news || news.length === 0)" class="text-center py-4 text-gray-500">
                 <p class="text-sm" x-text="language === 'zh' ? '暂无相关新闻' : 'No news available'"></p>
             </div>
+            </div>
         </div>
 
         <!-- 快捷操作 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '快捷操作' : 'Quick Actions'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '快捷操作' : 'Quick Actions'"></h2>
+            </div>
+            <div class="p-4">
             <div class="grid grid-cols-2 gap-3">
                 <button @click="openYouTubeSearch()" 
                         class="flex items-center justify-center space-x-2 bg-red-50 text-red-600 py-3 px-4 rounded-lg touch-target">
@@ -334,6 +430,7 @@
                     </svg>
                     <span class="text-sm font-medium" x-text="language === 'zh' ? '社区讨论' : 'Community'"></span>
                 </button>
+            </div>
             </div>
         </div>
     </main>
