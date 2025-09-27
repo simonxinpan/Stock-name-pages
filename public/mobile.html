@@ -155,38 +155,43 @@
         }
         
         .mobile-page .news-item {
-            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
-            padding: 16px 0;
+            border-bottom: 2px solid rgba(59, 130, 246, 0.2);
+            background-image: linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0%, transparent 100%);
+            padding: 18px 0;
+            margin-bottom: 4px;
             position: relative;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
         
         .mobile-page .news-item:hover {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(147, 197, 253, 0.02) 100%);
-            border-radius: 8px;
-            margin: 0 -8px;
-            padding: 16px 8px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 197, 253, 0.08) 100%);
+            border-radius: 12px;
+            margin: 0 -12px 4px -12px;
+            padding: 18px 12px;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         }
         
         .mobile-page .news-item:last-child {
-            border-bottom: none;
+            border-bottom: 2px solid rgba(59, 130, 246, 0.2);
         }
         
-        .mobile-page .news-item::before {
+        .mobile-page .news-item::after {
             content: '';
             position: absolute;
-            left: -8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3px;
-            height: 0;
-            background: linear-gradient(180deg, #3b82f6, #60a5fa);
+            left: 0;
+            bottom: -2px;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%);
             border-radius: 2px;
-            transition: height 0.2s ease;
+            opacity: 0.6;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
         }
         
-        .mobile-page .news-item:hover::before {
-            height: 60%;
+        .mobile-page .news-item:hover::after {
+            opacity: 1;
+            height: 4px;
         }
         
         .mobile-page .loading-spinner {
@@ -243,7 +248,7 @@
                         </svg>
                     </button>
                     <div>
-                        <h1 class="text-lg font-semibold text-gray-900" x-text="getDisplayName()"></h1>
+                        <h1 class="text-lg font-bold text-gray-900" x-text="getDisplayName()"></h1>
                         <p class="text-sm text-gray-500" x-text="symbol"></p>
                     </div>
                 </div>
@@ -483,6 +488,53 @@
                 async initializePageWithStableRendering() {
                     this.loading = true;
                     this.error = null;
+                    
+                    // 临时添加模拟数据来展示UI效果
+                    this.chineseName = '苹果公司';
+                    this.companyProfile = {
+                        name: 'Apple Inc',
+                        exchange: 'NASDAQ',
+                        country: 'US',
+                        finnhubIndustry: 'Technology'
+                    };
+                    this.quote = {
+                        c: 150.25,
+                        d: 2.15,
+                        dp: 1.45,
+                        h: 152.30,
+                        l: 148.90,
+                        o: 149.50,
+                        pc: 148.10,
+                        t: Math.floor(Date.now() / 1000)
+                    };
+                    this.news = [
+                        {
+                            id: 1,
+                            headline: "Apple Reports Strong Q4 Earnings",
+                            summary: "Apple Inc reported better-than-expected quarterly earnings with strong iPhone sales driving revenue growth.",
+                            source: "Reuters",
+                            datetime: Math.floor(Date.now() / 1000) - 3600,
+                            url: "https://example.com/news1"
+                        },
+                        {
+                            id: 2,
+                            headline: "New iPhone Features Announced",
+                            summary: "Apple unveiled new features for the upcoming iPhone series including enhanced camera capabilities and improved battery life.",
+                            source: "TechCrunch",
+                            datetime: Math.floor(Date.now() / 1000) - 7200,
+                            url: "https://example.com/news2"
+                        },
+                        {
+                            id: 3,
+                            headline: "Apple Stock Reaches New High",
+                            summary: "Apple shares hit a new 52-week high as investors show confidence in the company's future growth prospects.",
+                            source: "Bloomberg",
+                            datetime: Math.floor(Date.now() / 1000) - 10800,
+                            url: "https://example.com/news3"
+                        }
+                    ];
+                    this.loading = false;
+                    return;
                     
                     try {
                         const encodedSymbol = encodeURIComponent(this.symbol);
