@@ -4,66 +4,137 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>个股详情 - 移动版</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./tailwind.css">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 移动端优化样式 */
-        .mobile-container {
+        /* 移动端优化样式 - 作用域限制 */
+        .mobile-page .mobile-container {
             max-width: 100vw;
             overflow-x: hidden;
         }
         
-        .mobile-card {
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .mobile-page .mobile-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.08);
             margin-bottom: 16px;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            position: relative;
+            overflow: hidden;
         }
         
-        .price-display {
+        .mobile-page .mobile-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+        
+        .mobile-page .card-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            margin: -1px -1px 0 -1px;
+        }
+        
+        .mobile-page .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-page .card-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #3b82f6;
+            border-radius: 2px;
+        }
+        
+        .mobile-page .price-display {
             font-size: 2rem;
             font-weight: 700;
             line-height: 1.2;
         }
         
-        .change-positive {
+        .mobile-page .change-positive {
             color: #22c55e;
         }
         
-        .change-negative {
+        .mobile-page .change-negative {
             color: #ef4444;
         }
         
-        .metric-grid {
+        .mobile-page .metric-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 8px;
         }
         
-        .metric-item {
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 8px;
+        .mobile-page .metric-item {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 16px 12px;
+            border-radius: 12px;
             text-align: center;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            position: relative;
+            transition: all 0.2s ease;
         }
         
-        .chart-container {
+        .mobile-page .metric-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .mobile-page .metric-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            border-radius: 0 0 2px 2px;
+        }
+        
+        .mobile-page .chart-container {
             width: 100%;
-            height: 250px;
-            min-height: 250px;
+            height: 280px;
+            min-height: 280px;
             position: relative;
             /* 确保容器在初始化时有稳定的尺寸 */
             contain: layout;
+            overflow: hidden;
+            background: #fafafa;
+            border-radius: 8px;
         }
         
-        .chart-container canvas {
+        .mobile-page .chart-container canvas {
             width: 100% !important;
-            height: 250px !important;
+            height: 280px !important;
             max-width: 100%;
             display: block;
+            transition: opacity 0.3s ease;
         }
         
-        .tab-button {
+        .mobile-page .chart-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .mobile-page .tab-button {
             flex: 1;
             padding: 8px 12px;
             text-align: center;
@@ -73,55 +144,94 @@
             transition: all 0.2s;
         }
         
-        .tab-active {
+        .mobile-page .tab-active {
             background: #3b82f6;
             color: white;
         }
         
-        .tab-inactive {
+        .mobile-page .tab-inactive {
             background: #f1f5f9;
             color: #64748b;
         }
         
-        .news-item {
-            border-bottom: 1px solid #e2e8f0;
+        .mobile-page .news-item {
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
             padding: 16px 0;
+            position: relative;
+            transition: all 0.2s ease;
         }
         
-        .news-item:last-child {
+        .mobile-page .news-item:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(147, 197, 253, 0.02) 100%);
+            border-radius: 8px;
+            margin: 0 -8px;
+            padding: 16px 8px;
+        }
+        
+        .mobile-page .news-item:last-child {
             border-bottom: none;
         }
         
-        .loading-spinner {
+        .mobile-page .news-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: linear-gradient(180deg, #3b82f6, #60a5fa);
+            border-radius: 2px;
+            transition: height 0.2s ease;
+        }
+        
+        .mobile-page .news-item:hover::before {
+            height: 60%;
+        }
+        
+        .mobile-page .loading-spinner {
             display: inline-block;
             width: 20px;
             height: 20px;
             border: 3px solid #f3f3f3;
             border-top: 3px solid #3498db;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: mobile-spin 1s linear infinite;
         }
         
-        @keyframes spin {
+        @keyframes mobile-spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         
         /* 触摸优化 */
-        .touch-target {
+        .mobile-page .touch-target {
             min-height: 44px;
             min-width: 44px;
         }
         
+        /* 统一间距 */
+        .mobile-page .mobile-card .flex {
+            align-items: center;
+        }
+        
+        .mobile-page .mobile-card .space-y-3 > * + * {
+            margin-top: 12px;
+        }
+        
+        .mobile-page .mobile-card .space-y-2 > * + * {
+            margin-top: 8px;
+        }
+        
         /* 隐藏桌面端元素 */
         @media (max-width: 768px) {
-            .desktop-only {
+            .mobile-page .desktop-only {
                 display: none !important;
             }
         }
     </style>
 </head>
-<body class="bg-gray-50 mobile-container" x-data="mobileStockApp()" x-init="init()">
+<body class="mobile-page bg-gray-50 mobile-container" x-data="mobileStockApp()" x-init="init()">
     <!-- 顶部导航栏 -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="px-4 py-3">
@@ -158,24 +268,31 @@
         </div>
 
         <!-- 股价信息卡片 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <div class="text-center">
-                <div class="price-display mb-2" :class="getChangeClass()" x-text="formatPrice(quote?.c)"></div>
-                <div class="flex items-center justify-center space-x-4 text-sm">
-                    <span :class="getChangeClass()" x-text="formatChange(quote?.d)"></span>
-                    <span :class="getChangeClass()" x-text="formatChangePercent(quote?.dp)"></span>
-                </div>
-                <div class="mt-3 text-xs text-gray-500">
-                    <span x-text="language === 'zh' ? '更新时间: ' : 'Updated: '"></span>
-                    <span x-text="formatTime(quote?.t)"></span>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '实时股价' : 'Live Price'"></h2>
+            </div>
+            <div class="p-4">
+                <div class="text-center">
+                    <div class="price-display mb-2" :class="getChangeClass()" x-text="formatPrice(quote?.c)"></div>
+                    <div class="flex items-center justify-center space-x-4 text-sm">
+                        <span :class="getChangeClass()" x-text="formatChange(quote?.d)"></span>
+                        <span :class="getChangeClass()" x-text="formatChangePercent(quote?.dp)"></span>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500">
+                        <span x-text="language === 'zh' ? '更新时间: ' : 'Updated: '"></span>
+                        <span x-text="formatTime(quote?.t)"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 价格走势图 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <div class="mb-4">
-                <h2 class="text-lg font-semibold mb-3" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+            </div>
+            <div class="p-4">
                 <div class="flex space-x-2 mb-4">
                     <template x-for="period in timePeriods" :key="period.value">
                         <button @click="changePeriod(period.value)" 
@@ -185,18 +302,21 @@
                         </button>
                     </template>
                 </div>
-            </div>
             <div class="chart-container bg-gray-50 rounded-lg">
                 <canvas id="mobileStockChart"></canvas>
-                <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+                <div class="chart-loading" style="display: none;">
                     <div class="loading-spinner"></div>
                 </div>
+            </div>
             </div>
         </div>
 
         <!-- 关键财务指标 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h2>
+            </div>
+            <div class="p-4">
             <div class="metric-grid">
                 <div class="metric-item">
                     <div class="text-xs text-gray-500 mb-1" x-text="language === 'zh' ? '市值' : 'Market Cap'"></div>
@@ -223,11 +343,15 @@
                     <div class="font-semibold" x-text="formatRatio(metrics?.roeTTM)"></div>
                 </div>
             </div>
+            </div>
         </div>
 
         <!-- 公司信息 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '公司信息' : 'Company Info'"></h2>
+            </div>
+            <div class="p-4">
             <div class="space-y-3">
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
@@ -241,26 +365,21 @@
                     <span class="text-sm text-gray-600" x-text="language === 'zh' ? '交易所' : 'Exchange'"></span>
                     <span class="text-sm font-medium" x-text="companyProfile?.exchange || 'N/A'"></span>
                 </div>
-                <div x-show="companyProfile?.weburl" class="pt-2 border-t border-gray-100">
-                    <a :href="companyProfile?.weburl" target="_blank" 
-                       class="flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 py-2 px-4 rounded-lg touch-target">
-                        <span x-text="language === 'zh' ? '访问官网' : 'Visit Website'"></span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                        </svg>
-                    </a>
-                </div>
+            </div>
             </div>
         </div>
 
         <!-- 相关新闻 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
-                <button @click="loadNews()" class="text-blue-600 text-sm font-medium touch-target">
-                    <span x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
-                </button>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <div class="flex items-center justify-between w-full">
+                    <h2 class="card-title" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
+                    <button @click="loadNews()" class="text-blue-600 text-sm font-medium touch-target px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors">
+                        <span x-text="language === 'zh' ? '刷新' : 'Refresh'"></span>
+                    </button>
+                </div>
             </div>
+            <div class="p-4">
             
             <div x-show="newsLoading" class="text-center py-4">
                 <div class="loading-spinner mx-auto mb-2"></div>
@@ -287,11 +406,15 @@
             <div x-show="!newsLoading && (!news || news.length === 0)" class="text-center py-4 text-gray-500">
                 <p class="text-sm" x-text="language === 'zh' ? '暂无相关新闻' : 'No news available'"></p>
             </div>
+            </div>
         </div>
 
         <!-- 快捷操作 -->
-        <div x-show="!loading && !error" class="bg-white mobile-card p-4">
-            <h2 class="text-lg font-semibold mb-4" x-text="language === 'zh' ? '快捷操作' : 'Quick Actions'"></h2>
+        <div x-show="!loading && !error" class="mobile-card">
+            <div class="card-header">
+                <h2 class="card-title" x-text="language === 'zh' ? '快捷操作' : 'Quick Actions'"></h2>
+            </div>
+            <div class="p-4">
             <div class="grid grid-cols-2 gap-3">
                 <button @click="openYouTubeSearch()" 
                         class="flex items-center justify-center space-x-2 bg-red-50 text-red-600 py-3 px-4 rounded-lg touch-target">
@@ -307,6 +430,7 @@
                     </svg>
                     <span class="text-sm font-medium" x-text="language === 'zh' ? '社区讨论' : 'Community'"></span>
                 </button>
+            </div>
             </div>
         </div>
     </main>
@@ -390,9 +514,27 @@
                         
                         this.news = newsData || [];
                         
+                        // 1.5. 异步翻译新闻（不阻塞页面渲染）
+                        if (this.news.length > 0) {
+                            setTimeout(() => {
+                                this.translateNewsItems(this.news).catch(error => {
+                                    console.error('新闻翻译失败:', error);
+                                });
+                            }, 500); // 延迟500ms开始翻译，确保页面已渲染
+                        }
+                        
                         // 2. 处理K线数据但不立即渲染图表
+                        console.log('🔍 检查K线数据:', {
+                            hasCandlesData: !!candlesData,
+                            candlesType: typeof candlesData,
+                            hasC: candlesData?.c ? true : false,
+                            cLength: candlesData?.c?.length,
+                            isArray: Array.isArray(candlesData?.c)
+                        });
+                        
                         if (candlesData && candlesData.c && Array.isArray(candlesData.c) && candlesData.c.length > 0) {
                             this.candles = candlesData;
+                            console.log('✅ K线数据验证通过，准备渲染图表');
                             
                             // 3. 将K线图的渲染，放入下一个宏任务 (macro-task) 中
                             // 这是确保所有当前的DOM更新都已完成的终极技巧
@@ -405,10 +547,26 @@
                                     console.error('❌ 最终图表初始化尝试失败:', error);
                                     this.showChartError('图表渲染失败');
                                 }
-                            }, 0); // 延迟0毫秒，但足以将其推入下一个事件循环
+                            }, 100); // 增加延迟时间确保DOM完全就绪
                         } else {
-                            console.warn('暂无有效的K线图数据');
-                            this.showChartError('暂无K线图数据');
+                            console.warn('❌ K线数据验证失败:', candlesData);
+                            // 尝试重新加载K线数据
+                            setTimeout(async () => {
+                                console.log('🔄 尝试重新加载K线数据...');
+                                try {
+                                    const retryData = await this.loadCandlesData();
+                                    if (retryData && retryData.c && Array.isArray(retryData.c) && retryData.c.length > 0) {
+                                        this.candles = retryData;
+                                        this.renderChartInSeparateTask();
+                                        console.log('✅ 重新加载K线数据成功');
+                                    } else {
+                                        this.showChartError('暂无K线图数据');
+                                    }
+                                } catch (error) {
+                                    console.error('重新加载K线数据失败:', error);
+                                    this.showChartError('K线数据加载失败');
+                                }
+                            }, 1000);
                         }
                         
                     } catch (error) {
@@ -484,9 +642,16 @@
                 // 这些方法现在在initializePageWithStableRendering中统一调用
 
                 async translateNewsItems(newsItems) {
-                    const translatedNews = [];
+                    if (!newsItems || newsItems.length === 0) {
+                        console.log('📰 没有新闻需要翻译');
+                        return;
+                    }
                     
-                    for (const item of newsItems.slice(0, 3)) {
+                    console.log(`📰 开始翻译 ${newsItems.length} 条新闻...`);
+                    
+                    // 处理所有新闻，不只是前3条
+                    for (let i = 0; i < newsItems.length; i++) {
+                        const item = newsItems[i];
                         try {
                             // 同时翻译标题和摘要
                             const promises = [];
@@ -530,22 +695,26 @@
                             // 等待所有翻译完成
                             await Promise.all(promises);
                             
-                            translatedNews.push({
-                                ...item,
-                                originalHeadline: item.headline,
-                                originalSummary: item.summary
-                            });
+                            console.log(`✅ 新闻 ${i + 1}/${newsItems.length} 翻译完成`);
+                            
+                            // 直接修改原始数据，不需要返回新数组
+                            item.originalHeadline = item.headline;
+                            item.originalSummary = item.summary;
                         } catch (error) {
-                            console.error('Translation failed for news item:', error);
-                            translatedNews.push({
-                                ...item,
-                                translatedHeadline: item.headline,
-                                translatedSummary: item.summary
-                            });
+                            console.error(`❌ 新闻 ${i + 1} 翻译失败:`, error);
+                            // 翻译失败时保持原文
+                            item.translatedHeadline = item.headline;
+                            item.translatedSummary = item.summary;
+                            item.originalHeadline = item.headline;
+                            item.originalSummary = item.summary;
                         }
                     }
                     
-                    return translatedNews;
+                    console.log('🎉 所有新闻翻译处理完成');
+                    // 触发页面更新以显示翻译结果
+                    this.$nextTick(() => {
+                        console.log('📱 页面数据已更新');
+                    });
                 },
 
                 // 翻译缓存
@@ -656,36 +825,57 @@
                 // ================================================================
                 
                 renderChartInSeparateTask() {
-                    const ctx = document.getElementById('mobileStockChart');
-                    if (!ctx) {
-                        console.error('Canvas element not found');
-                        this.showChartError('图表容器未找到');
+                    // 防止重复渲染
+                    if (this.chartCreating) {
+                        console.warn('Chart creation already in progress');
                         return;
                     }
                     
-                    // 确保canvas有正确的尺寸
-                    const container = ctx.parentElement;
-                    if (!container) {
-                        console.error('Chart container not found');
-                        this.showChartError('图表容器未找到');
-                        return;
-                    }
+                    this.chartCreating = true;
                     
-                    const rect = container.getBoundingClientRect();
-                    if (rect.width <= 0 || rect.height <= 0) {
-                        console.error('Container size not ready:', rect);
-                        this.showChartError('容器尺寸未就绪');
-                        return;
+                    try {
+                        const ctx = document.getElementById('mobileStockChart');
+                        if (!ctx) {
+                            console.error('Canvas element not found');
+                            this.showChartError('图表容器未找到');
+                            return;
+                        }
+                        
+                        // 确保canvas有正确的尺寸
+                        const container = ctx.parentElement;
+                        if (!container) {
+                            console.error('Chart container not found');
+                            this.showChartError('图表容器未找到');
+                            return;
+                        }
+                        
+                        const rect = container.getBoundingClientRect();
+                        if (rect.width <= 0 || rect.height <= 0) {
+                            console.warn('Container size not ready, retrying...', rect);
+                            // 延迟重试
+                            setTimeout(() => {
+                                this.chartCreating = false;
+                                this.renderChartInSeparateTask();
+                            }, 200);
+                            return;
+                        }
+                        
+                        // 销毁现有图表
+                        if (this.chart) {
+                            try {
+                                this.chart.destroy();
+                            } catch (e) {
+                                console.warn('Error destroying existing chart:', e);
+                            }
+                            this.chart = null;
+                        }
+                        
+                        // 创建新图表
+                        this.createChart(ctx);
+                        
+                    } finally {
+                        this.chartCreating = false;
                     }
-                    
-                    // 销毁现有图表
-                    if (this.chart) {
-                        this.chart.destroy();
-                        this.chart = null;
-                    }
-                    
-                    // 创建新图表
-                    this.createChart(ctx);
                 },
                 
                 showChartError(message) {
@@ -773,11 +963,16 @@
                         this.chart = null;
                     }
                     
+                    // 显示加载状态
+                    this.showChartLoading(true);
+                    
                     // 延迟初始化，确保容器尺寸稳定
                     setTimeout(() => {
                         const ctx = document.getElementById('mobileStockChart');
                         if (!ctx || !this.candles || !this.candles.c || this.candles.c.length === 0) {
                             console.warn('Cannot update chart: invalid data or canvas');
+                            this.showChartLoading(false);
+                            this.showChartError('图表数据无效');
                             return;
                         }
                         
@@ -787,12 +982,25 @@
                             const rect = container.getBoundingClientRect();
                             if (rect.width > 0 && rect.height > 0) {
                                 this.createChart(ctx);
+                                this.showChartLoading(false);
                             } else {
                                 console.warn('Container size not ready, retrying...');
                                 setTimeout(() => this.updateChart(), 100);
                             }
                         }
                     }, 100);
+                },
+                
+                showChartLoading(show) {
+                    const loadingEl = document.querySelector('.chart-loading');
+                    if (loadingEl) {
+                        loadingEl.style.display = show ? 'block' : 'none';
+                    }
+                },
+                
+                showChartError(message) {
+                    console.error('Chart Error:', message);
+                    // 可以在这里添加错误提示UI
                 },
 
                 createChart(ctx) {
@@ -801,6 +1009,7 @@
                     // ================================================================
                     if (!this.candles || typeof this.candles !== 'object') {
                         console.warn('Cannot create chart: candles data is null or invalid');
+                        this.showChartError('K线数据无效');
                         return;
                     }
                     
@@ -814,6 +1023,7 @@
                             tLength: this.candles.t?.length,
                             cLength: this.candles.c?.length
                         });
+                        this.showChartError('K线数据格式错误');
                         return;
                     }
                     
@@ -838,6 +1048,7 @@
                         // 确保清洗后还有有效数据
                         if (cleanedData.length === 0) {
                             console.warn('Cannot create chart: no valid data points after cleaning');
+                            this.showChartError('没有有效的K线数据');
                             return;
                         }
                         
@@ -845,7 +1056,21 @@
                         
                         const isPositive = this.quote && this.quote.d >= 0;
                         const color = isPositive ? '#22c55e' : '#ef4444';
-                       
+                        
+                        // 确保Canvas上下文有效
+                        if (!ctx.getContext) {
+                            console.error('Invalid canvas context');
+                            this.showChartError('Canvas上下文无效');
+                            return;
+                        }
+                        
+                        // 设置Canvas尺寸
+                        const container = ctx.parentElement;
+                        const rect = container.getBoundingClientRect();
+                        ctx.width = rect.width;
+                        ctx.height = rect.height;
+                        
+
                         this.chart = new Chart(ctx, {
                             type: 'line',
                             data: {
