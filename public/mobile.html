@@ -892,6 +892,41 @@
                     }
                 },
 
+                async translateNews() {
+                    try {
+                        for (let i = 0; i < Math.min(this.news.length, 3); i++) {
+                            const article = this.news[i];
+                            if (!article.translatedHeadline && article.headline) {
+                                // 翻译标题
+                                const titleResponse = await fetch('/api/translate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: article.headline, target: 'zh' })
+                                });
+                                const titleData = await titleResponse.json();
+                                if (titleData.success) {
+                                    article.translatedHeadline = titleData.translatedText;
+                                }
+                            }
+                            
+                            if (!article.translatedSummary && article.summary) {
+                                // 翻译摘要
+                                const summaryResponse = await fetch('/api/translate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ text: article.summary, target: 'zh' })
+                                });
+                                const summaryData = await summaryResponse.json();
+                                if (summaryData.success) {
+                                    article.translatedSummary = summaryData.translatedText;
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Translation failed:', error);
+                    }
+                },
+
                 async changePeriod(newPeriod) {
                     if (this.selectedPeriod === newPeriod) return;
                     
@@ -1035,6 +1070,7 @@
                         ctx.width = rect.width;
                         ctx.height = rect.height;
                         
+
                         this.chart = new Chart(ctx, {
                             type: 'line',
                             data: {
