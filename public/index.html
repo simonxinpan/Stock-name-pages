@@ -269,7 +269,11 @@
                     <div>
                         <h1 class="text-3xl font-bold" x-text="getDisplayName()"></h1>
                         <p class="text-lg text-gray-600" x-text="getSubtitleName()"></p>
-                        <p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p>
+                        <div class="flex items-center space-x-4 mt-1">
+                            <p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p>
+                            <span class="text-gray-300">•</span>
+                            <p class="text-sm text-gray-500" x-text="companyProfile?.currency || 'USD'"></p>
+                        </div>
                     </div>
                 </div>
                 <div class="text-right">
@@ -329,10 +333,6 @@
                         <div class="h-4 bg-gray-200 rounded w-1/2"></div>
                     </div>
                     <div x-show="!loading && companyProfile" class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2" x-text="getDisplayName()"></h3>
-                            <p class="text-gray-600 text-sm" x-text="getSubtitleName()"></p>
-                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
@@ -341,14 +341,6 @@
                             <div>
                                 <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '国家' : 'Country'"></span>
                                 <p class="text-sm text-gray-900" x-text="companyProfile?.country || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '交易所' : 'Exchange'"></span>
-                                <p class="text-sm text-gray-900" x-text="companyProfile?.exchange || 'N/A'"></p>
-                            </div>
-                            <div>
-                                <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '货币' : 'Currency'"></span>
-                                <p class="text-sm text-gray-900" x-text="companyProfile?.currency || 'N/A'"></p>
                             </div>
                         </div>
                         <div x-show="companyProfile?.weburl">
@@ -390,9 +382,12 @@
                                 <div class="flex items-start space-x-3">
                                     <img :src="article.image" :alt="article.headline" class="w-16 h-16 object-cover rounded-lg flex-shrink-0" onerror="this.style.display='none'">
                                     <div class="flex-1 min-w-0">
-                                        <h3 class="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                                            <a :href="article.url" target="_blank" class="hover:text-blue-600" x-text="getTranslatedTitle(article, index)"></a>
-                                        </h3>
+                                        <div class="flex items-start space-x-2 mb-1">
+                                            <h3 class="text-sm font-medium text-gray-900 line-clamp-2 flex-1">
+                                                <a :href="article.url" target="_blank" class="hover:text-blue-600" x-text="getTranslatedTitle(article, index)"></a>
+                                            </h3>
+                                            <div class="w-4 h-4 bg-blue-500 rounded-sm flex-shrink-0 mt-0.5" title="新闻来源"></div>
+                                        </div>
                                         <p class="text-xs text-gray-500 mb-2" x-text="formatNewsDate(article.datetime)"></p>
                                         <p class="text-xs text-gray-600 line-clamp-2" x-text="getTranslatedSummary(article, index)"></p>
                                     </div>
@@ -462,26 +457,26 @@
         
         <!-- 相关视频和社区讨论 - 横排布局 -->
         <div class="bg-white rounded-lg card-shadow p-6 mt-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- 视频内容 -->
-                <div class="bg-gray-50 rounded-lg p-4">
+                <div>
                     <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '相关视频' : 'Related Videos'"></h3>
-                    <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 text-white px-4 py-3 rounded-lg transition-colors" style="background-color: #FF0000; hover:background-color: #CC0000;">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 text-white px-6 py-4 rounded-lg transition-all duration-200 hover:shadow-lg" style="background-color: #FF0000;">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                         </svg>
-                        <span x-text="language === 'zh' ? '观看相关视频' : 'Watch Related Videos'"></span>
+                        <span class="font-medium" x-text="language === 'zh' ? '观看相关视频' : 'Watch Related Videos'"></span>
                     </button>
                 </div>
                 
                 <!-- 社区内容 -->
-                <div class="bg-gray-50 rounded-lg p-4">
+                <div>
                     <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '社区讨论' : 'Community Discussion'"></h3>
-                    <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 text-white px-4 py-3 rounded-lg transition-colors" style="background-color: #1890FF; hover:background-color: #096DD9;">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 text-white px-6 py-4 rounded-lg transition-all duration-200 hover:shadow-lg" style="background-color: #1890FF;">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                         </svg>
-                        <span x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Community'"></span>
+                        <span class="font-medium" x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Community'"></span>
                     </button>
                 </div>
             </div>
