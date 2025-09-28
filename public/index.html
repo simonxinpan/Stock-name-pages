@@ -49,6 +49,58 @@
         .article-content em {
             font-style: italic;
         }
+        
+        /* 双栏布局样式 */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* 左栏宽度是右栏的2倍 */
+            gap: 24px; /* 左右两栏的间距 */
+            align-items: start; /* 顶部对齐 */
+            max-width: 1400px; /* 限制最大宽度 */
+            margin: 0 auto; /* 居中显示 */
+        }
+        
+        /* 响应式设计：在小屏幕上恢复单栏布局 */
+        @media (max-width: 1024px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+        
+        /* 确保图表容器宽度正确 */
+        #stockChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        /* 右侧边栏内的模块样式 */
+        .sidebar > div {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* 右侧边栏粘性定位，保持在视口顶部 */
+        .sidebar {
+            position: sticky;
+            top: 80px; /* 考虑导航栏高度 */
+            height: fit-content;
+        }
+        
+        /* 移除不再需要的旧边距，避免双重边距 */
+        .main-content > div:first-child {
+            margin-top: 0;
+        }
+        
+        /* 优化卡片阴影和间距 */
+        .card-shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        
+        .card-shadow:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
     </style>
 </head>
 <body class="bg-gray-50" x-data="liveStockApp()" x-init="init()">
@@ -102,120 +154,130 @@
                 </div>
             </div>
 
-            <!-- K线图和右侧信息面板 -->
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- 左侧K线图 -->
-                    <div class="lg:col-span-2">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
-                            <div class="flex items-center space-x-4">
-                                <div class="flex space-x-2">
-                                    <template x-for="period in timePeriods" :key="period.value">
-                                        <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-3 py-1 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
-                                    </template>
-                                </div>
-                                <div class="api-status" x-show="chartLoading || (Date.now() - lastCandleCall < candleCallInterval && lastCandleCall > 0)">
-                                    <span x-show="chartLoading" class="text-blue-500 text-sm">📊 <span x-text="language === 'zh' ? '加载中...' : 'Loading...'"></span></span>
-                                    <span x-show="!chartLoading && (Date.now() - lastCandleCall < candleCallInterval && lastCandleCall > 0)" class="text-orange-500 text-sm">
-                                        ⏱️ <span x-text="language === 'zh' ? 'API频率限制 (20秒间隔)' : 'API Rate Limit (20s interval)'"></span>
-                                    </span>
-                                </div>
+        </div>
+        
+        <!-- 双栏布局容器 -->
+        <div class="layout-grid mt-6 pt-6 border-t border-gray-200">
+            <!-- 左侧主内容区 -->
+            <div class="main-content">
+                <!-- K线图模块 -->
+                <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '价格走势' : 'Price Chart'"></h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex space-x-2">
+                                <template x-for="period in timePeriods" :key="period.value">
+                                    <button @click="changePeriod(period.value)" :class="selectedPeriod === period.value ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'" class="px-3 py-1 rounded-lg text-sm font-medium" x-text="language === 'zh' ? period.zh : period.en"></button>
+                                </template>
                             </div>
-                        </div>
-                        <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
-                            <canvas id="stockChart"></canvas>
-                            <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><span class="loading text-blue-500">Loading Chart...</span></div>
+                            <div class="api-status" x-show="chartLoading || (Date.now() - lastCandleCall < candleCallInterval && lastCandleCall > 0)">
+                                <span x-show="chartLoading" class="text-blue-500 text-sm">📊 <span x-text="language === 'zh' ? '加载中...' : 'Loading...'"></span></span>
+                                <span x-show="!chartLoading && (Date.now() - lastCandleCall < candleCallInterval && lastCandleCall > 0)" class="text-orange-500 text-sm">
+                                    ⏱️ <span x-text="language === 'zh' ? 'API频率限制 (20秒间隔)' : 'API Rate Limit (20s interval)'"></span>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- 右侧信息面板 -->
-                    <div class="space-y-6">
-                        <!-- 关键指标 -->
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h3>
-                            <div class="space-y-3">
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最高' : '52W High'"></span>
-                                    <span class="text-sm font-medium" x-text="formatPrice(metrics?.['52WeekHigh'])"></span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最低' : '52W Low'"></span>
-                                    <span class="text-sm font-medium" x-text="formatPrice(metrics?.['52WeekLow'])"></span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '开盘价' : 'Open'"></span>
-                                    <span class="text-sm font-medium" x-text="formatPrice(quote?.o)"></span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '前收盘' : 'Prev Close'"></span>
-                                    <span class="text-sm font-medium" x-text="formatPrice(quote?.pc)"></span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '成交量' : 'Volume'"></span>
-                                    <span class="text-sm font-medium" x-text="formatVolume(quote?.v)"></span>
-                                </div>
+                    <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center relative">
+                        <canvas id="stockChart"></canvas>
+                        <div x-show="chartLoading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center"><span class="loading text-blue-500">Loading Chart...</span></div>
+                    </div>
+                </div>
+                
+                <!-- 关于模块 -->
+                <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4" x-text="language === 'zh' ? '关于公司' : 'About Company'"></h2>
+                    <div x-show="loading" class="animate-pulse">
+                        <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                    <div x-show="!loading && companyProfile" class="space-y-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2" x-text="getDisplayName()"></h3>
+                            <p class="text-gray-600 text-sm" x-text="getSubtitleName()"></p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
+                                <p class="text-sm text-gray-900" x-text="companyProfile?.finnhubIndustry || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '国家' : 'Country'"></span>
+                                <p class="text-sm text-gray-900" x-text="companyProfile?.country || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '交易所' : 'Exchange'"></span>
+                                <p class="text-sm text-gray-900" x-text="companyProfile?.exchange || 'N/A'"></p>
+                            </div>
+                            <div>
+                                <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '货币' : 'Currency'"></span>
+                                <p class="text-sm text-gray-900" x-text="companyProfile?.currency || 'N/A'"></p>
                             </div>
                         </div>
-                        
-                        <!-- 公司详情 -->
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '公司详情' : 'Company Details'"></h3>
-                            <div class="space-y-3">
-                                <div>
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
-                                    <p class="text-sm font-medium" x-text="companyProfile?.finnhubIndustry || 'N/A'"></p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '国家' : 'Country'"></span>
-                                    <p class="text-sm font-medium" x-text="companyProfile?.country || 'N/A'"></p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '网站' : 'Website'"></span>
-                                    <a :href="companyProfile?.weburl" target="_blank" class="text-sm text-blue-600 hover:text-blue-800" x-text="companyProfile?.weburl || 'N/A'"></a>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-gray-600" x-text="language === 'zh' ? '员工数' : 'Employees'"></span>
-                                    <p class="text-sm font-medium" x-text="formatNumber(companyProfile?.shareOutstanding)"></p>
-                                </div>
-                            </div>
+                        <div x-show="companyProfile?.weburl">
+                            <span class="text-sm font-medium text-gray-500" x-text="language === 'zh' ? '官方网站' : 'Website'"></span>
+                            <a :href="companyProfile?.weburl" target="_blank" class="block text-sm text-blue-600 hover:text-blue-800" x-text="companyProfile?.weburl"></a>
                         </div>
-                        
-
                     </div>
                 </div>
             </div>
             
-            <!-- 相关视频和社区讨论 - 横排布局 -->
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- 视频内容 -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '相关视频' : 'Related Videos'"></h3>
-                        <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                            </svg>
-                            <span x-text="language === 'zh' ? '观看相关视频' : 'Watch Related Videos'"></span>
-                        </button>
-                    </div>
-                    
-                    <!-- 社区内容 -->
-                    <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '社区讨论' : 'Community Discussion'"></h3>
-                        <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
-                            <span x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Community'"></span>
-                        </button>
+            <!-- 右侧边栏区 -->
+            <div class="sidebar">
+                <!-- 关键指标模块 -->
+                <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '关键指标' : 'Key Metrics'"></h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最高' : '52W High'"></span>
+                            <span class="text-sm font-medium" x-text="formatPrice(metrics?.['52WeekHigh'])"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '52周最低' : '52W Low'"></span>
+                            <span class="text-sm font-medium" x-text="formatPrice(metrics?.['52WeekLow'])"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '开盘价' : 'Open'"></span>
+                            <span class="text-sm font-medium" x-text="formatPrice(quote?.o)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '前收盘' : 'Prev Close'"></span>
+                            <span class="text-sm font-medium" x-text="formatPrice(quote?.pc)"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '成交量' : 'Volume'"></span>
+                            <span class="text-sm font-medium" x-text="formatVolume(quote?.v)"></span>
+                        </div>
+                        
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- 相关新闻模块 -->
-        <div class="bg-white rounded-lg card-shadow p-6 mt-6">
+                
+                <!-- 公司详情模块 -->
+                <div class="bg-white rounded-lg card-shadow p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '公司详情' : 'Company Details'"></h3>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '行业' : 'Industry'"></span>
+                            <p class="text-sm font-medium" x-text="companyProfile?.finnhubIndustry || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '国家' : 'Country'"></span>
+                            <p class="text-sm font-medium" x-text="companyProfile?.country || 'N/A'"></p>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '网站' : 'Website'"></span>
+                            <a :href="companyProfile?.weburl" target="_blank" class="text-sm text-blue-600 hover:text-blue-800" x-text="companyProfile?.weburl || 'N/A'"></a>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-600" x-text="language === 'zh' ? '员工数' : 'Employees'"></span>
+                            <p class="text-sm font-medium" x-text="formatNumber(companyProfile?.shareOutstanding)"></p>
+                        </div>
+                    </div>
+                 </div>
+                 
+                 <!-- 相关新闻模块 -->
+                 <div class="bg-white rounded-lg card-shadow p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-900" x-text="language === 'zh' ? '相关新闻' : 'Related News'"></h2>
                 <div class="flex items-center space-x-4">
@@ -284,6 +346,35 @@
             
             <div x-show="!newsLoading && (!news || news.length === 0)" class="text-center py-8 text-gray-500">
                 <p x-text="language === 'zh' ? '暂无相关新闻' : 'No news available'"></p>
+            </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 相关视频和社区讨论 - 横排布局 -->
+        <div class="bg-white rounded-lg card-shadow p-6 mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 视频内容 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '相关视频' : 'Related Videos'"></h3>
+                    <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                        <span x-text="language === 'zh' ? '观看相关视频' : 'Watch Related Videos'"></span>
+                    </button>
+                </div>
+                
+                <!-- 社区内容 -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '社区讨论' : 'Community Discussion'"></h3>
+                    <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <span x-text="language === 'zh' ? '雪球社区讨论' : 'Xueqiu Community'"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </main>
