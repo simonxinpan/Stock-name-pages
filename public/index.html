@@ -80,10 +80,8 @@
             box-sizing: border-box;
         }
         
-        /* 右侧边栏粘性定位，保持在视口顶部 */
+        /* 右侧边栏样式 */
         .sidebar {
-            position: sticky;
-            top: 80px; /* 考虑导航栏高度 */
             height: fit-content;
         }
         
@@ -114,18 +112,19 @@
         
         /* 股票概览区域优化 */
         .stock-overview {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: white;
+            color: #1f2937;
             border-radius: 12px;
             padding: 32px;
             margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         
         .stock-overview h1 {
             margin: 0 0 8px 0;
             font-size: 28px;
             font-weight: 700;
+            color: #1f2937;
         }
         
         .stock-overview .price {
@@ -137,6 +136,19 @@
         .stock-overview .change {
             font-size: 18px;
             font-weight: 500;
+        }
+        
+        /* 股价涨跌颜色 */
+        .price-positive {
+            color: #10b981 !important; /* 绿色 */
+        }
+        
+        .price-negative {
+            color: #ef4444 !important; /* 红色 */
+        }
+        
+        .price-neutral {
+            color: #6b7280 !important; /* 灰色 */
         }
         
         /* 关键指标网格布局 */
@@ -253,16 +265,16 @@
         <div class="stock-overview">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex items-center space-x-4 mb-4 lg:mb-0">
-                    <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-white" x-text="symbol"></span></div>
+                    <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center"><span class="text-2xl font-bold text-gray-700" x-text="symbol"></span></div>
                     <div>
-                        <h1 class="text-3xl font-bold text-white" x-text="getDisplayName()"></h1>
-                        <p class="text-lg text-white text-opacity-80" x-text="getSubtitleName()"></p>
-                        <p class="text-sm text-white text-opacity-60" x-text="companyProfile?.exchange"></p>
+                        <h1 class="text-3xl font-bold" x-text="getDisplayName()"></h1>
+                        <p class="text-lg text-gray-600" x-text="getSubtitleName()"></p>
+                        <p class="text-sm text-gray-500" x-text="companyProfile?.exchange"></p>
                     </div>
                 </div>
                 <div class="text-right">
-                    <div class="price text-white" x-text="formatPrice(quote?.c)"></div>
-                    <div class="change flex items-center justify-end space-x-2 mt-1 text-white text-opacity-90"><span x-text="formatChange(quote?.d)"></span><span x-text="formatPercent(quote?.dp)"></span></div>
+                    <div class="price" :class="getPriceColorClass(quote?.d)" x-text="formatPrice(quote?.c)"></div>
+                    <div class="change flex items-center justify-end space-x-2 mt-1" :class="getPriceColorClass(quote?.d)"><span x-text="formatChange(quote?.d)"></span><span x-text="formatPercent(quote?.dp)"></span></div>
                 </div>
             </div>
         </div>
@@ -360,9 +372,6 @@
                     </div>
                     <div x-show="language === 'zh'" class="mb-4 p-3 bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg">
                         <div class="flex items-center space-x-2 text-sm">
-                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
                             <span class="text-blue-800 font-medium">💡 翻译提示：</span>
                             <span class="text-gray-700">点击新闻标题查看原文，Chrome/Edge浏览器会自动提示翻译整篇文章</span>
                         </div>
@@ -457,7 +466,7 @@
                 <!-- 视频内容 -->
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '相关视频' : 'Related Videos'"></h3>
-                    <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                    <button @click="openYouTubeSearch()" class="w-full flex items-center justify-center space-x-2 text-white px-4 py-3 rounded-lg transition-colors" style="background-color: #FF0000; hover:background-color: #CC0000;">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136C4.495 20.455 12 20.455 12 20.455s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                         </svg>
@@ -468,7 +477,7 @@
                 <!-- 社区内容 -->
                 <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="language === 'zh' ? '社区讨论' : 'Community Discussion'"></h3>
-                    <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    <button @click="openXueqiuSearch()" class="w-full flex items-center justify-center space-x-2 text-white px-4 py-3 rounded-lg transition-colors" style="background-color: #1890FF; hover:background-color: #096DD9;">
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                         </svg>
@@ -809,6 +818,12 @@
                 formatPrice(p) { return p != null ? '$' + p.toFixed(2) : 'N/A'; },
                 formatChange(c) { return c != null ? (c >= 0 ? '+' : '') + '$' + c.toFixed(2) : 'N/A'; },
                 formatPercent(p) { return p != null ? `(${(p >= 0 ? '+' : '')}${p.toFixed(2)}%)` : ''; },
+                getPriceColorClass(change) {
+                    if (change == null) return 'price-neutral';
+                    if (change > 0) return 'price-positive';
+                    if (change < 0) return 'price-negative';
+                    return 'price-neutral';
+                },
                 formatRatio(v) { return v ? v.toFixed(2) : 'N/A'; },
                 formatYield(v) { return v ? v.toFixed(2) + '%' : 'N/A'; },
                 // 智能双币种市值显示函数
@@ -1145,6 +1160,30 @@
                     
                     // 如果没有翻译结果，返回原文
                     return summary;
+                },
+                
+                getTranslatedTitle(article, index) {
+                    if (!article) return '';
+                    
+                    // 如果是中文模式且有翻译结果，使用翻译结果
+                    if (this.language === 'zh' && article.translatedHeadline) {
+                        return article.translatedHeadline;
+                    }
+                    
+                    // 否则返回原文
+                    return article.headline || '';
+                },
+                
+                getTranslatedSummary(article, index) {
+                    if (!article) return '';
+                    
+                    // 如果是中文模式且有翻译结果，使用翻译结果
+                    if (this.language === 'zh' && article.translatedSummary) {
+                        return article.translatedSummary;
+                    }
+                    
+                    // 否则返回原文
+                    return article.summary || '';
                 },
                 
                 formatNewsDate(timestamp) {
