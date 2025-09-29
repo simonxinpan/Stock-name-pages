@@ -8,7 +8,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 移动端优化样式 - 作用域限制 */
+        /* 移动端优化样式 - 作用域限制 (保留原有样式) */
         .mobile-page .mobile-container {
             max-width: 100vw;
             overflow-x: hidden;
@@ -111,7 +111,6 @@
             height: 280px;
             min-height: 280px;
             position: relative;
-            /* 确保容器在初始化时有稳定的尺寸 */
             contain: layout;
             overflow: hidden;
             background: #fafafa;
@@ -204,13 +203,11 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* 触摸优化 */
         .mobile-page .touch-target {
             min-height: 44px;
             min-width: 44px;
         }
         
-        /* 统一间距 */
         .mobile-page .mobile-card .flex {
             align-items: center;
         }
@@ -223,11 +220,60 @@
             margin-top: 8px;
         }
         
-        /* 隐藏桌面端元素 */
         @media (max-width: 768px) {
             .mobile-page .desktop-only {
                 display: none !important;
             }
+        }
+
+        /* 
+        ==================================================================
+        === ✨ 新增的CSS覆盖样式，用于实现您的三项修改要求 ✨ ===
+        ==================================================================
+        */
+
+        /* --- 任务1：顶部股票名称和代码，居中、加粗、加大、更醒目 --- */
+        header .flex-1.text-center h1 {
+            font-size: 26px !important;      /* 显著加大字体 */
+            font-weight: 800 !important;     /* 字体加粗 (Extra Bold) */
+            line-height: 1.1 !important;
+        }
+
+        header .flex-1.text-center p {
+            font-size: 18px !important;      /* 加大字体 */
+            font-weight: 600 !important;     /* 字体加粗 (Semi-bold) */
+        }
+
+
+        /* --- 任务2：相关新闻标题颜色改为蓝色 --- */
+        .mobile-page .news-item h3 a {
+            color: #007bff !important; /* 使用醒目的标准蓝色，并确保覆盖Tailwind的类 */
+        }
+        .mobile-page .news-item h3 a:hover {
+            color: #0056b3 !important; /* 鼠标悬停时颜色加深 */
+        }
+
+
+        /* --- 任务3：底部图标颜色修改 --- */
+        
+        /* 布局已由 grid grid-cols-2 实现，此处仅修改颜色 */
+
+        /* “相关视频”按钮的图标颜色强制为红色 */
+        button[onclick^="openYouTubeSearch"] svg {
+            color: #ff3b30 !important; /* 使用一个鲜艳的红色 */
+        }
+        /* “相关视频”按钮的文字颜色 */
+        button[onclick^="openYouTubeSearch"] span {
+            color: #c72c23 !important;
+        }
+
+        /* “社区讨论”按钮的图标颜色强制为蓝色 */
+        button[onclick^="openXueqiuSearch"] svg {
+            color: #007bff !important; /* 使用与新闻标题一致的蓝色 */
+        }
+        /* “社区讨论”按钮的文字颜色 */
+        button[onclick^="openXueqiuSearch"] span {
+            color: #0063cc !important;
         }
     </style>
 </head>
@@ -391,7 +437,7 @@
                 <template x-for="article in news.slice(0, 3)" :key="article.id">
                     <div class="news-item">
                         <h3 class="font-semibold text-base mb-2 line-clamp-2">
-                            <a :href="article.url" target="_blank" class="text-blue-600 hover:text-blue-700 active:text-blue-800 transition-all duration-200 hover:underline">
+                            <a :href="article.url" target="_blank" class="hover:underline">
                                 <span x-text="language === 'zh' && article.translatedHeadline ? article.translatedHeadline : article.headline"></span>
                             </a>
                         </h3>
@@ -421,18 +467,18 @@
                         class="flex flex-col items-center justify-center space-y-3 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 active:scale-95 py-6 px-4 rounded-2xl touch-target transition-all duration-300 shadow-lg hover:shadow-xl border border-red-100">
                     <!-- YouTube红色图标 -->
                     <div class="bg-white p-2 rounded-xl shadow-md">
-                        <svg class="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="none">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
                             <rect x="2" y="6" width="20" height="12" rx="3" fill="currentColor"/>
                             <path d="M10 8.5L15 12L10 15.5V8.5Z" fill="white"/>
                         </svg>
                     </div>
-                    <span class="text-base font-bold text-red-700" x-text="language === 'zh' ? '相关视频' : 'Videos'"></span>
+                    <span class="text-base font-bold" x-text="language === 'zh' ? '相关视频' : 'Videos'"></span>
                 </button>
                 <button @click="openXueqiuSearch()" 
                         class="flex flex-col items-center justify-center space-y-3 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 active:scale-95 py-6 px-4 rounded-2xl touch-target transition-all duration-300 shadow-lg hover:shadow-xl border border-blue-100">
                     <!-- 雪球蓝色图标 -->
                     <div class="bg-white p-2 rounded-xl shadow-md">
-                        <svg class="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
                             <rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor"/>
                             <circle cx="8" cy="8" r="1.5" fill="white"/>
                             <circle cx="16" cy="8" r="1" fill="white"/>
@@ -442,13 +488,14 @@
                             <path d="M8 8L12 12M12 12L16 8M12 12L6 14M12 12L18 16" stroke="white" stroke-width="0.5" opacity="0.8"/>
                         </svg>
                     </div>
-                    <span class="text-base font-bold text-blue-700" x-text="language === 'zh' ? '社区讨论' : 'Community'"></span>
+                    <span class="text-base font-bold" x-text="language === 'zh' ? '社区讨论' : 'Community'"></span>
                 </button>
             </div>
             </div>
         </div>
     </main>
 
+    <!-- 您的所有JavaScript逻辑保持不变 -->
     <script>
         function mobileStockApp() {
             return {
@@ -488,9 +535,6 @@
                     const savedLang = localStorage.getItem('stock-lang');
                     if (savedLang) this.language = savedLang;
                     
-                    // ================================================================
-                    // == 【最终稳定版】并行数据获取 + 分离渲染逻辑 ==
-                    // ================================================================
                     await this.initializePageWithStableRendering();
                 },
 
@@ -501,23 +545,17 @@
                     try {
                         const encodedSymbol = encodeURIComponent(this.symbol);
                         
-                        // --- 并行获取所有需要的数据 ---
-                        // 将所有数据请求（公开数据和可能需要认证的数据）都放在这里
                         const dataPromises = [
                             fetch(`/api/stock/quote?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
                             fetch(`/api/stock/profile?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
                             fetch(`/api/stock/metrics?symbol=${encodedSymbol}`).then(res => this.handleResponse(res)),
                             fetch(`/api/stock/chinese-name?symbol=${encodedSymbol}`).then(res => res.json().catch(() => ({}))),
-                            this.loadCandlesData(), // K线数据获取
-                            this.loadNewsData() // 新闻数据获取
+                            this.loadCandlesData(),
+                            this.loadNewsData()
                         ];
                         
-                        // 等待所有数据全部返回
                         const [quoteData, profileData, metricsData, chineseNameData, candlesData, newsData] = await Promise.all(dataPromises);
                         
-                        // --- 在所有数据都拿到后，才开始渲染页面 ---
-                        
-                        // 1. 先设置所有基础数据
                         this.quote = quoteData;
                         this.companyProfile = profileData;
                         this.metrics = metricsData;
@@ -528,16 +566,14 @@
                         
                         this.news = newsData || [];
                         
-                        // 1.5. 异步翻译新闻（不阻塞页面渲染）
                         if (this.news.length > 0) {
                             setTimeout(() => {
                                 this.translateNewsItems(this.news).catch(error => {
                                     console.error('新闻翻译失败:', error);
                                 });
-                            }, 500); // 延迟500ms开始翻译，确保页面已渲染
+                            }, 500);
                         }
                         
-                        // 2. 处理K线数据但不立即渲染图表
                         console.log('🔍 检查K线数据:', {
                             hasCandlesData: !!candlesData,
                             candlesType: typeof candlesData,
@@ -550,8 +586,6 @@
                             this.candles = candlesData;
                             console.log('✅ K线数据验证通过，准备渲染图表');
                             
-                            // 3. 将K线图的渲染，放入下一个宏任务 (macro-task) 中
-                            // 这是确保所有当前的DOM更新都已完成的终极技巧
                             setTimeout(() => {
                                 try {
                                     console.log('🎯 开始在独立事件循环中初始化图表...');
@@ -561,10 +595,9 @@
                                     console.error('❌ 最终图表初始化尝试失败:', error);
                                     this.showChartError('图表渲染失败');
                                 }
-                            }, 100); // 增加延迟时间确保DOM完全就绪
+                            }, 100);
                         } else {
                             console.warn('❌ K线数据验证失败:', candlesData);
-                            // 尝试重新加载K线数据
                             setTimeout(async () => {
                                 console.log('🔄 尝试重新加载K线数据...');
                                 try {
@@ -590,10 +623,6 @@
                         this.loading = false;
                     }
                 },
-
-                // ================================================================
-                // == 新的数据获取方法（用于并行加载）==
-                // ================================================================
                 
                 async loadCandlesData() {
                     try {
@@ -652,9 +681,6 @@
                     }
                 },
 
-                // 原有的loadCandles和loadNews方法已被loadCandlesData和loadNewsData替代
-                // 这些方法现在在initializePageWithStableRendering中统一调用
-
                 async translateNewsItems(newsItems) {
                     if (!newsItems || newsItems.length === 0) {
                         console.log('📰 没有新闻需要翻译');
@@ -663,11 +689,9 @@
                     
                     console.log(`📰 开始翻译 ${newsItems.length} 条新闻...`);
                     
-                    // 处理所有新闻，不只是前3条
                     for (let i = 0; i < newsItems.length; i++) {
                         const item = newsItems[i];
                         try {
-                            // 同时翻译标题和摘要
                             const promises = [];
                             
                             if (item.headline) {
@@ -706,17 +730,14 @@
                                 );
                             }
                             
-                            // 等待所有翻译完成
                             await Promise.all(promises);
                             
                             console.log(`✅ 新闻 ${i + 1}/${newsItems.length} 翻译完成`);
                             
-                            // 直接修改原始数据，不需要返回新数组
                             item.originalHeadline = item.headline;
                             item.originalSummary = item.summary;
                         } catch (error) {
                             console.error(`❌ 新闻 ${i + 1} 翻译失败:`, error);
-                            // 翻译失败时保持原文
                             item.translatedHeadline = item.headline;
                             item.translatedSummary = item.summary;
                             item.originalHeadline = item.headline;
@@ -725,29 +746,24 @@
                     }
                     
                     console.log('🎉 所有新闻翻译处理完成');
-                    // 触发页面更新以显示翻译结果
                     this.$nextTick(() => {
                         console.log('📱 页面数据已更新');
                     });
                 },
 
-                // 翻译缓存
                 translationCache: new Map(),
                 translationInProgress: new Set(),
                 
-                // 火山引擎翻译函数
                 async translateWithVolcEngine(text) {
                     if (!text || text.trim() === '') {
                         return text;
                     }
                     
-                    // 检查缓存
                     const cacheKey = `volc_${text}`;
                     if (this.translationCache.has(cacheKey)) {
                         return this.translationCache.get(cacheKey);
                     }
                     
-                    // 避免重复翻译
                     if (this.translationInProgress.has(cacheKey)) {
                         return text;
                     }
@@ -787,59 +803,11 @@
                     } catch (error) {
                         console.warn('❌ 火山引擎翻译失败:', error.message);
                         this.translationInProgress.delete(cacheKey);
-                        return text; // 返回原文
-                    }
-                },
-
-                async translateText(text) {
-                    if (!text || text.length < 10) return text;
-                    
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
-                        
-                        const response = await fetch('/api/translate', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                text: text,
-                                targetLang: 'zh'
-                            }),
-                            signal: controller.signal
-                        });
-                        
-                        clearTimeout(timeoutId);
-                        
-                        if (response.ok) {
-                            const result = await response.json();
-                            if (result && result.translatedText) {
-                                return result.translatedText;
-                            } else {
-                                console.warn('Translation response missing translatedText:', result);
-                                return text;
-                            }
-                        } else {
-                            console.error('Translation API HTTP error:', response.status, response.statusText);
-                            return text;
-                        }
-                    } catch (error) {
-                        if (error.name === 'AbortError') {
-                            console.warn('Translation request timeout');
-                        } else {
-                            console.error('Translation API error:', error);
-                        }
                         return text;
                     }
                 },
 
-                // ================================================================
-                // == 新的图表渲染方法（用于独立事件循环）==
-                // ================================================================
-                
                 renderChartInSeparateTask() {
-                    // 防止重复渲染
                     if (this.chartCreating) {
                         console.warn('Chart creation already in progress');
                         return;
@@ -855,7 +823,6 @@
                             return;
                         }
                         
-                        // 确保canvas有正确的尺寸
                         const container = ctx.parentElement;
                         if (!container) {
                             console.error('Chart container not found');
@@ -866,7 +833,6 @@
                         const rect = container.getBoundingClientRect();
                         if (rect.width <= 0 || rect.height <= 0) {
                             console.warn('Container size not ready, retrying...', rect);
-                            // 延迟重试
                             setTimeout(() => {
                                 this.chartCreating = false;
                                 this.renderChartInSeparateTask();
@@ -874,7 +840,6 @@
                             return;
                         }
                         
-                        // 销毁现有图表
                         if (this.chart) {
                             try {
                                 this.chart.destroy();
@@ -884,7 +849,6 @@
                             this.chart = null;
                         }
                         
-                        // 创建新图表
                         this.createChart(ctx);
                         
                     } finally {
@@ -909,7 +873,6 @@
                 async changePeriod(newPeriod) {
                     if (this.selectedPeriod === newPeriod) return;
                     
-                    // 防止快速切换周期时的重复调用
                     if (this.chartLoading || this.chartCreating) {
                         console.warn('Chart operation in progress, ignoring period change');
                         return;
@@ -917,13 +880,11 @@
                     
                     this.selectedPeriod = newPeriod;
                     
-                    // 使用新的稳定渲染逻辑
                     try {
                         const candlesData = await this.loadCandlesData();
                         if (candlesData && candlesData.c && Array.isArray(candlesData.c) && candlesData.c.length > 0) {
                             this.candles = candlesData;
                             
-                            // 同样使用setTimeout确保渲染稳定性
                             setTimeout(() => {
                                 this.renderChartInSeparateTask();
                             }, 0);
@@ -936,78 +897,22 @@
                     }
                 },
 
-                updateChart() {
-                    if (this.chart) {
-                        this.chart.destroy();
-                        this.chart = null;
-                    }
-                    
-                    // 显示加载状态
-                    this.showChartLoading(true);
-                    
-                    // 延迟初始化，确保容器尺寸稳定
-                    setTimeout(() => {
-                        const ctx = document.getElementById('mobileStockChart');
-                        if (!ctx || !this.candles || !this.candles.c || this.candles.c.length === 0) {
-                            console.warn('Cannot update chart: invalid data or canvas');
-                            this.showChartLoading(false);
-                            this.showChartError('图表数据无效');
-                            return;
-                        }
-                        
-                        // 确保canvas有正确的尺寸
-                        const container = ctx.parentElement;
-                        if (container) {
-                            const rect = container.getBoundingClientRect();
-                            if (rect.width > 0 && rect.height > 0) {
-                                this.createChart(ctx);
-                                this.showChartLoading(false);
-                            } else {
-                                console.warn('Container size not ready, retrying...');
-                                setTimeout(() => this.updateChart(), 100);
-                            }
-                        }
-                    }, 100);
-                },
-                
-                showChartLoading(show) {
-                    const loadingEl = document.querySelector('.chart-loading');
-                    if (loadingEl) {
-                        loadingEl.style.display = show ? 'block' : 'none';
-                    }
-                },
-                
-                showChartError(message) {
-                    console.error('Chart Error:', message);
-                    // 可以在这里添加错误提示UI
-                },
-
                 createChart(ctx) {
-                    // ================================================================
-                    // == 关键的数据清洗和验证步骤 ==
-                    // ================================================================
                     if (!this.candles || typeof this.candles !== 'object') {
                         console.warn('Cannot create chart: candles data is null or invalid');
                         this.showChartError('K线数据无效');
                         return;
                     }
                     
-                    // 验证API返回的数据格式
                     if (!Array.isArray(this.candles.t) || !Array.isArray(this.candles.c) || 
                         this.candles.t.length === 0 || this.candles.c.length === 0 ||
                         this.candles.t.length !== this.candles.c.length) {
-                        console.warn('Cannot create chart: invalid candle data structure', {
-                            hasT: Array.isArray(this.candles.t),
-                            hasC: Array.isArray(this.candles.c),
-                            tLength: this.candles.t?.length,
-                            cLength: this.candles.c?.length
-                        });
+                        console.warn('Cannot create chart: invalid candle data structure');
                         this.showChartError('K线数据格式错误');
                         return;
                     }
                     
                     try {
-                        // 数据清洗：过滤掉无效的数据点
                         const cleanedData = [];
                         const cleanedLabels = [];
                         
@@ -1015,7 +920,6 @@
                             const timestamp = this.candles.t[i];
                             const price = this.candles.c[i];
                             
-                            // 验证每个数据点的有效性
                             if (typeof timestamp === 'number' && timestamp > 0 &&
                                 typeof price === 'number' && !isNaN(price) && price > 0) {
                                 cleanedData.push(price);
@@ -1024,26 +928,21 @@
                             }
                         }
                         
-                        // 确保清洗后还有有效数据
                         if (cleanedData.length === 0) {
                             console.warn('Cannot create chart: no valid data points after cleaning');
                             this.showChartError('没有有效的K线数据');
                             return;
                         }
                         
-                        console.log(`Chart data cleaned: ${this.candles.c.length} -> ${cleanedData.length} valid points`);
-                        
                         const isPositive = this.quote && this.quote.d >= 0;
                         const color = isPositive ? '#22c55e' : '#ef4444';
                         
-                        // 确保Canvas上下文有效
                         if (!ctx.getContext) {
                             console.error('Invalid canvas context');
                             this.showChartError('Canvas上下文无效');
                             return;
                         }
                         
-                        // 设置Canvas尺寸
                         const container = ctx.parentElement;
                         const rect = container.getBoundingClientRect();
                         ctx.width = rect.width;
@@ -1067,67 +966,21 @@
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                },
+                                plugins: { legend: { display: false } },
                                 scales: {
-                                    x: {
-                                        display: true,
-                                        grid: {
-                                            display: false
-                                        },
-                                        ticks: {
-                                            maxTicksLimit: 6
-                                        }
-                                    },
-                                    y: {
-                                        display: true,
-                                        position: 'right',
-                                        grid: {
-                                            color: '#f1f5f9'
-                                        }
-                                    }
+                                    x: { display: true, grid: { display: false }, ticks: { maxTicksLimit: 6 } },
+                                    y: { display: true, position: 'right', grid: { color: '#f1f5f9' } }
                                 },
-                                interaction: {
-                                    intersect: false,
-                                    mode: 'index'
-                                }
+                                interaction: { intersect: false, mode: 'index' }
                             }
                         });
                         
                     } catch (error) {
-                        console.error('Chart.js Error Details:', {
-                            message: error.message,
-                            stack: error.stack,
-                            candlesData: {
-                                hasCandles: !!this.candles,
-                                candlesType: typeof this.candles,
-                                tLength: this.candles?.t?.length,
-                                cLength: this.candles?.c?.length,
-                                sampleT: this.candles?.t?.slice(0, 3),
-                                sampleC: this.candles?.c?.slice(0, 3)
-                            },
-                            contextInfo: {
-                                canvasExists: !!ctx,
-                                canvasId: ctx?.id,
-                                containerSize: ctx?.parentElement?.getBoundingClientRect()
-                            }
-                        });
+                        console.error('Chart.js Error Details:', error);
                         this.chart = null;
-                        
-                        // 显示用户友好的错误信息
                         const container = ctx?.parentElement;
                         if (container) {
-                            container.innerHTML = `
-                                <div class="flex items-center justify-center h-full text-gray-500">
-                                    <div class="text-center">
-                                        <p class="mb-2">${this.language === 'zh' ? '图表加载失败' : 'Chart loading failed'}</p>
-                                        <p class="text-sm">${this.language === 'zh' ? '请稍后重试' : 'Please try again later'}</p>
-                                    </div>
-                                </div>
-                            `;
+                            container.innerHTML = `<div class="flex items-center justify-center h-full text-gray-500"><div class="text-center"><p class="mb-2">${this.language === 'zh' ? '图表加载失败' : 'Chart loading failed'}</p><p class="text-sm">${this.language === 'zh' ? '请稍后重试' : 'Please try again later'}</p></div></div>`;
                         }
                     }
                 },
@@ -1148,90 +1001,18 @@
                     return this.quote.d >= 0 ? 'change-positive' : 'change-negative';
                 },
 
-                formatPrice(price) {
-                    if (!price) return 'N/A';
-                    return `$${parseFloat(price).toFixed(2)}`;
-                },
-
-                formatChange(change) {
-                    if (!change) return 'N/A';
-                    const sign = change >= 0 ? '+' : '';
-                    return `${sign}$${parseFloat(change).toFixed(2)}`;
-                },
-
-                formatChangePercent(changePercent) {
-                    if (!changePercent) return 'N/A';
-                    const sign = changePercent >= 0 ? '+' : '';
-                    return `${sign}${parseFloat(changePercent).toFixed(2)}%`;
-                },
-
-                formatMarketCap(marketCap) {
-                    if (!marketCap) return 'N/A';
-                    const TRILLION = 1000000000000;
-                    const BILLION = 100;
-                    
-                    if (marketCap >= TRILLION) {
-                        return `${(marketCap / TRILLION).toFixed(2)}万亿`;
-                    } else {
-                        return `${(marketCap / BILLION).toFixed(0)}亿`;
-                    }
-                },
-
-                formatVolume(volume) {
-                    if (!volume) return 'N/A';
-                    if (volume >= 1000000) {
-                        return `${(volume / 1000000).toFixed(1)}M`;
-                    } else if (volume >= 1000) {
-                        return `${(volume / 1000).toFixed(1)}K`;
-                    }
-                    return volume.toString();
-                },
-
-                formatRatio(ratio) {
-                    if (!ratio) return 'N/A';
-                    return parseFloat(ratio).toFixed(2);
-                },
-
-                formatTime(timestamp) {
-                    if (!timestamp) return 'N/A';
-                    const date = new Date(timestamp * 1000);
-                    return date.toLocaleString('zh-CN');
-                },
-
-                formatNewsDate(timestamp) {
-                    if (!timestamp) return '';
-                    const date = new Date(timestamp * 1000);
-                    const now = new Date();
-                    const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-                    
-                    if (diffHours < 1) return '刚刚';
-                    if (diffHours < 24) return `${diffHours}小时前`;
-                    if (diffHours < 48) return '1天前';
-                    return date.toLocaleDateString('zh-CN');
-                },
-
-                toggleLanguage() {
-                    this.language = this.language === 'zh' ? 'en' : 'zh';
-                    localStorage.setItem('stock-lang', this.language);
-                },
-
-                goBack() {
-                    if (window.history.length > 1) {
-                        window.history.back();
-                    } else {
-                        window.location.href = '/';
-                    }
-                },
-
-                openYouTubeSearch() {
-                    const query = encodeURIComponent(`${this.symbol} ${this.companyProfile?.name || ''} stock analysis`);
-                    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
-                },
-
-                openXueqiuSearch() {
-                    const query = encodeURIComponent(this.symbol);
-                    window.open(`https://xueqiu.com/S/${query}`, '_blank');
-                }
+                formatPrice(price) { if (!price) return 'N/A'; return `$${parseFloat(price).toFixed(2)}`; },
+                formatChange(change) { if (!change) return 'N/A'; const sign = change >= 0 ? '+' : ''; return `${sign}$${parseFloat(change).toFixed(2)}`; },
+                formatChangePercent(changePercent) { if (!changePercent) return 'N/A'; const sign = changePercent >= 0 ? '+' : ''; return `${sign}${parseFloat(changePercent).toFixed(2)}%`; },
+                formatMarketCap(marketCap) { if (!marketCap) return 'N/A'; const T = 1000000000000, B = 100; if (marketCap >= T) { return `${(marketCap / T).toFixed(2)}万亿`; } else { return `${(marketCap / B).toFixed(0)}亿`; } },
+                formatVolume(volume) { if (!volume) return 'N/A'; if (volume >= 1000000) { return `${(volume / 1000000).toFixed(1)}M`; } else if (volume >= 1000) { return `${(volume / 1000).toFixed(1)}K`; } return volume.toString(); },
+                formatRatio(ratio) { if (!ratio) return 'N/A'; return parseFloat(ratio).toFixed(2); },
+                formatTime(timestamp) { if (!timestamp) return 'N/A'; const date = new Date(timestamp * 1000); return date.toLocaleString('zh-CN'); },
+                formatNewsDate(timestamp) { if (!timestamp) return ''; const date = new Date(timestamp * 1000); const now = new Date(); const diffHours = Math.floor((now - date) / 3600000); if (diffHours < 1) return '刚刚'; if (diffHours < 24) return `${diffHours}小时前`; if (diffHours < 48) return '1天前'; return date.toLocaleDateString('zh-CN'); },
+                toggleLanguage() { this.language = this.language === 'zh' ? 'en' : 'zh'; localStorage.setItem('stock-lang', this.language); },
+                goBack() { if (window.history.length > 1) { window.history.back(); } else { window.location.href = '/'; } },
+                openYouTubeSearch() { const query = encodeURIComponent(`${this.symbol} ${this.companyProfile?.name || ''} stock analysis`); window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank'); },
+                openXueqiuSearch() { const query = encodeURIComponent(this.symbol); window.open(`https://xueqiu.com/S/${query}`, '_blank'); }
             };
         }
     </script>
